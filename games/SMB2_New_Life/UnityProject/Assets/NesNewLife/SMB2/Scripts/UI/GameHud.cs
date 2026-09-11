@@ -8,6 +8,7 @@ namespace NesNewLife.SMB2
         private GUIStyle textStyle;
         private GUIStyle centerStyle;
         private GUIStyle selectStyle;
+        private GUIStyle messageStyle;
         private Texture2D panelTexture;
 
         private void Awake()
@@ -39,6 +40,11 @@ namespace NesNewLife.SMB2
             selectStyle.alignment = TextAnchor.MiddleCenter;
             selectStyle.fontSize = 20;
             selectStyle.wordWrap = true;
+
+            messageStyle = new GUIStyle(titleStyle);
+            messageStyle.alignment = TextAnchor.MiddleCenter;
+            messageStyle.fontSize = 22;
+            messageStyle.wordWrap = true;
         }
 
         private void OnGUI()
@@ -55,14 +61,23 @@ namespace NesNewLife.SMB2
             }
 
             PlayerHealth health = FindFirstObjectByType<PlayerHealth>();
+            PlayerInventory inventory = FindFirstObjectByType<PlayerInventory>();
             CharacterTuning tuning = CharacterTuning.For(gm.SelectedCharacter);
 
-            Rect panel = new Rect(18, 18, 390, 142);
+            Rect panel = new Rect(18, 18, 430, 150);
             GUI.DrawTexture(panel, panelTexture);
-            GUI.Label(new Rect(34, 28, 350, 30), "NES NEW LIFE #001", titleStyle);
-            GUI.Label(new Rect(34, 62, 350, 26), $"{tuning.DisplayName}   HP: {(health != null ? health.CurrentHealth : 0)}/{(health != null ? health.MaxHealth : 0)}", textStyle);
-            GUI.Label(new Rect(34, 88, 350, 26), $"Lives: {gm.Lives}   Score: {gm.Score:000000}", textStyle);
-            GUI.Label(new Rect(34, 116, 350, 30), "A/D Move • Space Jump • Shift Carry • P Pause", textStyle);
+            GUI.Label(new Rect(34, 28, 390, 30), "NES NEW LIFE #001", titleStyle);
+            GUI.Label(new Rect(34, 62, 390, 26), $"{tuning.DisplayName}   HP: {(health != null ? health.CurrentHealth : 0)}/{(health != null ? health.MaxHealth : 0)}", textStyle);
+            GUI.Label(new Rect(34, 88, 390, 26), $"Lives: {gm.Lives}   Keys: {(inventory != null ? inventory.Keys : 0)}   Score: {gm.Score:000000}", textStyle);
+            GUI.Label(new Rect(34, 116, 390, 30), "A/D Move • Space Jump • Shift Carry • ↑/W Door • P Pause", textStyle);
+
+            if (gm.HasNotification)
+            {
+                float width = Mathf.Min(560f, Screen.width - 40f);
+                Rect notification = new Rect((Screen.width - width) * 0.5f, 22f, width, 58f);
+                GUI.DrawTexture(notification, panelTexture);
+                GUI.Label(notification, gm.NotificationText, messageStyle);
+            }
 
             if (gm.State == RunState.Playing)
                 return;
