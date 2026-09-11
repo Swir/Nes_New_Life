@@ -1,0 +1,26 @@
+# Never commit commercial ROMs or ROM-derived reference graphics
+*.nes
+*.fds
+*.unf
+*.unif
+roms/
+ROMs/
+
+# Local remaster workspaces (can contain ROM-derived captures)
+work/
+projects/**/work/
+projects/**/reference_chr/
+projects/**/captures/
+projects/**/MesenPack/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
