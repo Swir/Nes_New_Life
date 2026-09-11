@@ -15,14 +15,20 @@ namespace NesNewLife.SMB2.EditorTools
         {
             if (!File.Exists(ScenePath))
             {
-                EditorUtility.DisplayDialog(
-                    "NES New Life",
-                    "Playable scene does not exist yet. Run NES New Life > SMB2 > Create PLAYABLE Level first.",
-                    "OK");
+                Debug.Log("NES New Life: playable scene is missing; generating it before build.");
+                CreatePrototypeScene.CreatePlayable();
+                AssetDatabase.Refresh();
+            }
+
+            if (!File.Exists(ScenePath))
+            {
+                Debug.LogError("NES New Life: scene generation failed, build aborted.");
                 return;
             }
 
-            Directory.CreateDirectory(Path.GetDirectoryName(OutputPath));
+            string outputDirectory = Path.GetDirectoryName(OutputPath);
+            if (!string.IsNullOrEmpty(outputDirectory))
+                Directory.CreateDirectory(outputDirectory);
 
             BuildPlayerOptions options = new BuildPlayerOptions
             {
