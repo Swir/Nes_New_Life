@@ -1,0 +1,7 @@
+<ver>106
+<scale>4
+<options>disableSpriteLimit
+
+# This is intentionally only a template.
+# Use Mesen's HD Pack Builder to generate real <img> and <tile> mappings
+# from your own locally supplied ROM, then redraw the generated PNG sheets.
