@@ -10,7 +10,7 @@
 
 First research target: **Super Mario Bros. 2 (USA) (Rev 1)**.
 
-Current milestone: **`0.6.0-vertical-traversal-and-hazards`**
+Current milestone: **`0.7.0-seven-world-campaign-framework`**
 
 Already implemented:
 - self-contained Unity 6.3 LTS project baseline
@@ -21,25 +21,23 @@ Already implemented:
 - crouch + action pullable plants / buried items
 - health, lives, score, checkpoints and respawn
 - patrol, hopping and proximity-chasing enemies
-- two guardian archetypes including a timed charge guardian
+- jumping and charge guardian archetypes
 - moving platforms, respawning crumble platforms and spike hazards
-- collectibles and healing
-- pits / kill zones
 - connected surface and underground rooms
 - key inventory and key-gated doors
 - room-specific camera bounds
-- mandatory sub-area progression route
-- elevated/vertical stage exits in later campaign stages
-- persistent best score, clears and deaths
-- active campaign save with current stage, character, lives and run score
-- generated three-stage campaign with automatic Stage 1 → Stage 2 → Stage 3 transitions
-- progressively stronger traversal, hazards, encounters and guardians across stages
+- persistent best score, clears, deaths and active campaign state
+- **7-world / 20-stage campaign framework** from `1-1` through `7-2`
+- generated scenes `SMB2_Stage_01` through `SMB2_Stage_20`
+- persistent highest-unlocked-stage progression
+- unlocked stage selector for rapid testing/replay
+- per-world visual/traversal/hazard scaling
+- automatic world-finale detection and stronger later guardians
 - pause, game-over, campaign-complete and Continue flows
-- runtime HUD with stage progress and contextual world messages
-- generated public-safe placeholder visuals
-- one-click three-stage campaign generation
-- campaign-wide structural validator including v0.6 traversal/hazard checks
-- one-click Windows x64 build command that includes all campaign scenes
+- runtime HUD with world/stage progress
+- one-click 20-stage campaign generation
+- 20-scene structural validator
+- one-click Windows x64 builder including the full campaign scene list
 
 ## Repository layout
 
@@ -55,17 +53,14 @@ Nes_New_Life/
 
 ## Release policy
 
-Each game gets its own version stream and GitHub Releases. Release tags should use the game prefix, for example:
-
-- `smb2-v0.6.0-beta`
-- `smb2-v1.0.0`
+Each game gets its own version stream and GitHub Releases, for example `smb2-v0.7.0-beta` and `smb2-v1.0.0`.
 
 A binary Release should only be published after the corresponding Unity build has been compiled and smoke-tested.
 
 ## Development rule
 
-The goal is **faithful game feel, modern implementation**. Systems that are useful across multiple games should move into `shared/` instead of being duplicated.
+The goal is **faithful game feel, modern implementation**. Systems useful across multiple games should move into `shared/` instead of being duplicated.
 
 ## Status
 
-🚧 Active development — Project #001 now has persistent multi-stage campaign progression, connected sub-areas, keys/doors, pullable plants, multiple enemy behaviors, vertical traversal, environmental hazards, moving/crumbling platforms and two guardian archetypes. Work continues toward richer room archetypes, broader enemy/boss variety, original production art/audio, controller/accessibility polish and a tested public-safe standalone release.
+🚧 Active development — Project #001 now has campaign-scale progression infrastructure for 7 worlds / 20 stage slots plus connected sub-areas, doors/keys, pullable items, multiple enemy behaviors, vertical traversal, environmental hazards and guardian encounters. The next major work is replacing development-stage variants with richer handcrafted original rooms, expanding enemy/boss families, adding modern original presentation/audio and validating everything through real Unity CI/build testing.
