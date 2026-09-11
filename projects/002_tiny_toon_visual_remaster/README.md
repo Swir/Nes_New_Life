@@ -47,37 +47,39 @@ From `projects/002_tiny_toon_visual_remaster/windows/` run:
 Start_Remaster.bat
 ```
 
-It will:
-
-1. download the latest official Windows build of MesenCE from `nesdev-org/MesenCE` if needed,
-2. verify the downloaded ZIP SHA-256 when GitHub supplies a digest,
-3. install it locally under the gitignored `vendor/MesenCE` folder,
-4. ask you to choose your `.nes` file,
-5. verify the Project #002 SHA-1 fingerprint,
-6. launch the ROM directly from its existing location.
-
-The ROM is never copied into the repository.
+It downloads/verifies the current official MesenCE Windows build if needed, installs it under the local gitignored `vendor/MesenCE`, asks for the user-supplied `.nes`, verifies the Project #002 fingerprint and launches the ROM without copying it into the repository.
 
 ## Fast HD workflow
 
-The fastest route is now:
-
 1. Launch the ROM in MesenCE.
-2. Configure the keyboard layout above once in NES input settings.
-3. Open **Tools → HD Pack Builder**.
-4. Record gameplay and trigger every animation, enemy, level, menu and effect you can reach.
-5. For the first pass use a **4x scale** with a Prescale-style capture so tile coordinates stay clean and editing is comfortable.
-6. Save/export the generated `hires.txt` and PNG sheets into a local work folder.
-7. Open `TinyToonRemasterStudio.py` and choose **Select Mesen capture**.
-8. Run **Instant HD Preview**. Choose `clean`, `vibrant`, `smooth` or `illustrated`.
-9. Studio creates a separate modernized pack and preserves `hires.txt` mapping coordinates exactly.
-10. Re-run the original ROM with that pack, then replace important PNG regions with final hand-made artwork over time.
+2. Open **Tools → HD Pack Builder**.
+3. Capture at **4x Prescale** and trigger every reachable menu, route, animation, enemy, boss, HUD state and effect.
+4. Save `hires.txt` + PNG sheets into the local `MesenCapture` folder.
+5. Use the capture-diff tooling after later play sessions so new coverage is measurable.
+6. Run **Instant HD Preview** for a fast modernized baseline while preserving all `hires.txt` mappings.
+7. Generate the ranked/grouped art queue and finish the highest-reuse graphics first.
+8. Mark the readiness checklist only after real local verification.
+9. Run the **HD readiness dashboard**.
+10. Build the release ZIP only from a structurally valid pack.
 
-The automatic preview is a **baseline**, not a claim of finished modern artwork. Its purpose is to make the game visually improved immediately while letting us spend manual art time only on the characters, enemies, bosses and scenery that matter most.
+The automatic preview is a baseline, not a claim of finished modern artwork. The release dashboard deliberately refuses to invent an absolute whole-game percentage from unseen content.
+
+## Capture progress and art queue
+
+`hdpack_pipeline.py` measures capture growth and can rank tile/palette pairs by reuse:
+
+```bash
+python tools/hdpack_pipeline.py compare "C:\\TinyToonWork\\Capture_A" "C:\\TinyToonWork\\Capture_B"
+python tools/hdpack_pipeline.py art-queue "C:\\TinyToonWork\\MesenCapture" --output "C:\\TinyToonWork\\Artwork\\ART_QUEUE.csv"
+```
+
+`hd_readiness.py` can add evidence-based grouping to the queue. It classifies only when Mesen condition names provide meaningful keywords; otherwise the row stays `UNASSIGNED` for local inspection.
+
+```bash
+python tools/hd_readiness.py classify "C:\\TinyToonWork\\ModernizedPack\\vibrant" --output "C:\\TinyToonWork\\Artwork\\ART_QUEUE.csv"
+```
 
 ## Instant HD Preview
-
-`tools/hdpack_pipeline.py` can also be used directly:
 
 ```bash
 python tools/hdpack_pipeline.py analyze "C:\\TinyToonWork\\MesenCapture" --json
@@ -85,26 +87,49 @@ python tools/hdpack_pipeline.py preview "C:\\TinyToonWork\\MesenCapture" "C:\\Ti
 python tools/hdpack_pipeline.py report "C:\\TinyToonWork\\ModernizedPack\\vibrant"
 ```
 
-The preview pipeline:
+The preview pipeline verifies referenced PNG files, processes graphics into a separate folder, preserves alpha, dimensions and mapping coordinates, and writes a SHA-256 manifest.
 
-- parses current Mesen HD Pack format metadata,
-- counts PNG sheets, tile rules, conditions, unique tile IDs and palettes,
-- verifies referenced PNG files exist,
-- processes PNGs non-destructively into a separate folder,
-- preserves alpha transparency,
-- keeps image dimensions and `hires.txt` coordinates unchanged,
-- writes `NES_NEW_LIFE_PREVIEW.json` with hashes and processing metadata,
-- can generate a local HTML capture report.
+## HD readiness gate
+
+A prepared Studio workspace contains `HD_READINESS_CHECKLIST.json`. Its evidence items cover:
+
+- boot/title/menu states,
+- every player movement/action/hit/death animation,
+- every playable route and scrolling section,
+- all common enemies,
+- all boss phases,
+- HUD/text/dialog states,
+- projectiles/effects/transitions,
+- ending/credits,
+- final 4x art completion,
+- full-game visual regression verification.
+
+Generate the dashboard with:
+
+```bash
+python tools/hd_readiness.py dashboard "C:\\TinyToonWork\\ModernizedPack\\vibrant" --checklist "C:\\TinyToonWork\\HD_READINESS_CHECKLIST.json" --queue "C:\\TinyToonWork\\Artwork\\ART_QUEUE.csv" --output "C:\\TinyToonWork\\Release\\HD_READINESS.html"
+```
+
+The release gate is **BLOCKED** when structural validation fails, referenced PNGs are missing, the pack is below the 4x target, manual full-game evidence is incomplete, or the supplied art queue still contains TODO/unassigned rows.
+
+## Safe release ZIP
+
+```bash
+python tools/hd_readiness.py package "C:\\TinyToonWork\\ModernizedPack\\vibrant" "C:\\TinyToonWork\\Release\\TinyToon_Visual_Remaster_HD_Pack.zip"
+```
+
+The packager validates the HD Pack and refuses ROM/save/patch files. Generated local reports are excluded from the release archive. A successfully created ZIP means the **pack structure is valid**; call it a complete HD release only after the readiness gate also passes through real local full-game verification.
 
 ## Tools
 
 - `rom_probe.py` — CLI ROM inspector and CHR exporter.
 - `prepare_workspace.py` — creates a local remaster workspace without copying the ROM itself.
 - `validate_hdpack.py` — checks `hires.txt`, referenced PNG files and tile coordinates.
-- `hdpack_pipeline.py` — capture analysis, Instant HD Preview and HTML report generator.
-- `TinyToonRemasterStudio.py` — GUI for ROM inspection, workspace, capture analysis, preview generation and validation.
-- `windows/setup_mesence.ps1` — downloads/verifies the latest official MesenCE Windows build.
-- `windows/launch_remaster.ps1` — verifies the ROM fingerprint and launches it in local MesenCE.
+- `hdpack_pipeline.py` — capture analysis, capture diffing, ranked art queue, Instant HD Preview and capture report.
+- `hd_readiness.py` — art grouping, evidence checklist, readiness dashboard and safe release ZIP packaging.
+- `TinyToonRemasterStudio.py` — GUI for the complete capture → preview → art → readiness → package workflow.
+- `windows/setup_mesence.ps1` — downloads/verifies the official MesenCE Windows build.
+- `windows/launch_remaster.ps1` — verifies the ROM fingerprint and launches it locally.
 - `windows/Start_Remaster.bat` — one-click Windows wrapper.
 
 ## Python install
@@ -119,4 +144,4 @@ Pillow is used for PNG export, validation and preview processing.
 
 ## Copyright / repository rule
 
-Do not commit ROMs, emulator save states, Mesen captures made from commercial graphics, ripped game artwork, locally generated derivative preview packs, or downloaded emulator binaries. `reference_chr`, `captures`, `MesenPack`, `ModernizedPack`, `work`, and `vendor` are gitignored/local by design. The public repository contains tooling and original project metadata only.
+Do not commit ROMs, emulator save states, Mesen captures made from commercial graphics, ripped game artwork, locally generated derivative preview packs, or downloaded emulator binaries. `reference_chr`, `captures`, `MesenPack`, `ModernizedPack`, `work`, `Release`, and `vendor` remain local/gitignored by design. The public repository contains tooling and original project metadata only.
