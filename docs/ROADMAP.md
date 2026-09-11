@@ -27,8 +27,13 @@
 - next: use capture diffs after each play session until growth approaches zero
 - next: manually resolve remaining UNASSIGNED art-queue entries from local visual inspection
 
-### Phase 3 — modern art pass — ACTIVE TOOLING READY
+### Phase 3 — modern art pass — ACTIVE
 - work from the ranked/grouped art queue so the highest-reuse graphics are modernized first
+- generate PLAYER / ENEMY / BOSS / WORLD / UI / EFFECTS workboard PNGs automatically
+- detect exact duplicate captured graphics so one master redraw can cover every identical occurrence
+- flag visually near-duplicate tiles using a compact perceptual hash to reduce redundant drawing work
+- export one editable master PNG per unique captured graphic with a JSON target manifest
+- propagate one finished master replacement back into every exact matching sheet position while preserving `hires.txt` byte-for-byte
 - player animation replacements first
 - common enemies and projectiles
 - foreground tilesets and scenery
@@ -47,6 +52,6 @@
 - final local full-game verification against the original ROM behavior
 
 ### Current hard blocker to a truthful "complete HD" release
-The repository can now automate capture measurement, prioritization, grouping, preview processing, validation, readiness reporting and safe packaging. The remaining content-critical work requires a **local complete MesenCE capture and real full-game visual verification**. Tooling must never infer unseen bosses, routes, animation states or ending screens as complete.
+The repository can now automate capture measurement, prioritization, grouping, workboard generation, duplicate detection, master-tile export, exact replacement propagation, preview processing, validation, readiness reporting and safe packaging. The remaining content-critical work requires a **local complete MesenCE capture plus the actual finished 4x artwork and real full-game visual verification**. Tooling must never infer unseen bosses, routes, animation states or ending screens as complete.
 
 The ROM remains the gameplay source throughout all phases. We do not rebuild or redesign its levels, physics or enemy logic.
