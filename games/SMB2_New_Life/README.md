@@ -6,11 +6,11 @@ Project #001 in **NES New Life**.
 
 ## Current milestone
 
-**`0.7.0-seven-world-campaign-framework`**
+**`0.8.0-persistent-checkpoints-and-settings`**
 
-The project now has a complete campaign-scale progression framework: **7 worlds and 20 stage slots**, matching the useful high-level scope of a full-length classic campaign while keeping all generated layouts, names and presentation original/public-safe.
+The project has a complete campaign-scale progression framework with **7 worlds and 20 stage slots**, plus persistent in-stage checkpoints, settings/accessibility controls and a build-time campaign validation gate.
 
-This is not a claim that the original commercial levels have been recreated 1:1. The 20 generated scenes are development stages built from reusable systems so every future handcrafted level has a real slot, save path, transition, validation path and build target already in place.
+This is not a claim that the original commercial levels have been recreated 1:1. The twenty generated scenes remain original/public-safe development stages built from reusable systems so future handcrafted levels have real progression, save, validation and build infrastructure.
 
 ## Recommended editor
 
@@ -21,55 +21,52 @@ This is not a claim that the original commercial levels have been recreated 1:1.
 - 7 worlds
 - 20 generated campaign stages
 - world structure: `3 + 3 + 3 + 3 + 3 + 3 + 2`
-- stage IDs/names from `1-1` through `7-2`
-- scene naming `SMB2_Stage_01` through `SMB2_Stage_20`
-- automatic stage-to-world mapping
+- stage IDs from `1-1` through `7-2`
+- scenes `SMB2_Stage_01` through `SMB2_Stage_20`
 - persistent current stage and highest unlocked stage
-- selected character, lives and score preserved between scenes
-- Continue returns to the exact unfinished stage
-- unlocked-stage selector from the start screen (`Q/E`, then `Enter`)
-- world finales detected by the catalog
-- later world finales use the charge-guardian archetype
-- final Stage 20 is marked as the campaign finale
-- Windows build includes all 20 scenes in progression order
-- campaign validator checks all 20 generated scenes
+- selected character, lives and score preserved between stages
+- persistent per-stage checkpoint position
+- Continue returns to the unfinished stage and latest saved checkpoint
+- unlocked-stage selector (`Q/E`, then `Enter`)
+- world finales and final Stage 20 guardian configuration
+- Windows build includes all twenty scenes in progression order
 
-## Generated world progression
+## Gameplay systems
 
-The generator now scales encounters and traversal across the full campaign instead of cloning three identical development levels:
-
-- World 1 introduces climbing and basic moving traversal
-- World 2 increases moving-platform pressure and adds environmental hazards
-- World 3 adds crumble traversal and charge-guardian finales
-- World 4 adds horizontal moving-platform challenges
-- World 5 adds denser vertical/crumble combinations
-- World 6 increases hazard and guardian pressure further
-- World 7 contains the two-stage final world with the strongest generated guardian configuration
-
-Each world also receives a distinct public-safe color treatment and simple geometric landmarks. These are placeholders for the later original art pass.
-
-## Existing gameplay systems
-
-- Mario / Luigi / Peach / Toad profiles with different movement, jump, air control and throw power
+- Mario / Luigi / Peach / Toad profiles with distinct movement, jump, air control and throw power
 - Peach-style temporary air float
 - variable-height jumping, coyote time and jump buffering
 - crouch and charged crouch-jump
-- climbable traversal with jump-off support
+- climbable traversal and jump-off support
 - pickup, carry, throw and crouch+action plant pulling
 - thrown-object combat
 - patrol, hopping and proximity-chasing enemies
 - jumping and charge guardian archetypes
-- contact damage, 3-point health, knockback and invulnerability
+- contact damage, HP, knockback and invulnerability
 - moving platforms, respawning crumble platforms and spike hazards
-- lives, death, checkpoint respawn and pits
+- lives, death, persistent checkpoint respawn and pits
 - score collectibles and healing
 - room-specific camera bounds
-- connected doors, keys and locked doors
-- underground sub-area route
+- connected doors, keys, locked doors and underground sub-areas
 - boss-gated exits
 - pause, game-over and campaign-complete states
 - persistent best score, clear count and total deaths
 - runtime HUD and contextual messages
+
+## Settings & accessibility
+
+Press **F10** from the title flow, gameplay or pause state.
+
+Available persistent settings:
+
+- master volume
+- HUD text scale from 80% to 150%
+- reduced flashing after damage
+- assist health: +2 HP on newly loaded players
+- extra lives: new campaigns start with at least 5 lives
+- reset settings to defaults
+
+Settings use PlayerPrefs and are independent from campaign progress.
 
 ## Generate and run
 
@@ -82,7 +79,7 @@ Each world also receives a distinct public-safe color treatment and simple geome
 
 The generator registers all twenty scenes in Build Settings automatically.
 
-## Start-screen progression controls
+## Start-screen controls
 
 | Action | Key |
 |---|---|
@@ -91,9 +88,8 @@ The generator registers all twenty scenes in Build Settings automatically.
 | Previous unlocked stage | Q or `[` |
 | Next unlocked stage | E or `]` |
 | Start selected unlocked stage | Enter |
-| Reset local progress | N |
-
-Stage select never allows a stage above the highest unlocked save value.
+| Reset local campaign progress | N |
+| Settings / accessibility | F10 |
 
 ## Gameplay controls
 
@@ -108,13 +104,22 @@ Stage select never allows a stage above the highest unlocked save value.
 | Pull buried item | Crouch + Shift near plant |
 | Enter door | W or Up Arrow |
 | Pause / resume | P or Esc |
+| Settings / accessibility | F10 |
 | New campaign after win/game over | R |
+
+## Save / checkpoint behavior
+
+The campaign save stores character, score, remaining lives, current stage and highest unlocked stage. Reaching a checkpoint additionally stores its world position for the current stage. Closing the game and choosing Continue restores that checkpoint when the stage loads again.
+
+Checkpoint data is cleared when advancing to the next stage, starting a new campaign, abandoning a campaign, completing the campaign or resetting progress, preventing stale positions from leaking into another stage.
 
 ## Build Windows x64
 
 Choose `NES New Life > SMB2 > Build Windows x64`.
 
-If campaign scenes are missing, the builder generates all 20 first. Output remains:
+If campaign scenes are missing, the builder generates all twenty first. Before invoking Unity's `BuildPipeline`, it runs the structural campaign validator. Any validation error aborts the build instead of producing a knowingly incomplete executable.
+
+Output:
 
 `Builds/Windows/NES_New_Life_SMB2.exe`
 
@@ -122,14 +127,15 @@ Compiled builds are ignored by Git and should only be published after a real Uni
 
 ## Validation status
 
-Source and project structure are reviewed statically. **A real Unity 6.3 LTS Editor compile, Play Mode pass and Windows executable launch have not been performed in this run.** The repository therefore does not claim a tested binary yet.
+Source and project structure were reviewed statically. **A real Unity 6.3 LTS Editor compile, Play Mode pass, checkpoint persistence test and Windows executable launch were not performed in this run.** The repository therefore does not claim a tested binary yet.
 
 ## Next production milestones
 
-- replace generated development layouts with richer handcrafted original rooms while retaining the 20-stage campaign framework
-- add more enemy families, projectile/bomb interactions and boss archetypes
+- replace generated development layouts with richer handcrafted original rooms while retaining the 20-stage framework
+- add additional enemy families, projectile/bomb interactions and boss archetypes
 - modern original art, animation, VFX and camera feedback
-- audio, modern Input System/controller remapping, settings and accessibility
+- modern controller/Input System layer and remapping
+- audio implementation that uses the persistent volume setting
 - automated Unity CI compile/test/build once repository secrets are configured
 - balancing, QA and first tested standalone release
 
