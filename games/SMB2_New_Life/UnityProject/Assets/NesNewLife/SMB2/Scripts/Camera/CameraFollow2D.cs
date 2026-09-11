@@ -2,6 +2,7 @@ using UnityEngine;
 
 namespace NesNewLife.SMB2
 {
+    [RequireComponent(typeof(Camera))]
     public sealed class CameraFollow2D : MonoBehaviour
     {
         [SerializeField] private Transform target;
@@ -12,6 +13,9 @@ namespace NesNewLife.SMB2
 
         private Vector3 velocity;
         private float startY;
+        private Camera cameraComponent;
+        private bool useWorldBounds;
+        private Rect worldBounds;
 
         public Transform Target
         {
@@ -21,7 +25,21 @@ namespace NesNewLife.SMB2
 
         private void Awake()
         {
+            cameraComponent = GetComponent<Camera>();
             startY = transform.position.y;
+        }
+
+        public void SetWorldBounds(Rect bounds)
+        {
+            worldBounds = bounds;
+            useWorldBounds = bounds.width > 0.01f && bounds.height > 0.01f;
+            velocity = Vector3.zero;
+        }
+
+        public void ClearWorldBounds()
+        {
+            useWorldBounds = false;
+            velocity = Vector3.zero;
         }
 
         private void LateUpdate()
@@ -40,8 +58,11 @@ namespace NesNewLife.SMB2
                 transform.position.z
             );
 
-            if (lockVerticalBelowStart)
+            if (lockVerticalBelowStart && !useWorldBounds)
                 desired.y = Mathf.Max(startY, desired.y);
+
+            if (useWorldBounds)
+                desired = ClampToBounds(desired);
 
             transform.position = Vector3.SmoothDamp(
                 transform.position,
@@ -49,6 +70,27 @@ namespace NesNewLife.SMB2
                 ref velocity,
                 smoothTime
             );
+        }
+
+        private Vector3 ClampToBounds(Vector3 desired)
+        {
+            float halfHeight = cameraComponent.orthographicSize;
+            float halfWidth = halfHeight * cameraComponent.aspect;
+
+            float minX = worldBounds.xMin + halfWidth;
+            float maxX = worldBounds.xMax - halfWidth;
+            float minY = worldBounds.yMin + halfHeight;
+            float maxY = worldBounds.yMax - halfHeight;
+
+            desired.x = minX <= maxX
+                ? Mathf.Clamp(desired.x, minX, maxX)
+                : worldBounds.center.x;
+
+            desired.y = minY <= maxY
+                ? Mathf.Clamp(desired.y, minY, maxY)
+                : worldBounds.center.y;
+
+            return desired;
         }
     }
 }
