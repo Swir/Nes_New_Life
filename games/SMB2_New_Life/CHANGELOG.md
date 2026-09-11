@@ -2,6 +2,32 @@
 
 All notable development milestones for Project #001 are recorded here.
 
+## [0.7.0-seven-world-campaign-framework] - 2026-09-11
+
+### Added
+- full 7-world / 20-stage campaign catalog
+- stage numbering and display mapping from `1-1` through `7-2`
+- generated scene naming from `SMB2_Stage_01` through `SMB2_Stage_20`
+- automatic world-finale detection
+- per-world visual palette and geometric landmark generation
+- world-scaled traversal/hazard pressure
+- stronger later-world guardian configuration
+- final Stage 20 guardian configuration
+- unlocked-stage selector (`Q/E` or brackets, then Enter)
+- HUD world/level display and campaign-scale progression information
+- 20-scene campaign validation
+
+### Changed
+- campaign generator now produces 20 stages instead of 3
+- Build Settings registration now includes all 20 scenes in progression order
+- Windows builder auto-generates and builds the complete 20-stage campaign scaffold
+- progression/save systems now operate across all 20 stages
+- campaign completion now occurs on Stage 20
+
+### Validation note
+- source/configuration received static review only
+- real Unity 6.3 LTS compile, Play Mode and Windows executable launch are still required before publishing a tested binary
+
 ## [0.6.0-vertical-traversal-and-hazards] - 2026-09-11
 
 ### Added
