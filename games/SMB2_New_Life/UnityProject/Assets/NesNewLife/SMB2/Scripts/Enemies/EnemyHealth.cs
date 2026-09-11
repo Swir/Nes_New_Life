@@ -9,10 +9,19 @@ namespace NesNewLife.SMB2
 
         private int currentHealth;
         public bool IsDead { get; private set; }
+        public int CurrentHealth => currentHealth;
+        public int MaxHealth => maxHealth;
 
         private void Awake()
         {
             currentHealth = maxHealth;
+        }
+
+        public void Configure(int health, int reward)
+        {
+            maxHealth = Mathf.Max(1, health);
+            currentHealth = maxHealth;
+            scoreReward = Mathf.Max(0, reward);
         }
 
         public void Damage(int amount)
