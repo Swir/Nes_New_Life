@@ -11,6 +11,16 @@ namespace NesNewLife.SMB2.EditorTools
         [MenuItem("NES New Life/SMB2/Validate 20-Stage Campaign")]
         public static void Validate()
         {
+            ValidateInternal(true);
+        }
+
+        public static bool ValidateForBuild()
+        {
+            return ValidateInternal(false);
+        }
+
+        private static bool ValidateInternal(bool showDialog)
+        {
             int errors = 0;
             int warnings = 0;
             int checkedStages = 0;
@@ -66,7 +76,10 @@ namespace NesNewLife.SMB2.EditorTools
                 }
 
                 if (Object.FindFirstObjectByType<GameManager>() == null) { Debug.LogError($"{world}-{level}: missing GameManager."); errors++; }
+                if (Object.FindFirstObjectByType<GameHud>() == null) { Debug.LogError($"{world}-{level}: missing GameHud."); errors++; }
                 if (Object.FindFirstObjectByType<PlayerController2D>() == null) { Debug.LogError($"{world}-{level}: missing player."); errors++; }
+                if (Object.FindFirstObjectByType<PlayerHealth>() == null) { Debug.LogError($"{world}-{level}: missing PlayerHealth."); errors++; }
+                if (Object.FindFirstObjectByType<CheckpointTrigger>() == null) { Debug.LogWarning($"{world}-{level}: no checkpoint found; continue will resume from stage start."); warnings++; }
                 if (Object.FindFirstObjectByType<LevelExit>() == null) { Debug.LogError($"{world}-{level}: missing LevelExit."); errors++; }
                 if (Object.FindFirstObjectByType<CameraFollow2D>() == null) { Debug.LogWarning($"{world}-{level}: no CameraFollow2D found."); warnings++; }
                 if (Object.FindFirstObjectByType<ClimbableZone2D>() == null) { Debug.LogError($"{world}-{level}: missing climbable traversal zone."); errors++; }
@@ -113,7 +126,9 @@ namespace NesNewLife.SMB2.EditorTools
 
             string summary = $"Campaign validation complete: {checkedStages}/{CampaignCatalog.StageCount} stage(s) checked, {errors} error(s), {warnings} warning(s).";
             if (errors == 0) Debug.Log(summary); else Debug.LogError(summary);
-            EditorUtility.DisplayDialog("NES New Life — Campaign Validation", summary, "OK");
+            if (showDialog)
+                EditorUtility.DisplayDialog("NES New Life — Campaign Validation", summary, "OK");
+            return errors == 0;
         }
     }
 }

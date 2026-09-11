@@ -38,6 +38,12 @@ namespace NesNewLife.SMB2.EditorTools
                 }
             }
 
+            if (!ValidateCampaign.ValidateForBuild())
+            {
+                Debug.LogError("NES New Life: campaign validation failed. Windows build aborted before BuildPipeline.");
+                return;
+            }
+
             string outputDirectory = Path.GetDirectoryName(OutputPath);
             if (!string.IsNullOrEmpty(outputDirectory))
                 Directory.CreateDirectory(outputDirectory);
@@ -53,7 +59,7 @@ namespace NesNewLife.SMB2.EditorTools
             var report = BuildPipeline.BuildPlayer(options);
             if (report.summary.result == UnityEditor.Build.Reporting.BuildResult.Succeeded)
             {
-                Debug.Log($"NES New Life {CampaignCatalog.StageCount}-stage campaign build ready: {OutputPath} ({report.summary.totalSize} bytes)");
+                Debug.Log($"NES New Life {CampaignCatalog.StageCount}-stage validated campaign build ready: {OutputPath} ({report.summary.totalSize} bytes)");
                 EditorUtility.RevealInFinder(OutputPath);
             }
             else

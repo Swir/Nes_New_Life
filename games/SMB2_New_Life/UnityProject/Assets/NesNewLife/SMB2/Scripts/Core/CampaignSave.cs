@@ -15,6 +15,10 @@ namespace NesNewLife.SMB2
         private const string HighestStageKey = Prefix + "HighestStage";
         private const string RunScoreKey = Prefix + "RunScore";
         private const string RunLivesKey = Prefix + "RunLives";
+        private const string CheckpointStageKey = Prefix + "CheckpointStage";
+        private const string CheckpointXKey = Prefix + "CheckpointX";
+        private const string CheckpointYKey = Prefix + "CheckpointY";
+        private const string CheckpointValidKey = Prefix + "CheckpointValid";
 
         public static bool HasSave => PlayerPrefs.GetInt(HasSaveKey, 0) == 1;
         public static bool CampaignActive => PlayerPrefs.GetInt(CampaignActiveKey, 0) == 1;
@@ -37,8 +41,37 @@ namespace NesNewLife.SMB2
             }
         }
 
+        public static bool TryGetCheckpoint(int stageNumber, out Vector3 position)
+        {
+            bool valid = PlayerPrefs.GetInt(CheckpointValidKey, 0) == 1
+                && PlayerPrefs.GetInt(CheckpointStageKey, -1) == stageNumber;
+
+            position = valid
+                ? new Vector3(PlayerPrefs.GetFloat(CheckpointXKey, 0f), PlayerPrefs.GetFloat(CheckpointYKey, 0f), 0f)
+                : Vector3.zero;
+            return valid;
+        }
+
+        public static void SaveCheckpoint(int stageNumber, Vector3 position)
+        {
+            PlayerPrefs.SetInt(CheckpointValidKey, 1);
+            PlayerPrefs.SetInt(CheckpointStageKey, Mathf.Max(1, stageNumber));
+            PlayerPrefs.SetFloat(CheckpointXKey, position.x);
+            PlayerPrefs.SetFloat(CheckpointYKey, position.y);
+            PlayerPrefs.Save();
+        }
+
+        public static void ClearCheckpoint()
+        {
+            PlayerPrefs.DeleteKey(CheckpointValidKey);
+            PlayerPrefs.DeleteKey(CheckpointStageKey);
+            PlayerPrefs.DeleteKey(CheckpointXKey);
+            PlayerPrefs.DeleteKey(CheckpointYKey);
+        }
+
         public static void BeginCampaign(CharacterType character, int stageNumber, int lives = 3, int score = 0)
         {
+            ClearCheckpoint();
             PlayerPrefs.SetInt(HasSaveKey, 1);
             PlayerPrefs.SetInt(CampaignActiveKey, 1);
             PlayerPrefs.SetInt(CharacterKey, (int)character);
@@ -75,6 +108,7 @@ namespace NesNewLife.SMB2
 
         public static void RecordClear(int score, CharacterType character)
         {
+            ClearCheckpoint();
             PlayerPrefs.SetInt(HasSaveKey, 1);
             PlayerPrefs.SetInt(CampaignActiveKey, 0);
             PlayerPrefs.SetInt(CharacterKey, (int)character);
@@ -89,6 +123,7 @@ namespace NesNewLife.SMB2
 
         public static void AbandonCampaign()
         {
+            ClearCheckpoint();
             PlayerPrefs.SetInt(CampaignActiveKey, 0);
             PlayerPrefs.SetInt(CurrentStageKey, 1);
             PlayerPrefs.SetInt(RunLivesKey, 3);
@@ -98,6 +133,7 @@ namespace NesNewLife.SMB2
 
         public static void ResetProgress()
         {
+            ClearCheckpoint();
             PlayerPrefs.DeleteKey(BestScoreKey);
             PlayerPrefs.DeleteKey(ClearsKey);
             PlayerPrefs.DeleteKey(DeathsKey);
