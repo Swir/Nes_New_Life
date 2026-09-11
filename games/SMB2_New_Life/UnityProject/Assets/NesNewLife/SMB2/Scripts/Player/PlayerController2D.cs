@@ -29,11 +29,16 @@ namespace NesNewLife.SMB2
         [SerializeField, Min(0.1f)] private float maxCrouchChargeTime = 1f;
         [SerializeField, Min(0f)] private float maxCrouchJumpBonus = 3f;
 
+        [Header("Float")]
+        [SerializeField, Min(0f)] private float floatSeconds;
+        [SerializeField, Min(0.1f)] private float floatFallSpeed = 2.0f;
+
         private Rigidbody2D body;
         private float horizontalInput;
         private float coyoteCounter;
         private float jumpBufferCounter;
         private float crouchCharge;
+        private float floatRemaining;
         private bool jumpHeld;
         private bool isGrounded;
         private bool isCrouching;
@@ -51,6 +56,9 @@ namespace NesNewLife.SMB2
 
         private void Update()
         {
+            if (GameManager.Instance != null && GameManager.Instance.State != RunState.Playing)
+                return;
+
             ReadInput();
             UpdateGroundState();
             UpdateJumpTimers();
@@ -60,8 +68,24 @@ namespace NesNewLife.SMB2
 
         private void FixedUpdate()
         {
+            if (GameManager.Instance != null && GameManager.Instance.State != RunState.Playing)
+            {
+                body.linearVelocity = Vector2.zero;
+                return;
+            }
+
             ApplyHorizontalMovement();
             ApplyBetterJumpGravity();
+        }
+
+        public void ApplyTuning(CharacterTuning tuning)
+        {
+            maxMoveSpeed = tuning.MoveSpeed;
+            groundAcceleration = tuning.Acceleration;
+            jumpVelocity = tuning.JumpVelocity;
+            airControl = tuning.AirControl;
+            floatSeconds = tuning.FloatSeconds;
+            floatRemaining = floatSeconds;
         }
 
         private void ReadInput()
@@ -86,19 +110,14 @@ namespace NesNewLife.SMB2
                 return;
             }
 
-            isGrounded = Physics2D.OverlapCircle(
-                groundCheck.position,
-                groundCheckRadius,
-                groundMask
-            ) != null;
+            isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundMask) != null;
+            if (isGrounded)
+                floatRemaining = floatSeconds;
         }
 
         private void UpdateJumpTimers()
         {
-            coyoteCounter = isGrounded
-                ? coyoteTime
-                : Mathf.Max(0f, coyoteCounter - Time.deltaTime);
-
+            coyoteCounter = isGrounded ? coyoteTime : Mathf.Max(0f, coyoteCounter - Time.deltaTime);
             jumpBufferCounter = Mathf.Max(0f, jumpBufferCounter - Time.deltaTime);
         }
 
@@ -110,10 +129,7 @@ namespace NesNewLife.SMB2
                 return;
             }
 
-            if (!isGrounded)
-                return;
-
-            if (!isCrouching && jumpBufferCounter <= 0f)
+            if (isGrounded && !isCrouching && jumpBufferCounter <= 0f)
                 crouchCharge = Mathf.MoveTowards(crouchCharge, 0f, Time.deltaTime * 2f);
         }
 
@@ -122,10 +138,7 @@ namespace NesNewLife.SMB2
             if (jumpBufferCounter <= 0f || coyoteCounter <= 0f)
                 return;
 
-            float charge01 = maxCrouchChargeTime <= 0f
-                ? 0f
-                : Mathf.Clamp01(crouchCharge / maxCrouchChargeTime);
-
+            float charge01 = maxCrouchChargeTime <= 0f ? 0f : Mathf.Clamp01(crouchCharge / maxCrouchChargeTime);
             float finalJumpVelocity = jumpVelocity + (maxCrouchJumpBonus * charge01);
 
             Vector2 velocity = body.linearVelocity;
@@ -135,50 +148,45 @@ namespace NesNewLife.SMB2
             jumpBufferCounter = 0f;
             coyoteCounter = 0f;
             crouchCharge = 0f;
+            floatRemaining = floatSeconds;
         }
 
         private void ApplyHorizontalMovement()
         {
-            float targetSpeed = isCrouching && isGrounded
-                ? 0f
-                : horizontalInput * maxMoveSpeed;
-
-            float acceleration = Mathf.Abs(targetSpeed) > 0.01f
-                ? groundAcceleration
-                : groundDeceleration;
-
+            float targetSpeed = isCrouching && isGrounded ? 0f : horizontalInput * maxMoveSpeed;
+            float acceleration = Mathf.Abs(targetSpeed) > 0.01f ? groundAcceleration : groundDeceleration;
             if (!isGrounded)
                 acceleration *= airControl;
 
-            float newX = Mathf.MoveTowards(
-                body.linearVelocity.x,
-                targetSpeed,
-                acceleration * Time.fixedDeltaTime
-            );
-
+            float newX = Mathf.MoveTowards(body.linearVelocity.x, targetSpeed, acceleration * Time.fixedDeltaTime);
             body.linearVelocity = new Vector2(newX, body.linearVelocity.y);
         }
 
         private void ApplyBetterJumpGravity()
         {
+            bool canFloat = floatRemaining > 0f && jumpHeld && body.linearVelocity.y <= 0.5f && !isGrounded;
+            if (canFloat)
+            {
+                floatRemaining = Mathf.Max(0f, floatRemaining - Time.fixedDeltaTime);
+                body.linearVelocity = new Vector2(body.linearVelocity.x, Mathf.Max(body.linearVelocity.y, -floatFallSpeed));
+                body.linearVelocity += Physics2D.gravity * (0.18f * Time.fixedDeltaTime);
+                return;
+            }
+
             if (body.linearVelocity.y < -0.01f)
             {
-                body.linearVelocity += Physics2D.gravity
-                    * ((fallingGravityMultiplier - 1f) * Time.fixedDeltaTime);
+                body.linearVelocity += Physics2D.gravity * ((fallingGravityMultiplier - 1f) * Time.fixedDeltaTime);
             }
             else if (body.linearVelocity.y > 0.01f && !jumpHeld)
             {
-                body.linearVelocity += Physics2D.gravity
-                    * ((shortJumpGravityMultiplier - 1f) * Time.fixedDeltaTime);
+                body.linearVelocity += Physics2D.gravity * ((shortJumpGravityMultiplier - 1f) * Time.fixedDeltaTime);
             }
         }
 
         private void OnDrawGizmosSelected()
         {
-            if (groundCheck == null)
-                return;
-
-            Gizmos.DrawWireSphere(groundCheck.position, groundCheckRadius);
+            if (groundCheck != null)
+                Gizmos.DrawWireSphere(groundCheck.position, groundCheckRadius);
         }
     }
 }
