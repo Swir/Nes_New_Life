@@ -6,8 +6,13 @@ namespace NesNewLife.SMB2
     {
         private void OnTriggerEnter2D(Collider2D other)
         {
-            if (other.GetComponentInParent<PlayerController2D>() != null && GameManager.Instance != null)
-                GameManager.Instance.Win();
+            if (other.GetComponentInParent<PlayerController2D>() == null || GameManager.Instance == null)
+                return;
+
+            if (FindFirstObjectByType<BossController>() != null)
+                return;
+
+            GameManager.Instance.Win();
         }
     }
 }
