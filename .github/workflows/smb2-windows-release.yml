@@ -1,0 +1,142 @@
+name: SMB2 New Life Windows Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release tag (example smb2-v0.8.0-alpha)
+        required: true
+        default: smb2-v0.8.0-alpha
+  push:
+    tags:
+      - 'smb2-v*'
+    branches:
+      - main
+    paths:
+      - '.release-trigger'
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    name: Validate, build and publish Windows x64
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve release version
+        id: version
+        shell: bash
+        env:
+          MANUAL_VERSION: ${{ inputs.version }}
+        run: |
+          VERSION_FILE="games/SMB2_New_Life/UnityProject/VERSION"
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            TAG="$MANUAL_VERSION"
+          elif [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            TAG="$GITHUB_REF_NAME"
+          else
+            TAG="$(tr -d '\r\n ' < "$VERSION_FILE")"
+          fi
+          if [[ -z "$TAG" || "$TAG" != smb2-v* ]]; then
+            echo "::error::Invalid release tag '$TAG'. Expected smb2-v*."
+            exit 1
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Building $TAG"
+
+      - name: Verify Unity CI credentials
+        shell: bash
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        run: |
+          if [ -z "$UNITY_EMAIL" ] || [ -z "$UNITY_PASSWORD" ]; then
+            echo "::error::Missing UNITY_EMAIL or UNITY_PASSWORD repository secret."
+            exit 1
+          fi
+          if [ -z "$UNITY_LICENSE" ] && [ -z "$UNITY_SERIAL" ]; then
+            echo "::error::Missing Unity license. Add UNITY_LICENSE for Personal or UNITY_SERIAL for Pro."
+            exit 1
+          fi
+          echo "Unity CI credentials are configured."
+
+      - name: Cache Unity Library
+        uses: actions/cache@v4
+        with:
+          path: games/SMB2_New_Life/UnityProject/Library
+          key: smb2-Library-${{ runner.os }}-6000.3.17f1-${{ hashFiles('games/SMB2_New_Life/UnityProject/Assets/**', 'games/SMB2_New_Life/UnityProject/Packages/**', 'games/SMB2_New_Life/UnityProject/ProjectSettings/**') }}
+          restore-keys: |
+            smb2-Library-${{ runner.os }}-6000.3.17f1-
+
+      - name: Build SMB2 New Life
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          projectPath: games/SMB2_New_Life/UnityProject
+          unityVersion: 6000.3.17f1
+          targetPlatform: StandaloneWindows64
+          buildMethod: NesNewLife.SMB2.EditorTools.CIBuild.BuildWindows
+          allowDirtyBuild: true
+
+      - name: Verify Windows player
+        shell: bash
+        run: |
+          BUILD_DIR="games/SMB2_New_Life/UnityProject/build/StandaloneWindows64"
+          test -f "$BUILD_DIR/NES_New_Life_SMB2.exe"
+          test -d "$BUILD_DIR/NES_New_Life_SMB2_Data"
+          test -f "$BUILD_DIR/BUILD_INFO.txt"
+          echo "Windows player verified."
+          ls -lah "$BUILD_DIR"
+
+      - name: Create portable Windows ZIP
+        shell: bash
+        run: |
+          BUILD_DIR="games/SMB2_New_Life/UnityProject/build/StandaloneWindows64"
+          PACKAGE="NES-New-Life-SMB2-Windows-x64.zip"
+          cd "$BUILD_DIR"
+          zip -r "$GITHUB_WORKSPACE/$PACKAGE" .
+          cd "$GITHUB_WORKSPACE"
+          test -s "$PACKAGE"
+          ls -lh "$PACKAGE"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NES-New-Life-SMB2-Windows-x64
+          path: NES-New-Life-SMB2-Windows-x64.zip
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          NOTES="First CI-built Windows x64 alpha for NES New Life #001. Includes the current public-safe 7-world / 20-stage campaign framework, persistent checkpoints, settings/accessibility, enemies, guardians, sub-areas and hazards. This is an in-development remake framework, not a claim of a complete 1:1 recreation of the commercial game. No ROM or ripped commercial assets are included."
+          EXTRA=""
+          if [[ "$TAG" == *alpha* || "$TAG" == *beta* || "$TAG" == *rc* ]]; then
+            EXTRA="--prerelease"
+          fi
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" NES-New-Life-SMB2-Windows-x64.zip --clobber
+          else
+            gh release create "$TAG" NES-New-Life-SMB2-Windows-x64.zip \
+              --target "$GITHUB_SHA" \
+              --title "SMB2 New Life $TAG" \
+              --notes "$NOTES" \
+              $EXTRA
+          fi
