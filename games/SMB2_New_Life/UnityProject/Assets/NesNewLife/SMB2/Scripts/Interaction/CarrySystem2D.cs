@@ -64,13 +64,17 @@ namespace NesNewLife.SMB2
                 return;
 
             Collider2D[] hits = Physics2D.OverlapCircleAll(pickupPoint.position, pickupRadius, carryableMask);
+
+            if (player.IsCrouching && TryPullPlant(hits))
+                return;
+
             CarryableObject2D best = null;
             float bestDistanceSquared = float.PositiveInfinity;
 
             foreach (Collider2D hit in hits)
             {
                 CarryableObject2D candidate = hit.GetComponentInParent<CarryableObject2D>();
-                if (candidate == null || candidate.IsCarried)
+                if (candidate == null || candidate.IsCarried || !candidate.gameObject.activeInHierarchy)
                     continue;
 
                 float distanceSquared = (candidate.transform.position - pickupPoint.position).sqrMagnitude;
@@ -83,6 +87,35 @@ namespace NesNewLife.SMB2
 
             if (best != null && best.TryPickup(carryAnchor))
                 carriedObject = best;
+        }
+
+        private bool TryPullPlant(Collider2D[] hits)
+        {
+            PullablePlant bestPlant = null;
+            float bestDistanceSquared = float.PositiveInfinity;
+
+            foreach (Collider2D hit in hits)
+            {
+                PullablePlant plant = hit.GetComponentInParent<PullablePlant>();
+                if (plant == null || plant.IsPulled)
+                    continue;
+
+                float distanceSquared = (plant.transform.position - pickupPoint.position).sqrMagnitude;
+                if (distanceSquared >= bestDistanceSquared)
+                    continue;
+
+                bestPlant = plant;
+                bestDistanceSquared = distanceSquared;
+            }
+
+            if (bestPlant == null)
+                return false;
+
+            if (!bestPlant.TryPull(carryAnchor, out CarryableObject2D pulled))
+                return false;
+
+            carriedObject = pulled;
+            return true;
         }
 
         public void ThrowCurrent()
