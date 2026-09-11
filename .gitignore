@@ -14,6 +14,8 @@ projects/**/captures/
 projects/**/MesenPack/
 projects/**/MesenCapture/
 projects/**/ModernizedPack/
+projects/**/Release/
+projects/**/HD_READINESS_CHECKLIST.json
 
 # Local third-party emulator install (downloaded by setup script)
 projects/**/vendor/
