@@ -10,9 +10,12 @@ namespace NesNewLife.SMB2
                 return;
 
             if (FindFirstObjectByType<BossController>() != null)
+            {
+                GameManager.Instance.ShowMessage("Defeat the guardian first", 1.4f);
                 return;
+            }
 
-            GameManager.Instance.Win();
+            GameManager.Instance.CompleteCurrentStage();
         }
     }
 }
