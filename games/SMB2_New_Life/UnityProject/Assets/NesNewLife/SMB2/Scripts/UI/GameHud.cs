@@ -10,6 +10,7 @@ namespace NesNewLife.SMB2
         private GUIStyle selectStyle;
         private GUIStyle messageStyle;
         private Texture2D panelTexture;
+        private float lastHudScale = -1f;
 
         private void Awake()
         {
@@ -20,30 +21,34 @@ namespace NesNewLife.SMB2
 
         private void EnsureStyles()
         {
-            if (textStyle != null)
+            float scale = GameSettings.HudScale;
+            if (textStyle != null && Mathf.Approximately(scale, lastHudScale))
                 return;
 
+            lastHudScale = scale;
+            int Font(float size) => Mathf.RoundToInt(size * scale);
+
             textStyle = new GUIStyle(GUI.skin.label);
-            textStyle.fontSize = 18;
+            textStyle.fontSize = Font(18f);
             textStyle.normal.textColor = Color.white;
 
             titleStyle = new GUIStyle(textStyle);
-            titleStyle.fontSize = 24;
+            titleStyle.fontSize = Font(24f);
             titleStyle.fontStyle = FontStyle.Bold;
 
             centerStyle = new GUIStyle(titleStyle);
             centerStyle.alignment = TextAnchor.MiddleCenter;
-            centerStyle.fontSize = 34;
+            centerStyle.fontSize = Font(34f);
             centerStyle.wordWrap = true;
 
             selectStyle = new GUIStyle(textStyle);
             selectStyle.alignment = TextAnchor.MiddleCenter;
-            selectStyle.fontSize = 20;
+            selectStyle.fontSize = Font(20f);
             selectStyle.wordWrap = true;
 
             messageStyle = new GUIStyle(titleStyle);
             messageStyle.alignment = TextAnchor.MiddleCenter;
-            messageStyle.fontSize = 22;
+            messageStyle.fontSize = Font(22f);
             messageStyle.wordWrap = true;
         }
 
@@ -53,6 +58,12 @@ namespace NesNewLife.SMB2
             GameManager gm = GameManager.Instance;
             if (gm == null)
                 return;
+
+            if (gm.State == RunState.Settings)
+            {
+                DrawSettings(gm);
+                return;
+            }
 
             if (gm.State == RunState.CharacterSelect)
             {
@@ -66,15 +77,15 @@ namespace NesNewLife.SMB2
             int world = CampaignCatalog.WorldForStage(gm.StageNumber);
             int level = CampaignCatalog.LevelForStage(gm.StageNumber);
 
-            Rect panel = new Rect(18, 18, 520, 226);
+            Rect panel = new Rect(18, 18, 560, 230);
             GUI.DrawTexture(panel, panelTexture);
-            GUI.Label(new Rect(34, 28, 475, 30), "NES NEW LIFE #001", titleStyle);
-            GUI.Label(new Rect(34, 58, 475, 26), $"WORLD {world}-{level}   {gm.StageName}", textStyle);
-            GUI.Label(new Rect(34, 84, 475, 26), $"Campaign stage {gm.StageNumber}/{CampaignCatalog.StageCount}   World {world}/{CampaignCatalog.WorldCount}", textStyle);
-            GUI.Label(new Rect(34, 110, 475, 26), $"{tuning.DisplayName}   HP: {(health != null ? health.CurrentHealth : 0)}/{(health != null ? health.MaxHealth : 0)}", textStyle);
-            GUI.Label(new Rect(34, 136, 475, 26), $"Lives: {gm.Lives}   Keys: {(inventory != null ? inventory.Keys : 0)}   Score: {gm.Score:000000}", textStyle);
-            GUI.Label(new Rect(34, 162, 475, 26), $"Best: {gm.BestScore:000000}   Clears: {gm.Clears}   Deaths: {gm.TotalDeaths}", textStyle);
-            GUI.Label(new Rect(34, 190, 475, 30), "A/D Move • Space Jump • Shift Carry • ↑/W Door • P Pause", textStyle);
+            GUI.Label(new Rect(34, 28, 520, 30), "NES NEW LIFE #001", titleStyle);
+            GUI.Label(new Rect(34, 58, 520, 26), $"WORLD {world}-{level}   {gm.StageName}", textStyle);
+            GUI.Label(new Rect(34, 84, 520, 26), $"Campaign stage {gm.StageNumber}/{CampaignCatalog.StageCount}   World {world}/{CampaignCatalog.WorldCount}", textStyle);
+            GUI.Label(new Rect(34, 110, 520, 26), $"{tuning.DisplayName}   HP: {(health != null ? health.CurrentHealth : 0)}/{(health != null ? health.MaxHealth : 0)}", textStyle);
+            GUI.Label(new Rect(34, 136, 520, 26), $"Lives: {gm.Lives}   Keys: {(inventory != null ? inventory.Keys : 0)}   Score: {gm.Score:000000}", textStyle);
+            GUI.Label(new Rect(34, 162, 520, 26), $"Best: {gm.BestScore:000000}   Clears: {gm.Clears}   Deaths: {gm.TotalDeaths}", textStyle);
+            GUI.Label(new Rect(34, 190, 520, 30), "A/D Move • Space Jump • Shift Carry • ↑/W Door • P Pause • F10 Settings", textStyle);
 
             if (gm.HasNotification)
             {
@@ -92,13 +103,57 @@ namespace NesNewLife.SMB2
 
             string message;
             if (gm.State == RunState.Paused)
-                message = $"PAUSED\n{gm.StageName}\n\nPress P or Esc to continue";
+                message = $"PAUSED\n{gm.StageName}\n\nPress P or Esc to continue\nF10 settings";
             else if (gm.State == RunState.Won)
                 message = $"7-WORLD CAMPAIGN COMPLETE!\nScore: {gm.Score:000000}   Best: {gm.BestScore:000000}\nClears: {gm.Clears}\n\nPress R for a new campaign";
             else
                 message = $"GAME OVER\nReached: {gm.StageName}\nTotal deaths: {gm.TotalDeaths}\n\nPress R to restart campaign";
 
             GUI.Label(overlay, message, centerStyle);
+        }
+
+        private void DrawSettings(GameManager gm)
+        {
+            float width = Mathf.Min(720f, Screen.width - 30f);
+            float left = (Screen.width - width) * 0.5f;
+            Rect panel = new Rect(left, Mathf.Max(20f, Screen.height * 0.5f - 280f), width, 560f);
+            GUI.DrawTexture(panel, panelTexture);
+            GUI.Label(new Rect(left + 20, panel.y + 18, width - 40, 48), "SETTINGS & ACCESSIBILITY", centerStyle);
+
+            float volume = GameSettings.MasterVolume;
+            GUI.Label(new Rect(left + 55, panel.y + 92, width - 110, 28), $"Master volume: {Mathf.RoundToInt(volume * 100f)}%", textStyle);
+            float newVolume = GUI.HorizontalSlider(new Rect(left + 55, panel.y + 126, width - 110, 24), volume, 0f, 1f);
+            if (!Mathf.Approximately(newVolume, volume))
+                GameSettings.MasterVolume = newVolume;
+
+            float hud = GameSettings.HudScale;
+            GUI.Label(new Rect(left + 55, panel.y + 166, width - 110, 28), $"HUD size: {Mathf.RoundToInt(hud * 100f)}%", textStyle);
+            float newHud = GUI.HorizontalSlider(new Rect(left + 55, panel.y + 200, width - 110, 24), hud, 0.8f, 1.5f);
+            if (!Mathf.Approximately(newHud, hud))
+                GameSettings.HudScale = newHud;
+
+            bool reduced = GUI.Toggle(new Rect(left + 55, panel.y + 246, width - 110, 32), GameSettings.ReducedFlash, " Reduced flashing after damage", textStyle);
+            if (reduced != GameSettings.ReducedFlash)
+                GameSettings.ReducedFlash = reduced;
+
+            bool assistHealth = GUI.Toggle(new Rect(left + 55, panel.y + 292, width - 110, 32), GameSettings.AssistHealth, " Assist health (+2 HP on newly loaded player)", textStyle);
+            if (assistHealth != GameSettings.AssistHealth)
+                GameSettings.AssistHealth = assistHealth;
+
+            bool extraLives = GUI.Toggle(new Rect(left + 55, panel.y + 338, width - 110, 32), GameSettings.ExtraLives, " Extra lives (new campaigns start with at least 5)", textStyle);
+            if (extraLives != GameSettings.ExtraLives)
+                GameSettings.ExtraLives = extraLives;
+
+            GUI.Label(new Rect(left + 55, panel.y + 386, width - 110, 55), "Settings are saved automatically. Health changes take effect when the player is loaded again.", selectStyle);
+
+            if (GUI.Button(new Rect(left + 55, panel.y + 458, 210, 48), "Reset settings"))
+            {
+                GameSettings.ResetToDefaults();
+                lastHudScale = -1f;
+            }
+
+            if (GUI.Button(new Rect(left + width - 265, panel.y + 458, 210, 48), "Close (F10)"))
+                gm.ToggleSettings();
         }
 
         private void DrawCharacterSelect(GameManager gm)
@@ -131,8 +186,9 @@ namespace NesNewLife.SMB2
                 "3  PEACH\nHold jump while falling to float\n\n" +
                 "4  TOAD\nFast movement and strongest throw";
 
-            GUI.Label(new Rect(left + 45, panel.y + 205, width - 90, 315), choices, selectStyle);
-            GUI.Label(new Rect(left + 25, panel.y + 520, width - 50, 30), $"Campaign: {CampaignCatalog.WorldCount} worlds • {CampaignCatalog.StageCount} stages", selectStyle);
+            GUI.Label(new Rect(left + 45, panel.y + 205, width - 90, 285), choices, selectStyle);
+            GUI.Label(new Rect(left + 25, panel.y + 492, width - 50, 28), "F10 = settings & accessibility", selectStyle);
+            GUI.Label(new Rect(left + 25, panel.y + 526, width - 50, 30), $"Campaign: {CampaignCatalog.WorldCount} worlds • {CampaignCatalog.StageCount} stages", selectStyle);
         }
 
         private void OnDestroy()
