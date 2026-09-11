@@ -17,12 +17,16 @@
 - analyze capture sheets and `hires.txt` automatically
 - report tile rules, conditions, unique tile IDs and palettes
 - Instant HD Preview generator with non-destructive styles
+- compare any two capture sessions and quantify rule/tile/palette growth
+- flag removed mappings so a newer capture cannot silently regress coverage
+- generate a ranked CSV art queue from real tile/palette usage
 - keep generated derivative packs local/gitignored
 - next: record every world, menu, animation, boss and effect
-- next: measure coverage gaps and conflicting/reused tile contexts
-- next: group capture sheets into player/enemy/world/UI art sets
+- next: use capture diffs after each play session until growth approaches zero
+- next: classify the generated art queue into player/enemy/world/boss/UI/effects groups
 
 ### Phase 3 — modern art pass
+- work from the ranked art queue so the highest-reuse graphics are modernized first
 - player animation replacements first
 - common enemies and projectiles
 - foreground tilesets and scenery
