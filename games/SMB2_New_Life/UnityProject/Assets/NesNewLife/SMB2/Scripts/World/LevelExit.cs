@@ -9,7 +9,10 @@ namespace NesNewLife.SMB2
             if (other.GetComponentInParent<PlayerController2D>() == null || GameManager.Instance == null)
                 return;
 
-            if (FindFirstObjectByType<BossController>() != null)
+            bool guardianAlive = FindFirstObjectByType<BossController>() != null
+                || FindFirstObjectByType<ChargeBossController>() != null;
+
+            if (guardianAlive)
             {
                 GameManager.Instance.ShowMessage("Defeat the guardian first", 1.4f);
                 return;
