@@ -10,18 +10,23 @@
 
 First research target: **Super Mario Bros. 2 (USA) (Rev 1)**.
 
-Current milestone: `0.1.0-foundation`
+Current milestone: **`0.2.0-playable-vertical-slice`**
 
-Planned foundation:
-- Unity 2D gameplay framework
-- responsive horizontal movement
-- variable jump
-- crouch state
-- object pickup / carry / throw loop
-- reusable game-state architecture
-- 16:9 presentation and modern camera support
-- controller-ready input layer
-- documentation for reverse-engineered gameplay observations
+Already implemented:
+- self-contained Unity 6.3 LTS project baseline
+- four selectable character profiles
+- responsive movement, jumping, crouch-charge and Peach-style float
+- object pickup / carry / throw combat
+- health, lives, score, checkpoints and respawn
+- patrol enemies and contact damage
+- collectibles and healing
+- pits / kill zones
+- final miniboss and locked goal
+- pause, win, game-over and replay states
+- runtime HUD
+- generated public-safe placeholder visuals
+- one-click playable level generation
+- one-click Windows x64 build command
 
 ## Repository layout
 
@@ -31,7 +36,7 @@ Nes_New_Life/
 ├─ games/                 # one folder per remake/reimagining
 │  └─ SMB2_New_Life/
 │     ├─ Research/        # notes from gameplay/ROM research; no ROMs
-│     └─ UnityProject/    # Unity source
+│     └─ UnityProject/    # self-contained Unity project source
 └─ shared/                # reusable systems for future projects
 ```
 
@@ -39,11 +44,11 @@ Nes_New_Life/
 
 Each game gets its own version stream and GitHub Releases. Release tags should use the game prefix, for example:
 
-- `smb2-v0.1.0`
+- `smb2-v0.2.0`
 - `smb2-v0.5.0-beta`
 - `smb2-v1.0.0`
 
-Future projects will use their own prefixes.
+A binary Release should only be published after the corresponding Unity build has been compiled and smoke-tested.
 
 ## Development rule
 
@@ -51,4 +56,4 @@ The goal is **faithful game feel, modern implementation**. Systems that are usef
 
 ## Status
 
-🚧 Active development — Project #001 foundation in progress.
+🚧 Active development — Project #001 now has its first complete playable vertical slice. Next target: modern original art, animation, VFX and audio.
