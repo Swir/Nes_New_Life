@@ -11,9 +11,20 @@ namespace NesNewLife.SMB2
         public string SelectedStageName => CampaignCatalog.DisplayNameForStage(selectedStage);
         public int HighestUnlockedStage => Mathf.Clamp(CampaignSave.HighestUnlockedStage, 1, CampaignCatalog.StageCount);
 
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        private static void Bootstrap()
+        {
+            GameManager gm = Object.FindFirstObjectByType<GameManager>();
+            if (gm != null && gm.GetComponent<CampaignStageSelector>() == null)
+                gm.gameObject.AddComponent<CampaignStageSelector>();
+        }
+
         private void OnEnable()
         {
-            selectedStage = Mathf.Clamp(CampaignSave.CampaignActive ? CampaignSave.CurrentStage : CampaignSave.HighestUnlockedStage, 1, HighestUnlockedStage);
+            selectedStage = Mathf.Clamp(
+                CampaignSave.CampaignActive ? CampaignSave.CurrentStage : CampaignSave.HighestUnlockedStage,
+                1,
+                HighestUnlockedStage);
         }
 
         private void Update()
