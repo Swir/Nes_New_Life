@@ -77,6 +77,7 @@ namespace NesNewLife.SMB2.EditorTools
 
             ApplyVisualVariant(stageNumber);
             ApplyDifficultyVariant(stageNumber);
+            ApplyTraversalAndHazardVariant(stageNumber);
             EditorSceneManager.SaveScene(scene, path);
         }
 
@@ -144,6 +145,137 @@ namespace NesNewLife.SMB2.EditorTools
                 position.y += wave;
                 platforms[i].transform.position = position;
             }
+        }
+
+        private static void ApplyTraversalAndHazardVariant(int stageNumber)
+        {
+            Sprite prototypeSprite = FindPrototypeSprite();
+            if (prototypeSprite == null)
+            {
+                Debug.LogWarning($"NES New Life: Stage {stageNumber} traversal pass skipped because no prototype sprite was found.");
+                return;
+            }
+
+            if (stageNumber == 1)
+            {
+                CreateClimbable(new Vector2(20.5f, 1.6f), new Vector2(0.7f, 4.8f), prototypeSprite);
+                CreateGroundLedge(new Vector2(20.5f, 4.1f), new Vector2(3.2f, 0.45f), prototypeSprite);
+                return;
+            }
+
+            LevelExit exit = Object.FindFirstObjectByType<LevelExit>();
+            if (exit != null)
+                exit.transform.position = new Vector3(53f, 5.7f, exit.transform.position.z);
+
+            CreateClimbable(new Vector2(52.6f, 1.5f), new Vector2(0.8f, 7.6f), prototypeSprite);
+            CreateGroundLedge(new Vector2(52.6f, 4.65f), new Vector2(4.4f, 0.5f), prototypeSprite);
+            CreateMovingPlatform(new Vector2(37.5f, -0.7f), new Vector2(2.7f, 0.45f), new Vector2(0f, 4.2f), 1.7f + stageNumber * 0.25f, prototypeSprite);
+            CreateCrumblePlatform(new Vector2(42.2f, 1.25f), new Vector2(2.4f, 0.42f), prototypeSprite);
+            CreateSpikes(new Vector2(46.2f, -1.72f), new Vector2(1.8f, 0.35f), prototypeSprite);
+            CreateSpikes(new Vector2(49.2f, -1.72f), new Vector2(1.5f, 0.35f), prototypeSprite);
+
+            if (stageNumber >= 3)
+            {
+                CreateMovingPlatform(new Vector2(45.0f, 1.2f), new Vector2(2.4f, 0.42f), new Vector2(3.6f, 0f), 2.5f, prototypeSprite);
+                ReplaceGuardianWithChargeBoss();
+            }
+        }
+
+        private static Sprite FindPrototypeSprite()
+        {
+            PlayerController2D player = Object.FindFirstObjectByType<PlayerController2D>();
+            if (player != null)
+            {
+                SpriteRenderer renderer = player.GetComponent<SpriteRenderer>();
+                if (renderer != null && renderer.sprite != null)
+                    return renderer.sprite;
+            }
+
+            foreach (SpriteRenderer renderer in Object.FindObjectsByType<SpriteRenderer>(FindObjectsSortMode.None))
+            {
+                if (renderer.sprite != null)
+                    return renderer.sprite;
+            }
+
+            return null;
+        }
+
+        private static void CreateClimbable(Vector2 position, Vector2 size, Sprite sprite)
+        {
+            GameObject vine = CreateBlock("Climbable Vine", position, size, new Color(0.22f, 0.72f, 0.38f, 0.72f), sprite);
+            SpriteRenderer renderer = vine.GetComponent<SpriteRenderer>();
+            renderer.sortingOrder = -1;
+            BoxCollider2D collider = vine.AddComponent<BoxCollider2D>();
+            collider.isTrigger = true;
+            vine.AddComponent<ClimbableZone2D>();
+        }
+
+        private static void CreateGroundLedge(Vector2 position, Vector2 size, Sprite sprite)
+        {
+            GameObject ledge = CreateBlock("Vertical Ledge", position, size, new Color(0.31f, 0.45f, 0.54f), sprite);
+            ledge.layer = 8;
+            ledge.AddComponent<BoxCollider2D>();
+        }
+
+        private static void CreateMovingPlatform(Vector2 position, Vector2 size, Vector2 travel, float speed, Sprite sprite)
+        {
+            GameObject platform = CreateBlock("Moving Platform", position, size, new Color(0.34f, 0.70f, 0.92f), sprite);
+            platform.layer = 8;
+            Rigidbody2D body = platform.AddComponent<Rigidbody2D>();
+            body.bodyType = RigidbodyType2D.Kinematic;
+            body.freezeRotation = true;
+            platform.AddComponent<BoxCollider2D>();
+            MovingPlatform2D mover = platform.AddComponent<MovingPlatform2D>();
+            mover.Configure(travel, speed);
+        }
+
+        private static void CreateCrumblePlatform(Vector2 position, Vector2 size, Sprite sprite)
+        {
+            GameObject platform = CreateBlock("Crumble Platform", position, size, new Color(0.88f, 0.56f, 0.25f), sprite);
+            platform.layer = 8;
+            platform.AddComponent<BoxCollider2D>();
+            platform.AddComponent<CrumblePlatform2D>();
+        }
+
+        private static void CreateSpikes(Vector2 position, Vector2 size, Sprite sprite)
+        {
+            GameObject spikes = CreateBlock("Spike Hazard", position, size, new Color(0.95f, 0.22f, 0.30f), sprite);
+            BoxCollider2D collider = spikes.AddComponent<BoxCollider2D>();
+            collider.isTrigger = true;
+            spikes.AddComponent<SpikeHazard2D>();
+        }
+
+        private static void ReplaceGuardianWithChargeBoss()
+        {
+            BossController oldBoss = Object.FindFirstObjectByType<BossController>();
+            if (oldBoss == null)
+                return;
+
+            GameObject bossObject = oldBoss.gameObject;
+            Object.DestroyImmediate(oldBoss);
+            ChargeBossController chargeBoss = bossObject.AddComponent<ChargeBossController>();
+            chargeBoss.Configure(42f, 50f, 1.12f);
+
+            SpriteRenderer renderer = bossObject.GetComponent<SpriteRenderer>();
+            if (renderer != null)
+                renderer.color = new Color(0.92f, 0.23f, 0.60f);
+
+            EnemyHealth health = bossObject.GetComponent<EnemyHealth>();
+            if (health != null)
+                health.Configure(9, 5000);
+
+            bossObject.name = "Charge Guardian";
+        }
+
+        private static GameObject CreateBlock(string name, Vector2 position, Vector2 size, Color color, Sprite sprite)
+        {
+            GameObject obj = new GameObject(name);
+            obj.transform.position = position;
+            obj.transform.localScale = new Vector3(size.x, size.y, 1f);
+            SpriteRenderer renderer = obj.AddComponent<SpriteRenderer>();
+            renderer.sprite = sprite;
+            renderer.color = color;
+            return obj;
         }
     }
 }
