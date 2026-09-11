@@ -10,20 +10,25 @@
 
 First research target: **Super Mario Bros. 2 (USA) (Rev 1)**.
 
-Current milestone: **`0.2.0-playable-vertical-slice`**
+Current milestone: **`0.3.0-world-flow-foundation`**
 
 Already implemented:
 - self-contained Unity 6.3 LTS project baseline
 - four selectable character profiles
 - responsive movement, jumping, crouch-charge and Peach-style float
 - object pickup / carry / throw combat
+- crouch + action pullable plants / buried items
 - health, lives, score, checkpoints and respawn
 - patrol enemies and contact damage
 - collectibles and healing
 - pits / kill zones
+- connected surface and underground rooms
+- key inventory and key-gated doors
+- room-specific camera bounds
+- mandatory sub-area progression route
 - final miniboss and locked goal
 - pause, win, game-over and replay states
-- runtime HUD
+- runtime HUD with contextual world messages
 - generated public-safe placeholder visuals
 - one-click playable level generation
 - one-click Windows x64 build command
@@ -44,7 +49,7 @@ Nes_New_Life/
 
 Each game gets its own version stream and GitHub Releases. Release tags should use the game prefix, for example:
 
-- `smb2-v0.2.0`
+- `smb2-v0.3.0`
 - `smb2-v0.5.0-beta`
 - `smb2-v1.0.0`
 
@@ -56,4 +61,4 @@ The goal is **faithful game feel, modern implementation**. Systems that are usef
 
 ## Status
 
-🚧 Active development — Project #001 now has its first complete playable vertical slice. Next target: modern original art, animation, VFX and audio.
+🚧 Active development — Project #001 now has connected rooms, sub-areas, keys, locked doors, pullable plants and a complete development-level progression loop. Work continues toward multiple full stages and a public-safe standalone release.
