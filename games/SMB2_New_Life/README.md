@@ -16,7 +16,7 @@ The repository now contains a self-contained Unity project baseline and a one-cl
 
 ## What is playable now
 
-- four runtime character profiles: Mario / Luigi / Peach / Toad
+- start screen with four character choices: Mario / Luigi / Peach / Toad
 - different speed, acceleration, jump, air control and throw power per character
 - Peach-style temporary air float
 - variable-height jumping
@@ -34,8 +34,9 @@ The repository now contains a self-contained Unity project baseline and a one-cl
 - checkpoint halfway through the level
 - final miniboss with 5 HP
 - exit locked until the miniboss is defeated
-- win / game-over states and replay
+- pause, win, game-over and replay states
 - runtime HUD
+- generated local placeholder sprite (no dependency on commercial art)
 - one-click Windows x64 build command
 
 ## Run it
@@ -58,34 +59,33 @@ The repository now contains a self-contained Unity project baseline and a one-cl
    `NES New Life > SMB2 > Create PLAYABLE Level`
 
 8. Press **Play**.
+9. Choose a character with `1`, `2`, `3` or `4` to begin.
 
 The generator creates and saves:
 
 `Assets/NesNewLife/SMB2/Prototype/SMB2_Playable.unity`
 
-It also adds the scene to Build Settings automatically.
+It also generates its own white placeholder sprite and adds the scene to Build Settings automatically.
 
 ## Controls
 
 | Action | Key |
 |---|---|
+| Select Mario / Luigi / Peach / Toad | 1 / 2 / 3 / 4 |
 | Move | A/D or Left/Right |
 | Jump | Space |
 | Crouch / charge jump | S or Down |
 | Pick up / throw | Left Shift / Right Shift |
-| Mario profile | 1 |
-| Luigi profile | 2 |
-| Peach profile | 3 |
-| Toad profile | 4 |
+| Pause / resume | P or Esc |
 | Replay after win/game over | R |
 
 ## Build a Windows EXE
 
-After generating the playable scene choose:
+Choose:
 
 `NES New Life > SMB2 > Build Windows x64`
 
-Unity writes the local build to:
+If the playable scene has not been generated yet, the build command creates it automatically first. Unity writes the local build to:
 
 `Builds/Windows/NES_New_Life_SMB2.exe`
 
