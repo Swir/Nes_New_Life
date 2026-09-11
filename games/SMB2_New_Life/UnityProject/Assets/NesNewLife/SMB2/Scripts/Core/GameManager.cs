@@ -24,12 +24,17 @@ namespace NesNewLife.SMB2
         private int lives;
         private int score;
         private RunState state;
+        private string notificationText = string.Empty;
+        private float notificationUntil;
 
         public int Lives => lives;
         public int Score => score;
         public RunState State => state;
         public CharacterType SelectedCharacter => selectedCharacter;
         public Vector3 Checkpoint => checkpoint;
+        public Transform PlayerTransform => player;
+        public string NotificationText => Time.unscaledTime <= notificationUntil ? notificationText : string.Empty;
+        public bool HasNotification => !string.IsNullOrEmpty(NotificationText);
 
         private void Awake()
         {
@@ -97,6 +102,7 @@ namespace NesNewLife.SMB2
             ApplyCharacter(type);
             state = RunState.Playing;
             Time.timeScale = 1f;
+            ShowMessage("Find the key and explore the sub-area", 2.4f);
         }
 
         public void ApplyCharacter(CharacterType type)
@@ -115,6 +121,12 @@ namespace NesNewLife.SMB2
             if (renderer != null) renderer.color = tuning.Color;
         }
 
+        public void ShowMessage(string text, float seconds = 1.5f)
+        {
+            notificationText = text ?? string.Empty;
+            notificationUntil = Time.unscaledTime + Mathf.Max(0.1f, seconds);
+        }
+
         public void AddScore(int amount)
         {
             if (state != RunState.Playing)
@@ -125,6 +137,7 @@ namespace NesNewLife.SMB2
         public void SetCheckpoint(Vector3 worldPosition)
         {
             checkpoint = worldPosition;
+            ShowMessage("Checkpoint reached", 1.6f);
         }
 
         public void PlayerDied()
@@ -156,6 +169,8 @@ namespace NesNewLife.SMB2
             PlayerHealth health = player.GetComponent<PlayerHealth>();
             if (health != null)
                 health.RestoreFull();
+
+            ShowMessage($"Respawn  •  Lives: {lives}", 1.5f);
         }
 
         public void Win()

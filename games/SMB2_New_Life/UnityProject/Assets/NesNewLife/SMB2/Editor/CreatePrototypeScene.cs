@@ -31,49 +31,81 @@ namespace NesNewLife.SMB2.EditorTools
             CreateManagers();
             CreateBackdrop(sprite);
 
-            CreateGround(-18f, 10f, sprite);
-            CreateGround(-5f, 12f, sprite);
-            CreateGround(10f, 14f, sprite);
-            CreateGround(28f, 16f, sprite);
-            CreateGround(48f, 20f, sprite);
+            // MAIN ROUTE
+            CreateGroundAt(-18f, -2.5f, 10f, sprite, new Color(0.15f, 0.22f, 0.30f));
+            CreateGroundAt(-5f, -2.5f, 12f, sprite, new Color(0.15f, 0.22f, 0.30f));
+            CreateGroundAt(10f, -2.5f, 14f, sprite, new Color(0.15f, 0.22f, 0.30f));
+            CreateGroundAt(23f, -2.5f, 10f, sprite, new Color(0.15f, 0.22f, 0.30f));
+            CreateGroundAt(42f, -2.5f, 27f, sprite, new Color(0.15f, 0.22f, 0.30f));
 
             CreatePlatform(new Vector2(-12f, -0.2f), new Vector2(4f, 0.55f), sprite);
             CreatePlatform(new Vector2(-2f, 1.0f), new Vector2(4f, 0.55f), sprite);
             CreatePlatform(new Vector2(8f, 2.0f), new Vector2(5f, 0.55f), sprite);
             CreatePlatform(new Vector2(21f, 0.4f), new Vector2(5f, 0.55f), sprite);
-            CreatePlatform(new Vector2(34f, 1.8f), new Vector2(5f, 0.55f), sprite);
-            CreatePlatform(new Vector2(45f, 3.0f), new Vector2(5f, 0.55f), sprite);
+            CreatePlatform(new Vector2(40f, 1.8f), new Vector2(5f, 0.55f), sprite);
+            CreatePlatform(new Vector2(50f, 3.0f), new Vector2(5f, 0.55f), sprite);
+
+            // This tall barrier makes the underground key route mandatory.
+            CreateBarrier(new Vector2(29f, 2f), new Vector2(1.2f, 12f), sprite);
 
             GameObject player = CreatePlayer(new Vector2(-21f, -1.15f), sprite);
 
             CreateCarryable(new Vector2(-16.5f, -1.55f), sprite, new Color(0.98f, 0.54f, 0.18f));
-            CreateCarryable(new Vector2(-8f, -1.55f), sprite, new Color(0.95f, 0.31f, 0.24f));
-            CreateCarryable(new Vector2(3f, -1.55f), sprite, new Color(0.85f, 0.40f, 0.92f));
-            CreateCarryable(new Vector2(24f, -1.55f), sprite, new Color(0.98f, 0.70f, 0.20f));
-            CreateCarryable(new Vector2(39.5f, -1.55f), sprite, new Color(0.34f, 0.82f, 0.64f));
-            CreateCarryable(new Vector2(43f, -1.55f), sprite, new Color(0.95f, 0.56f, 0.18f));
-            CreateCarryable(new Vector2(50f, -1.55f), sprite, new Color(0.42f, 0.76f, 1f));
+            CreatePullablePlant(new Vector2(-6f, -1.72f), sprite, new Color(0.95f, 0.31f, 0.24f));
+            CreatePullablePlant(new Vector2(4f, -1.72f), sprite, new Color(0.85f, 0.40f, 0.92f));
+            CreateCarryable(new Vector2(19f, -1.55f), sprite, new Color(0.98f, 0.70f, 0.20f));
+            CreatePullablePlant(new Vector2(38f, -1.72f), sprite, new Color(0.34f, 0.82f, 0.64f));
+            CreateCarryable(new Vector2(44f, -1.55f), sprite, new Color(0.95f, 0.56f, 0.18f));
+            CreateCarryable(new Vector2(51f, -1.55f), sprite, new Color(0.42f, 0.76f, 1f));
 
             CreateEnemy(new Vector2(-11.5f, 0.55f), -13.5f, -10.5f, 1.6f, sprite);
             CreateEnemy(new Vector2(1f, -1.35f), -1f, 4f, 2.0f, sprite);
             CreateEnemy(new Vector2(9f, 2.7f), 6.2f, 10.2f, 1.9f, sprite);
-            CreateEnemy(new Vector2(18f, -1.35f), 15f, 22f, 2.3f, sprite);
-            CreateEnemy(new Vector2(34f, 2.5f), 31.8f, 36.2f, 2.1f, sprite);
-            CreateBoss(new Vector2(47f, -1.0f), 41f, 51f, sprite);
+            CreateEnemy(new Vector2(20f, -1.35f), 17f, 25f, 2.3f, sprite);
+            CreateEnemy(new Vector2(39f, 2.5f), 36.5f, 41.5f, 2.1f, sprite);
+            CreateBoss(new Vector2(50f, -1.0f), 44f, 54f, sprite);
 
             CreateScorePickup(new Vector2(-12f, 1.0f), sprite);
             CreateScorePickup(new Vector2(-2f, 2.0f), sprite);
             CreateScorePickup(new Vector2(8f, 3.0f), sprite);
             CreateScorePickup(new Vector2(21f, 1.4f), sprite);
-            CreateScorePickup(new Vector2(34f, 2.8f), sprite);
-            CreateScorePickup(new Vector2(45f, 4.0f), sprite);
-
+            CreateScorePickup(new Vector2(40f, 2.8f), sprite);
+            CreateScorePickup(new Vector2(50f, 4.0f), sprite);
             CreateHeart(new Vector2(6f, -1.3f), sprite);
-            CreateHeart(new Vector2(31f, -1.3f), sprite);
-            CreateCheckpoint(new Vector2(25f, -1.15f), sprite);
-            CreateExit(new Vector2(56f, -0.55f), sprite);
-            CreateKillZone(new Vector2(15f, -7.5f), new Vector2(105f, 4f));
-            CreateCamera(player.transform);
+            CreateHeart(new Vector2(40f, -1.3f), sprite);
+
+            // UNDERGROUND SUB-AREA
+            CreateGroundAt(18f, -20.5f, 24f, sprite, new Color(0.12f, 0.13f, 0.19f));
+            CreateBarrier(new Vector2(6f, -16f), new Vector2(1f, 10f), sprite);
+            CreateBarrier(new Vector2(30f, -16f), new Vector2(1f, 10f), sprite);
+            CreatePlatform(new Vector2(12f, -17.3f), new Vector2(4f, 0.55f), sprite, new Color(0.26f, 0.28f, 0.36f));
+            CreatePlatform(new Vector2(18f, -15.4f), new Vector2(4f, 0.55f), sprite, new Color(0.26f, 0.28f, 0.36f));
+            CreatePlatform(new Vector2(24f, -17.0f), new Vector2(4f, 0.55f), sprite, new Color(0.26f, 0.28f, 0.36f));
+            CreateEnemy(new Vector2(14f, -19.35f), 10f, 17f, 2.0f, sprite);
+            CreateEnemy(new Vector2(23f, -19.35f), 20f, 27f, 2.2f, sprite);
+            CreatePullablePlant(new Vector2(11f, -19.72f), sprite, new Color(0.64f, 0.42f, 0.94f));
+            CreatePullablePlant(new Vector2(25f, -19.72f), sprite, new Color(0.88f, 0.48f, 0.28f));
+            CreateScorePickup(new Vector2(12f, -16.25f), sprite);
+            CreateScorePickup(new Vector2(24f, -15.95f), sprite);
+            CreateKey(new Vector2(18f, -14.55f), sprite);
+            CreateHeart(new Vector2(18f, -19.3f), sprite);
+
+            Transform undergroundEntry = CreateMarker("Underground Entry Spawn", new Vector2(9f, -19.1f));
+            Transform mainDoorReturn = CreateMarker("Main Door Return", new Vector2(13f, -1.25f));
+            Transform postBarrierSpawn = CreateMarker("Post Barrier Spawn", new Vector2(34f, -1.25f));
+
+            CreateDoor("Door_To_Underground", new Vector2(13f, -1.0f), undergroundEntry, false, sprite, new Color(0.30f, 0.66f, 0.95f));
+            CreateDoor("Door_Back_To_Surface", new Vector2(9f, -18.8f), mainDoorReturn, false, sprite, new Color(0.30f, 0.66f, 0.95f));
+            CreateDoor("LOCKED_Door_To_LateRoute", new Vector2(27f, -18.8f), postBarrierSpawn, true, sprite, new Color(0.95f, 0.68f, 0.18f));
+
+            CreateCameraZone("Main Camera Zone", new Vector2(17f, 0f), new Vector2(86f, 12f));
+            CreateCameraZone("Underground Camera Zone", new Vector2(18f, -16f), new Vector2(24f, 12f));
+
+            CreateCheckpoint(new Vector2(36f, -1.15f), sprite);
+            CreateExit(new Vector2(54.5f, -0.55f), sprite);
+            CreateKillZone(new Vector2(16f, -8f), new Vector2(110f, 4f));
+            CreateKillZone(new Vector2(18f, -25f), new Vector2(30f, 4f));
+            CreateCamera(player.transform, new Rect(-26f, -6f, 86f, 12f));
 
             Directory.CreateDirectory(SceneDirectory);
             AssetDatabase.Refresh();
@@ -82,7 +114,7 @@ namespace NesNewLife.SMB2.EditorTools
 
             Selection.activeGameObject = player;
             EditorGUIUtility.PingObject(player);
-            Debug.Log("NES New Life: PLAYABLE SMB2 vertical slice created. Press Play. Controls: A/D, Space, Shift, 1-4.");
+            Debug.Log("NES New Life: multi-room SMB2 playable level created. Select 1-4, crouch + Shift to pull plants, explore the underground room, collect the key and unlock the late route.");
         }
 
         [MenuItem("NES New Life/SMB2/Create Prototype Scene")]
@@ -160,7 +192,9 @@ namespace NesNewLife.SMB2.EditorTools
             carrySO.FindProperty("carryAnchor").objectReferenceValue = carryAnchor.transform;
             carrySO.FindProperty("carryableMask").intValue = 1 << CarryableLayer;
             carrySO.ApplyModifiedPropertiesWithoutUndo();
+
             player.AddComponent<PlayerHealth>();
+            player.AddComponent<PlayerInventory>();
             return player;
         }
 
@@ -193,7 +227,7 @@ namespace NesNewLife.SMB2.EditorTools
             controller.Configure(left, right);
         }
 
-        private static void CreateCarryable(Vector2 position, Sprite sprite, Color color)
+        private static CarryableObject2D CreateCarryable(Vector2 position, Sprite sprite, Color color)
         {
             GameObject obj = CreateBlock("Carryable", position, new Vector2(0.55f, 0.55f), color, sprite);
             obj.layer = CarryableLayer;
@@ -201,7 +235,55 @@ namespace NesNewLife.SMB2.EditorTools
             body.gravityScale = 2.5f;
             body.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
             obj.AddComponent<BoxCollider2D>();
-            obj.AddComponent<CarryableObject2D>();
+            return obj.AddComponent<CarryableObject2D>();
+        }
+
+        private static void CreatePullablePlant(Vector2 position, Sprite sprite, Color payloadColor)
+        {
+            CarryableObject2D payload = CreateCarryable(position + Vector2.up * 0.35f, sprite, payloadColor);
+            payload.name = "Pulled_Item";
+            payload.gameObject.SetActive(false);
+
+            GameObject plant = CreateBlock("Pullable_Plant", position, new Vector2(0.32f, 0.55f), new Color(0.28f, 0.82f, 0.32f), sprite);
+            plant.layer = CarryableLayer;
+            BoxCollider2D collider = plant.AddComponent<BoxCollider2D>();
+            collider.isTrigger = true;
+            PullablePlant pullable = plant.AddComponent<PullablePlant>();
+            pullable.Configure(payload);
+        }
+
+        private static void CreateKey(Vector2 position, Sprite sprite)
+        {
+            GameObject key = CreateBlock("KEY", position, new Vector2(0.38f, 0.72f), new Color(1f, 0.82f, 0.16f), sprite);
+            BoxCollider2D collider = key.AddComponent<BoxCollider2D>();
+            collider.isTrigger = true;
+            key.AddComponent<KeyPickup>();
+        }
+
+        private static void CreateDoor(string name, Vector2 position, Transform destination, bool requiresKey, Sprite sprite, Color color)
+        {
+            GameObject door = CreateBlock(name, position, new Vector2(1.25f, 2.5f), color, sprite);
+            BoxCollider2D collider = door.AddComponent<BoxCollider2D>();
+            collider.isTrigger = true;
+            DoorPortal portal = door.AddComponent<DoorPortal>();
+            portal.Configure(destination, requiresKey, requiresKey);
+        }
+
+        private static Transform CreateMarker(string name, Vector2 position)
+        {
+            GameObject marker = new GameObject(name);
+            marker.transform.position = position;
+            return marker.transform;
+        }
+
+        private static void CreateCameraZone(string name, Vector2 center, Vector2 size)
+        {
+            GameObject zone = new GameObject(name);
+            zone.transform.position = center;
+            BoxCollider2D collider = zone.AddComponent<BoxCollider2D>();
+            collider.isTrigger = true;
+            CameraZone cameraZone = zone.AddComponent<CameraZone>();
+            cameraZone.Configure(center, size);
         }
 
         private static void CreateScorePickup(Vector2 position, Sprite sprite)
@@ -246,18 +328,30 @@ namespace NesNewLife.SMB2.EditorTools
             zone.AddComponent<KillZone>();
         }
 
-        private static void CreateGround(float centerX, float width, Sprite sprite)
+        private static void CreateGroundAt(float centerX, float centerY, float width, Sprite sprite, Color color)
         {
-            GameObject ground = CreateBlock("Ground", new Vector2(centerX, -2.5f), new Vector2(width, 1f), new Color(0.15f, 0.22f, 0.30f), sprite);
+            GameObject ground = CreateBlock("Ground", new Vector2(centerX, centerY), new Vector2(width, 1f), color, sprite);
             ground.layer = GroundLayer;
             ground.AddComponent<BoxCollider2D>();
         }
 
         private static void CreatePlatform(Vector2 position, Vector2 scale, Sprite sprite)
         {
-            GameObject platform = CreateBlock("Platform", position, scale, new Color(0.30f, 0.44f, 0.52f), sprite);
+            CreatePlatform(position, scale, sprite, new Color(0.30f, 0.44f, 0.52f));
+        }
+
+        private static void CreatePlatform(Vector2 position, Vector2 scale, Sprite sprite, Color color)
+        {
+            GameObject platform = CreateBlock("Platform", position, scale, color, sprite);
             platform.layer = GroundLayer;
             platform.AddComponent<BoxCollider2D>();
+        }
+
+        private static void CreateBarrier(Vector2 position, Vector2 scale, Sprite sprite)
+        {
+            GameObject barrier = CreateBlock("World Barrier", position, scale, new Color(0.12f, 0.17f, 0.23f), sprite);
+            barrier.layer = GroundLayer;
+            barrier.AddComponent<BoxCollider2D>();
         }
 
         private static GameObject CreateBlock(string name, Vector2 position, Vector2 scale, Color color, Sprite sprite)
@@ -279,9 +373,12 @@ namespace NesNewLife.SMB2.EditorTools
                 GameObject hill = CreateBlock("Backdrop", new Vector2(x, -0.2f), new Vector2(8f, 7f), new Color(0.08f + i * 0.006f, 0.12f, 0.20f), sprite);
                 hill.GetComponent<SpriteRenderer>().sortingOrder = -20;
             }
+
+            GameObject underground = CreateBlock("Underground Backdrop", new Vector2(18f, -16f), new Vector2(24f, 12f), new Color(0.035f, 0.04f, 0.075f), sprite);
+            underground.GetComponent<SpriteRenderer>().sortingOrder = -20;
         }
 
-        private static void CreateCamera(Transform target)
+        private static void CreateCamera(Transform target, Rect initialBounds)
         {
             GameObject cameraObject = new GameObject("Main Camera");
             cameraObject.tag = "MainCamera";
@@ -293,6 +390,7 @@ namespace NesNewLife.SMB2.EditorTools
             camera.backgroundColor = new Color(0.035f, 0.055f, 0.10f);
             CameraFollow2D follow = cameraObject.AddComponent<CameraFollow2D>();
             follow.Target = target;
+            follow.SetWorldBounds(initialBounds);
         }
 
         private static void EnsureSceneInBuildSettings()
