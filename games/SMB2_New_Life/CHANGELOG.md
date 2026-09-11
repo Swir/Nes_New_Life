@@ -2,6 +2,30 @@
 
 All notable development milestones for Project #001 are recorded here.
 
+## [0.5.0-multi-stage-campaign] - 2026-09-11
+
+### Added
+- reusable campaign stage metadata component
+- three-stage campaign catalog and scene naming convention
+- active campaign save state: current stage, run score and remaining lives
+- persistent highest unlocked stage
+- scene-to-scene campaign transition bridge
+- Continue flow that returns to the exact saved campaign stage
+- one-click `Create 3-Stage Campaign` editor command
+- generated Stage 1 / Stage 2 / Stage 3 scenes with distinct names and completion bonuses
+- per-stage color treatment and platform-height variation
+- progressive per-stage Hopper/Chaser encounter pressure
+- progressively stronger stage guardians
+- campaign-wide structural validator
+- campaign stage name/progress display in HUD
+
+### Changed
+- stage exits now advance the campaign instead of always ending the run
+- lives, character and score persist across campaign scenes
+- final stage records a campaign clear; intermediate stages save and advance
+- Windows builder now generates missing campaign scenes automatically and builds all three in order
+- game-over/replay flow now starts a fresh campaign
+
 ## [0.4.0-progression-and-enemy-variety] - 2026-09-11
 
 ### Added

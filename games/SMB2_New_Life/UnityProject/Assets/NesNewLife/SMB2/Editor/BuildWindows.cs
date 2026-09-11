@@ -7,23 +7,35 @@ namespace NesNewLife.SMB2.EditorTools
 {
     public static class BuildWindows
     {
-        private const string ScenePath = "Assets/NesNewLife/SMB2/Prototype/SMB2_Playable.unity";
         private const string OutputPath = "Builds/Windows/NES_New_Life_SMB2.exe";
 
         [MenuItem("NES New Life/SMB2/Build Windows x64")]
         public static void Build()
         {
-            if (!File.Exists(ScenePath))
+            bool campaignReady = true;
+            foreach (string path in CreateCampaignScenes.StagePaths)
             {
-                Debug.Log("NES New Life: playable scene is missing; generating it before build.");
-                CreatePrototypeScene.CreatePlayable();
+                if (!File.Exists(path))
+                {
+                    campaignReady = false;
+                    break;
+                }
+            }
+
+            if (!campaignReady)
+            {
+                Debug.Log("NES New Life: campaign scenes missing; generating the 3-stage campaign before build.");
+                CreateCampaignScenes.Create();
                 AssetDatabase.Refresh();
             }
 
-            if (!File.Exists(ScenePath))
+            foreach (string path in CreateCampaignScenes.StagePaths)
             {
-                Debug.LogError("NES New Life: scene generation failed, build aborted.");
-                return;
+                if (!File.Exists(path))
+                {
+                    Debug.LogError($"NES New Life: campaign generation failed; missing {path}. Build aborted.");
+                    return;
+                }
             }
 
             string outputDirectory = Path.GetDirectoryName(OutputPath);
@@ -32,7 +44,7 @@ namespace NesNewLife.SMB2.EditorTools
 
             BuildPlayerOptions options = new BuildPlayerOptions
             {
-                scenes = new[] { ScenePath },
+                scenes = CreateCampaignScenes.StagePaths,
                 locationPathName = OutputPath,
                 target = BuildTarget.StandaloneWindows64,
                 options = BuildOptions.None
@@ -41,7 +53,7 @@ namespace NesNewLife.SMB2.EditorTools
             var report = BuildPipeline.BuildPlayer(options);
             if (report.summary.result == UnityEditor.Build.Reporting.BuildResult.Succeeded)
             {
-                Debug.Log($"NES New Life build ready: {OutputPath} ({report.summary.totalSize} bytes)");
+                Debug.Log($"NES New Life 3-stage campaign build ready: {OutputPath} ({report.summary.totalSize} bytes)");
                 EditorUtility.RevealInFinder(OutputPath);
             }
             else

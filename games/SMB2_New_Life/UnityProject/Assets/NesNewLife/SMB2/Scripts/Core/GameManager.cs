@@ -26,6 +26,9 @@ namespace NesNewLife.SMB2
         private RunState state;
         private string notificationText = string.Empty;
         private float notificationUntil;
+        private CampaignStageDefinition stageDefinition;
+        private int stageNumber = 1;
+        private string stageName = "Development Stage";
 
         public int Lives => lives;
         public int Score => score;
@@ -39,6 +42,9 @@ namespace NesNewLife.SMB2
         public int Clears => CampaignSave.Clears;
         public int TotalDeaths => CampaignSave.Deaths;
         public bool HasSave => CampaignSave.HasSave;
+        public int StageNumber => stageNumber;
+        public string StageName => stageName;
+        public int HighestUnlockedStage => CampaignSave.HighestUnlockedStage;
 
         private void Awake()
         {
@@ -49,10 +55,23 @@ namespace NesNewLife.SMB2
             }
 
             Instance = this;
-            lives = Mathf.Max(1, startingLives);
+            stageDefinition = FindFirstObjectByType<CampaignStageDefinition>();
+            if (stageDefinition != null)
+            {
+                stageNumber = stageDefinition.StageNumber;
+                stageName = stageDefinition.StageName;
+            }
+
+            bool resumeTransition = CampaignRuntimeBridge.ResumeAfterSceneTransition
+                && CampaignSave.CampaignActive
+                && CampaignSave.CurrentStage == stageNumber;
+
+            CampaignRuntimeBridge.ResumeAfterSceneTransition = false;
             selectedCharacter = CampaignSave.HasSave ? CampaignSave.LastCharacter : selectedCharacter;
-            state = RunState.CharacterSelect;
-            Time.timeScale = 0f;
+            lives = resumeTransition ? Mathf.Max(1, CampaignSave.RunLives) : Mathf.Max(1, startingLives);
+            score = resumeTransition ? CampaignSave.RunScore : 0;
+            state = resumeTransition ? RunState.Playing : RunState.CharacterSelect;
+            Time.timeScale = resumeTransition ? 1f : 0f;
 
             if (GetComponent<LevelRuntimeEnhancer>() == null)
                 gameObject.AddComponent<LevelRuntimeEnhancer>();
@@ -67,15 +86,18 @@ namespace NesNewLife.SMB2
                 checkpoint = player.position;
                 ApplyCharacter(selectedCharacter);
             }
+
+            if (state == RunState.Playing)
+                ShowMessage($"{stageName} — campaign continues", 2f);
         }
 
         private void Update()
         {
             if (state == RunState.CharacterSelect)
             {
-                if (CampaignSave.HasSave && Input.GetKeyDown(KeyCode.C))
+                if (CampaignSave.CampaignActive && Input.GetKeyDown(KeyCode.C))
                 {
-                    StartWithCharacter(CampaignSave.LastCharacter);
+                    ContinueCampaign();
                     return;
                 }
 
@@ -109,7 +131,10 @@ namespace NesNewLife.SMB2
             }
 
             if ((state == RunState.Won || state == RunState.GameOver) && Input.GetKeyDown(KeyCode.R))
-                RestartScene();
+            {
+                CampaignSave.AbandonCampaign();
+                LoadStage(1, false);
+            }
         }
 
         public void RegisterPlayer(Transform playerTransform)
@@ -122,11 +147,39 @@ namespace NesNewLife.SMB2
         public void StartWithCharacter(CharacterType type)
         {
             ApplyCharacter(type);
-            CampaignSave.MarkStarted(type);
+            lives = Mathf.Max(1, startingLives);
+            score = 0;
+            CampaignSave.BeginCampaign(type, stageNumber, lives, score);
             state = RunState.Playing;
             Time.timeScale = 1f;
-            string difficulty = CampaignSave.Clears > 0 ? $"Veteran run {CampaignSave.Clears + 1}" : "First run";
-            ShowMessage($"{difficulty} — find the key and explore the sub-area", 2.6f);
+            string difficulty = CampaignSave.Clears > 0 ? $"Veteran campaign {CampaignSave.Clears + 1}" : "New campaign";
+            ShowMessage($"{difficulty} — {stageName}", 2.6f);
+        }
+
+        public void ContinueCampaign()
+        {
+            if (!CampaignSave.CampaignActive)
+            {
+                ShowMessage("No active campaign", 1.5f);
+                return;
+            }
+
+            int savedStage = Mathf.Clamp(CampaignSave.CurrentStage, 1, CampaignCatalog.StageCount);
+            selectedCharacter = CampaignSave.LastCharacter;
+            lives = Mathf.Max(1, CampaignSave.RunLives);
+            score = CampaignSave.RunScore;
+
+            if (savedStage != stageNumber)
+            {
+                CampaignRuntimeBridge.ResumeAfterSceneTransition = true;
+                SceneManager.LoadScene(CampaignCatalog.SceneForStage(savedStage));
+                return;
+            }
+
+            ApplyCharacter(selectedCharacter);
+            state = RunState.Playing;
+            Time.timeScale = 1f;
+            ShowMessage($"Continue — {stageName}", 2f);
         }
 
         public void ApplyCharacter(CharacterType type)
@@ -156,11 +209,13 @@ namespace NesNewLife.SMB2
             if (state != RunState.Playing)
                 return;
             score = Mathf.Max(0, score + amount);
+            PersistRun();
         }
 
         public void SetCheckpoint(Vector3 worldPosition)
         {
             checkpoint = worldPosition;
+            PersistRun();
             ShowMessage("Checkpoint reached", 1.6f);
         }
 
@@ -173,11 +228,13 @@ namespace NesNewLife.SMB2
             lives--;
             if (lives <= 0)
             {
+                CampaignSave.AbandonCampaign();
                 state = RunState.GameOver;
                 Time.timeScale = 0f;
                 return;
             }
 
+            PersistRun();
             RespawnPlayer();
         }
 
@@ -196,6 +253,32 @@ namespace NesNewLife.SMB2
                 health.RestoreFull();
 
             ShowMessage($"Respawn  •  Lives: {lives}", 1.5f);
+        }
+
+        public void CompleteCurrentStage()
+        {
+            if (state != RunState.Playing)
+                return;
+
+            int bonus = stageDefinition != null ? stageDefinition.CompletionBonus : 2500;
+            score += bonus;
+
+            bool finalStage = stageDefinition == null || stageDefinition.FinalStage || stageNumber >= CampaignCatalog.StageCount;
+            if (finalStage)
+            {
+                Win();
+                return;
+            }
+
+            int nextStage = stageNumber + 1;
+            string nextScene = !string.IsNullOrWhiteSpace(stageDefinition.NextSceneName)
+                ? stageDefinition.NextSceneName
+                : CampaignCatalog.SceneForStage(nextStage);
+
+            CampaignSave.SaveRun(selectedCharacter, nextStage, lives, score);
+            CampaignRuntimeBridge.ResumeAfterSceneTransition = true;
+            Time.timeScale = 1f;
+            SceneManager.LoadScene(nextScene);
         }
 
         public void Win()
@@ -217,6 +300,19 @@ namespace NesNewLife.SMB2
                 SceneManager.LoadScene(active.buildIndex);
             else
                 SceneManager.LoadScene(active.name);
+        }
+
+        private void PersistRun()
+        {
+            if (state == RunState.Playing)
+                CampaignSave.SaveRun(selectedCharacter, stageNumber, lives, score);
+        }
+
+        private static void LoadStage(int number, bool resume)
+        {
+            Time.timeScale = 1f;
+            CampaignRuntimeBridge.ResumeAfterSceneTransition = resume;
+            SceneManager.LoadScene(CampaignCatalog.SceneForStage(number));
         }
 
         private void OnDestroy()
