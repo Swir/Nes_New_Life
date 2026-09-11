@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import csv
+import json
 import sys
 import tempfile
 import unittest
+import zipfile
 from pathlib import Path
 
 from PIL import Image
@@ -12,6 +14,14 @@ ROOT = Path(__file__).resolve().parents[1]
 TOOLS = ROOT / "tools"
 sys.path.insert(0, str(TOOLS))
 
+from hd_readiness import (  # noqa: E402
+    default_checklist,
+    infer_art_group,
+    package_hd_pack,
+    readiness,
+    write_grouped_art_queue,
+    write_readiness_dashboard,
+)
 from hdpack_pipeline import (  # noqa: E402
     analyze,
     build_preview,
@@ -69,15 +79,15 @@ class ToolTests(unittest.TestCase):
             "<scale>4",
             "<img>tiles.png",
             "<tile>0,2E,FF16360F,0,0,1,N",
-            "[hero]<tile>0,2F,FF16360F,32,0,1,N",
-            "<condition>hero,tileNearby,8,0,2E,FF16360F",
+            "[hero_player]<tile>0,2F,FF16360F,32,0,1,N",
+            "<condition>hero_player,tileNearby,8,0,2E,FF16360F",
         ]
         if extra:
             lines.extend(
                 [
                     "<tile>0,30,FF27160F,0,32,1,N",
-                    "[boss]<tile>0,31,FF27160F,32,32,1,N",
-                    "<condition>boss,tileNearby,8,0,30,FF27160F",
+                    "[boss_final]<tile>0,31,FF27160F,32,32,1,N",
+                    "<condition>boss_final,tileNearby,8,0,30,FF27160F",
                 ]
             )
         (folder / "hires.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -102,7 +112,7 @@ class ToolTests(unittest.TestCase):
 
             rules = parse_tile_rules(source)
             self.assertEqual(rules[0].tile_id, "2E")
-            self.assertEqual(rules[1].condition, "hero")
+            self.assertEqual(rules[1].condition, "hero_player")
             self.assertEqual((rules[1].x, rules[1].y), (32, 0))
 
             manifest = build_preview(source, output, style="vibrant")
@@ -143,7 +153,60 @@ class ToolTests(unittest.TestCase):
             self.assertEqual(len(rows), 4)
             self.assertEqual(rows[0]["priority"], "1")
             self.assertEqual(rows[0]["status"], "TODO")
-            self.assertEqual(rows[0]["art_group"], "UNASSIGNED")
+
+    def test_art_group_inference_and_grouped_queue(self) -> None:
+        self.assertEqual(infer_art_group({"hero_player"})[0], "PLAYER")
+        self.assertEqual(infer_art_group({"boss_final"})[0], "BOSS")
+        self.assertEqual(infer_art_group(set())[0], "UNASSIGNED")
+
+        with tempfile.TemporaryDirectory() as td:
+            pack = Path(td) / "pack"
+            self._write_pack(pack, extra=True)
+            queue = write_grouped_art_queue(pack)
+            with queue.open(encoding="utf-8", newline="") as handle:
+                rows = list(csv.DictReader(handle))
+            groups = {row["tile_id"]: row["art_group"] for row in rows}
+            self.assertEqual(groups["2F"], "PLAYER")
+            self.assertEqual(groups["31"], "BOSS")
+            self.assertEqual(groups["2E"], "UNASSIGNED")
+
+    def test_readiness_requires_manual_evidence_and_finished_art(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            pack = root / "pack"
+            self._write_pack(pack, extra=True)
+            queue = write_grouped_art_queue(pack, root / "queue.csv")
+            checklist = root / "checklist.json"
+            checklist.write_text(json.dumps(default_checklist(), indent=2), encoding="utf-8")
+
+            result = readiness(pack, checklist, queue)
+            self.assertFalse(result["release_ready"])
+            self.assertEqual(result["release_gate"], "BLOCKED")
+            self.assertTrue(any("checklist incomplete" in item for item in result["blockers"]))
+            self.assertTrue(any("unfinished entries" in item for item in result["blockers"]))
+
+            dashboard = write_readiness_dashboard(pack, checklist, queue, root / "readiness.html")
+            self.assertTrue(dashboard.is_file())
+            self.assertTrue(dashboard.with_suffix(".json").is_file())
+            self.assertIn("Release gate: BLOCKED", dashboard.read_text(encoding="utf-8"))
+
+    def test_safe_packaging_blocks_rom_and_excludes_generated_reports(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            pack = root / "pack"
+            self._write_pack(pack)
+            (pack / "NES_NEW_LIFE_REPORT.html").write_text("generated", encoding="utf-8")
+            output = root / "release.zip"
+            package_hd_pack(pack, output)
+            with zipfile.ZipFile(output) as archive:
+                names = set(archive.namelist())
+            self.assertIn("hires.txt", names)
+            self.assertIn("tiles.png", names)
+            self.assertNotIn("NES_NEW_LIFE_REPORT.html", names)
+
+            (pack / "accidental.nes").write_bytes(b"NES\x1a")
+            with self.assertRaises(ValueError):
+                package_hd_pack(pack, root / "blocked.zip")
 
 
 if __name__ == "__main__":
