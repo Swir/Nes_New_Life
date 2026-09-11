@@ -33,25 +33,35 @@ namespace NesNewLife.SMB2
         [SerializeField, Min(0f)] private float floatSeconds;
         [SerializeField, Min(0.1f)] private float floatFallSpeed = 2.0f;
 
+        [Header("Climbing")]
+        [SerializeField, Min(0.1f)] private float climbSpeed = 4.2f;
+        [SerializeField, Range(0.1f, 1f)] private float climbHorizontalControl = 0.45f;
+
         private Rigidbody2D body;
         private float horizontalInput;
+        private float verticalInput;
         private float coyoteCounter;
         private float jumpBufferCounter;
         private float crouchCharge;
         private float floatRemaining;
+        private float defaultGravityScale;
         private bool jumpHeld;
         private bool isGrounded;
         private bool isCrouching;
+        private bool touchingClimbable;
+        private bool isClimbing;
         private int facingSign = 1;
 
         public bool IsGrounded => isGrounded;
         public bool IsCrouching => isCrouching;
+        public bool IsClimbing => isClimbing;
         public int FacingSign => facingSign;
         public Vector2 Velocity => body != null ? body.linearVelocity : Vector2.zero;
 
         private void Awake()
         {
             body = GetComponent<Rigidbody2D>();
+            defaultGravityScale = body.gravityScale;
         }
 
         private void Update()
@@ -61,6 +71,7 @@ namespace NesNewLife.SMB2
 
             ReadInput();
             UpdateGroundState();
+            UpdateClimbingState();
             UpdateJumpTimers();
             UpdateCrouchCharge();
             TryConsumeJump();
@@ -71,6 +82,12 @@ namespace NesNewLife.SMB2
             if (GameManager.Instance != null && GameManager.Instance.State != RunState.Playing)
             {
                 body.linearVelocity = Vector2.zero;
+                return;
+            }
+
+            if (isClimbing)
+            {
+                ApplyClimbingMovement();
                 return;
             }
 
@@ -88,17 +105,28 @@ namespace NesNewLife.SMB2
             floatRemaining = floatSeconds;
         }
 
+        public void SetClimbableContact(bool touching)
+        {
+            touchingClimbable = touching;
+            if (!touching)
+                StopClimbing();
+        }
+
         private void ReadInput()
         {
             bool left = Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow);
             bool right = Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow);
+            bool up = Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow);
+            bool down = Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow);
+
             horizontalInput = (right ? 1f : 0f) - (left ? 1f : 0f);
+            verticalInput = (up ? 1f : 0f) - (down ? 1f : 0f);
 
             jumpHeld = Input.GetKey(KeyCode.Space);
             if (Input.GetKeyDown(KeyCode.Space))
                 jumpBufferCounter = jumpBufferTime;
 
-            isCrouching = Input.GetKey(crouchKey) || Input.GetKey(crouchAlternateKey);
+            isCrouching = !isClimbing && (Input.GetKey(crouchKey) || Input.GetKey(crouchAlternateKey));
 
             if (Mathf.Abs(horizontalInput) > 0.01f)
                 facingSign = horizontalInput > 0f ? 1 : -1;
@@ -115,6 +143,36 @@ namespace NesNewLife.SMB2
             isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundMask) != null;
             if (isGrounded)
                 floatRemaining = floatSeconds;
+        }
+
+        private void UpdateClimbingState()
+        {
+            if (!touchingClimbable)
+                return;
+
+            if (!isClimbing && Mathf.Abs(verticalInput) > 0.01f)
+            {
+                isClimbing = true;
+                body.gravityScale = 0f;
+                body.linearVelocity = Vector2.zero;
+            }
+
+            if (isClimbing && Input.GetKeyDown(KeyCode.Space))
+            {
+                StopClimbing();
+                body.linearVelocity = new Vector2(body.linearVelocity.x, jumpVelocity * 0.85f);
+                jumpBufferCounter = 0f;
+            }
+        }
+
+        private void StopClimbing()
+        {
+            if (!isClimbing)
+                return;
+
+            isClimbing = false;
+            if (body != null)
+                body.gravityScale = defaultGravityScale;
         }
 
         private void UpdateJumpTimers()
@@ -137,7 +195,7 @@ namespace NesNewLife.SMB2
 
         private void TryConsumeJump()
         {
-            if (jumpBufferCounter <= 0f || coyoteCounter <= 0f)
+            if (isClimbing || jumpBufferCounter <= 0f || coyoteCounter <= 0f)
                 return;
 
             float charge01 = maxCrouchChargeTime <= 0f ? 0f : Mathf.Clamp01(crouchCharge / maxCrouchChargeTime);
@@ -151,6 +209,15 @@ namespace NesNewLife.SMB2
             coyoteCounter = 0f;
             crouchCharge = 0f;
             floatRemaining = floatSeconds;
+        }
+
+        private void ApplyClimbingMovement()
+        {
+            body.gravityScale = 0f;
+            body.linearVelocity = new Vector2(
+                horizontalInput * maxMoveSpeed * climbHorizontalControl,
+                verticalInput * climbSpeed
+            );
         }
 
         private void ApplyHorizontalMovement()
@@ -183,6 +250,11 @@ namespace NesNewLife.SMB2
             {
                 body.linearVelocity += Physics2D.gravity * ((shortJumpGravityMultiplier - 1f) * Time.fixedDeltaTime);
             }
+        }
+
+        private void OnDisable()
+        {
+            StopClimbing();
         }
 
         private void OnDrawGizmosSelected()
