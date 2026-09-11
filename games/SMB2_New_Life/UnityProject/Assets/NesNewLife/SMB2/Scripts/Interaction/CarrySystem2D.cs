@@ -11,7 +11,7 @@ namespace NesNewLife.SMB2
         [SerializeField] private LayerMask carryableMask;
 
         [Header("Pickup")]
-        [SerializeField, Min(0.05f)] private float pickupRadius = 0.45f;
+        [SerializeField, Min(0.05f)] private float pickupRadius = 0.6f;
         [SerializeField] private KeyCode actionKey = KeyCode.LeftShift;
         [SerializeField] private KeyCode alternateActionKey = KeyCode.RightShift;
 
@@ -33,6 +33,9 @@ namespace NesNewLife.SMB2
 
         private void Update()
         {
+            if (GameManager.Instance != null && GameManager.Instance.State != RunState.Playing)
+                return;
+
             if (!ActionPressedThisFrame())
                 return;
 
@@ -45,6 +48,11 @@ namespace NesNewLife.SMB2
             TryPickupNearest();
         }
 
+        public void SetThrowHorizontalSpeed(float speed)
+        {
+            throwHorizontalSpeed = Mathf.Max(0f, speed);
+        }
+
         private bool ActionPressedThisFrame()
         {
             return Input.GetKeyDown(actionKey) || Input.GetKeyDown(alternateActionKey);
@@ -55,12 +63,7 @@ namespace NesNewLife.SMB2
             if (pickupPoint == null || carryAnchor == null)
                 return;
 
-            Collider2D[] hits = Physics2D.OverlapCircleAll(
-                pickupPoint.position,
-                pickupRadius,
-                carryableMask
-            );
-
+            Collider2D[] hits = Physics2D.OverlapCircleAll(pickupPoint.position, pickupRadius, carryableMask);
             CarryableObject2D best = null;
             float bestDistanceSquared = float.PositiveInfinity;
 
@@ -87,11 +90,7 @@ namespace NesNewLife.SMB2
             if (carriedObject == null)
                 return;
 
-            Vector2 velocity = new Vector2(
-                player.FacingSign * throwHorizontalSpeed,
-                throwVerticalSpeed
-            );
-
+            Vector2 velocity = new Vector2(player.FacingSign * throwHorizontalSpeed, throwVerticalSpeed);
             CarryableObject2D released = carriedObject;
             carriedObject = null;
             released.Throw(velocity);
@@ -102,11 +101,7 @@ namespace NesNewLife.SMB2
             if (carriedObject == null)
                 return;
 
-            Vector2 velocity = new Vector2(
-                player.FacingSign * dropForwardSpeed,
-                0f
-            );
-
+            Vector2 velocity = new Vector2(player.FacingSign * dropForwardSpeed, 0f);
             CarryableObject2D released = carriedObject;
             carriedObject = null;
             released.Drop(velocity);
@@ -120,10 +115,8 @@ namespace NesNewLife.SMB2
 
         private void OnDrawGizmosSelected()
         {
-            if (pickupPoint == null)
-                return;
-
-            Gizmos.DrawWireSphere(pickupPoint.position, pickupRadius);
+            if (pickupPoint != null)
+                Gizmos.DrawWireSphere(pickupPoint.position, pickupRadius);
         }
     }
 }
