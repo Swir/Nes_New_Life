@@ -51,10 +51,10 @@ namespace NesNewLife.SMB2.EditorTools
             GameObject player = CreatePlayer(new Vector2(-21f, -1.15f), sprite);
 
             CreateCarryable(new Vector2(-16.5f, -1.55f), sprite, new Color(0.98f, 0.54f, 0.18f));
-            CreateCarryable(new Vector2(-8f, -1.55f), sprite, new Color(0.95f, 0.31f, 0.24f));
-            CreateCarryable(new Vector2(3f, -1.55f), sprite, new Color(0.85f, 0.40f, 0.92f));
+            CreatePullablePlant(new Vector2(-6f, -1.72f), sprite, new Color(0.95f, 0.31f, 0.24f));
+            CreatePullablePlant(new Vector2(4f, -1.72f), sprite, new Color(0.85f, 0.40f, 0.92f));
             CreateCarryable(new Vector2(19f, -1.55f), sprite, new Color(0.98f, 0.70f, 0.20f));
-            CreateCarryable(new Vector2(38f, -1.55f), sprite, new Color(0.34f, 0.82f, 0.64f));
+            CreatePullablePlant(new Vector2(38f, -1.72f), sprite, new Color(0.34f, 0.82f, 0.64f));
             CreateCarryable(new Vector2(44f, -1.55f), sprite, new Color(0.95f, 0.56f, 0.18f));
             CreateCarryable(new Vector2(51f, -1.55f), sprite, new Color(0.42f, 0.76f, 1f));
 
@@ -83,8 +83,8 @@ namespace NesNewLife.SMB2.EditorTools
             CreatePlatform(new Vector2(24f, -17.0f), new Vector2(4f, 0.55f), sprite, new Color(0.26f, 0.28f, 0.36f));
             CreateEnemy(new Vector2(14f, -19.35f), 10f, 17f, 2.0f, sprite);
             CreateEnemy(new Vector2(23f, -19.35f), 20f, 27f, 2.2f, sprite);
-            CreateCarryable(new Vector2(11f, -19.55f), sprite, new Color(0.64f, 0.42f, 0.94f));
-            CreateCarryable(new Vector2(25f, -19.55f), sprite, new Color(0.88f, 0.48f, 0.28f));
+            CreatePullablePlant(new Vector2(11f, -19.72f), sprite, new Color(0.64f, 0.42f, 0.94f));
+            CreatePullablePlant(new Vector2(25f, -19.72f), sprite, new Color(0.88f, 0.48f, 0.28f));
             CreateScorePickup(new Vector2(12f, -16.25f), sprite);
             CreateScorePickup(new Vector2(24f, -15.95f), sprite);
             CreateKey(new Vector2(18f, -14.55f), sprite);
@@ -102,7 +102,7 @@ namespace NesNewLife.SMB2.EditorTools
             CreateCameraZone("Underground Camera Zone", new Vector2(18f, -16f), new Vector2(24f, 12f));
 
             CreateCheckpoint(new Vector2(36f, -1.15f), sprite);
-            CreateExit(new Vector2(58f, -0.55f), sprite);
+            CreateExit(new Vector2(54.5f, -0.55f), sprite);
             CreateKillZone(new Vector2(16f, -8f), new Vector2(110f, 4f));
             CreateKillZone(new Vector2(18f, -25f), new Vector2(30f, 4f));
             CreateCamera(player.transform, new Rect(-26f, -6f, 86f, 12f));
@@ -114,7 +114,7 @@ namespace NesNewLife.SMB2.EditorTools
 
             Selection.activeGameObject = player;
             EditorGUIUtility.PingObject(player);
-            Debug.Log("NES New Life: multi-room SMB2 playable level created. Select 1-4, explore the underground room, collect the key and unlock the late route.");
+            Debug.Log("NES New Life: multi-room SMB2 playable level created. Select 1-4, crouch + Shift to pull plants, explore the underground room, collect the key and unlock the late route.");
         }
 
         [MenuItem("NES New Life/SMB2/Create Prototype Scene")]
@@ -227,7 +227,7 @@ namespace NesNewLife.SMB2.EditorTools
             controller.Configure(left, right);
         }
 
-        private static void CreateCarryable(Vector2 position, Sprite sprite, Color color)
+        private static CarryableObject2D CreateCarryable(Vector2 position, Sprite sprite, Color color)
         {
             GameObject obj = CreateBlock("Carryable", position, new Vector2(0.55f, 0.55f), color, sprite);
             obj.layer = CarryableLayer;
@@ -235,7 +235,21 @@ namespace NesNewLife.SMB2.EditorTools
             body.gravityScale = 2.5f;
             body.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
             obj.AddComponent<BoxCollider2D>();
-            obj.AddComponent<CarryableObject2D>();
+            return obj.AddComponent<CarryableObject2D>();
+        }
+
+        private static void CreatePullablePlant(Vector2 position, Sprite sprite, Color payloadColor)
+        {
+            CarryableObject2D payload = CreateCarryable(position + Vector2.up * 0.35f, sprite, payloadColor);
+            payload.name = "Pulled_Item";
+            payload.gameObject.SetActive(false);
+
+            GameObject plant = CreateBlock("Pullable_Plant", position, new Vector2(0.32f, 0.55f), new Color(0.28f, 0.82f, 0.32f), sprite);
+            plant.layer = CarryableLayer;
+            BoxCollider2D collider = plant.AddComponent<BoxCollider2D>();
+            collider.isTrigger = true;
+            PullablePlant pullable = plant.AddComponent<PullablePlant>();
+            pullable.Configure(payload);
         }
 
         private static void CreateKey(Vector2 position, Sprite sprite)
