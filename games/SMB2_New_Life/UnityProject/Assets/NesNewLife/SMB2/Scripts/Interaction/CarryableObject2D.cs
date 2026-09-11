@@ -80,6 +80,16 @@ namespace NesNewLife.SMB2
                 return;
 
             enemy.Damage(thrownDamage);
+
+            BossController boss = collision.collider.GetComponentInParent<BossController>();
+            if (boss != null)
+            {
+                isThrown = false;
+                body.angularVelocity = 0f;
+                body.linearVelocity = new Vector2(-body.linearVelocity.x * 0.25f, 2.5f);
+                return;
+            }
+
             Destroy(gameObject);
         }
 
