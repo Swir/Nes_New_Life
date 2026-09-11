@@ -12,15 +12,22 @@ namespace NesNewLife.SMB2.EditorTools
     {
         private const string SceneDirectory = "Assets/NesNewLife/SMB2/Prototype";
         private const string ScenePath = SceneDirectory + "/SMB2_Playable.unity";
+        private const string GeneratedDirectory = "Assets/NesNewLife/SMB2/Generated";
+        private const string GeneratedSpritePath = GeneratedDirectory + "/PrototypeSquare.png";
         private const int GroundLayer = 8;
         private const int CarryableLayer = 9;
 
         [MenuItem("NES New Life/SMB2/Create PLAYABLE Level")]
         public static void CreatePlayable()
         {
-            Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
-            Sprite sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd");
+            Sprite sprite = GetOrCreatePrototypeSprite();
+            if (sprite == null)
+            {
+                Debug.LogError("NES New Life: failed to create the prototype sprite asset.");
+                return;
+            }
 
+            Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             CreateManagers();
             CreateBackdrop(sprite);
 
@@ -80,6 +87,37 @@ namespace NesNewLife.SMB2.EditorTools
 
         [MenuItem("NES New Life/SMB2/Create Prototype Scene")]
         public static void CreateLegacyMenuAlias() => CreatePlayable();
+
+        private static Sprite GetOrCreatePrototypeSprite()
+        {
+            Sprite existing = AssetDatabase.LoadAssetAtPath<Sprite>(GeneratedSpritePath);
+            if (existing != null)
+                return existing;
+
+            Directory.CreateDirectory(GeneratedDirectory);
+            Texture2D texture = new Texture2D(16, 16, TextureFormat.RGBA32, false);
+            Color[] pixels = new Color[16 * 16];
+            for (int i = 0; i < pixels.Length; i++)
+                pixels[i] = Color.white;
+            texture.SetPixels(pixels);
+            texture.Apply();
+            File.WriteAllBytes(GeneratedSpritePath, texture.EncodeToPNG());
+            Object.DestroyImmediate(texture);
+
+            AssetDatabase.ImportAsset(GeneratedSpritePath, ImportAssetOptions.ForceSynchronousImport);
+            TextureImporter importer = AssetImporter.GetAtPath(GeneratedSpritePath) as TextureImporter;
+            if (importer != null)
+            {
+                importer.textureType = TextureImporterType.Sprite;
+                importer.spritePixelsPerUnit = 16f;
+                importer.filterMode = FilterMode.Point;
+                importer.textureCompression = TextureImporterCompression.Uncompressed;
+                importer.wrapMode = TextureWrapMode.Clamp;
+                importer.SaveAndReimport();
+            }
+
+            return AssetDatabase.LoadAssetAtPath<Sprite>(GeneratedSpritePath);
+        }
 
         private static void CreateManagers()
         {
