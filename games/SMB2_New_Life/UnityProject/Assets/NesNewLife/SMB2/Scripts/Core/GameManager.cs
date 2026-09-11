@@ -5,7 +5,9 @@ namespace NesNewLife.SMB2
 {
     public enum RunState
     {
+        CharacterSelect,
         Playing,
+        Paused,
         Won,
         GameOver
     }
@@ -39,7 +41,8 @@ namespace NesNewLife.SMB2
 
             Instance = this;
             lives = Mathf.Max(1, startingLives);
-            state = RunState.Playing;
+            state = RunState.CharacterSelect;
+            Time.timeScale = 0f;
         }
 
         private void Start()
@@ -55,10 +58,28 @@ namespace NesNewLife.SMB2
 
         private void Update()
         {
-            if (Input.GetKeyDown(KeyCode.Alpha1)) ApplyCharacter(CharacterType.Mario);
-            if (Input.GetKeyDown(KeyCode.Alpha2)) ApplyCharacter(CharacterType.Luigi);
-            if (Input.GetKeyDown(KeyCode.Alpha3)) ApplyCharacter(CharacterType.Peach);
-            if (Input.GetKeyDown(KeyCode.Alpha4)) ApplyCharacter(CharacterType.Toad);
+            if (state == RunState.CharacterSelect)
+            {
+                if (Input.GetKeyDown(KeyCode.Alpha1)) StartWithCharacter(CharacterType.Mario);
+                else if (Input.GetKeyDown(KeyCode.Alpha2)) StartWithCharacter(CharacterType.Luigi);
+                else if (Input.GetKeyDown(KeyCode.Alpha3)) StartWithCharacter(CharacterType.Peach);
+                else if (Input.GetKeyDown(KeyCode.Alpha4)) StartWithCharacter(CharacterType.Toad);
+                return;
+            }
+
+            if (state == RunState.Playing && (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.P)))
+            {
+                state = RunState.Paused;
+                Time.timeScale = 0f;
+                return;
+            }
+
+            if (state == RunState.Paused && (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.P)))
+            {
+                state = RunState.Playing;
+                Time.timeScale = 1f;
+                return;
+            }
 
             if ((state == RunState.Won || state == RunState.GameOver) && Input.GetKeyDown(KeyCode.R))
                 RestartScene();
@@ -69,6 +90,13 @@ namespace NesNewLife.SMB2
             player = playerTransform;
             checkpoint = player.position;
             ApplyCharacter(selectedCharacter);
+        }
+
+        public void StartWithCharacter(CharacterType type)
+        {
+            ApplyCharacter(type);
+            state = RunState.Playing;
+            Time.timeScale = 1f;
         }
 
         public void ApplyCharacter(CharacterType type)
