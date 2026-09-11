@@ -9,14 +9,16 @@ namespace NesNewLife.SMB2.EditorTools
 {
     public static class CIBuild
     {
-        private const string BuildFolder = "build/StandaloneWindows64";
-        private const string ExePath = BuildFolder + "/NES_New_Life_SMB2.exe";
-        private const string VersionFile = "VERSION";
-
         public static void BuildWindows()
         {
+            string projectRoot = Directory.GetParent(Application.dataPath)?.FullName
+                ?? throw new Exception("Could not resolve Unity project root.");
+            string buildFolder = Path.Combine(projectRoot, "build", "StandaloneWindows64");
+            string exePath = Path.Combine(buildFolder, "NES_New_Life_SMB2.exe");
+
+            Debug.Log("[NES New Life CI] Project root: " + projectRoot);
             Debug.Log("[NES New Life CI] Preparing SMB2 Windows x64 release build...");
-            Directory.CreateDirectory(BuildFolder);
+            Directory.CreateDirectory(buildFolder);
 
             if (!CampaignScenesExist())
             {
@@ -31,13 +33,13 @@ namespace NesNewLife.SMB2.EditorTools
             if (!ValidateCampaign.ValidateForBuild())
                 throw new Exception("Campaign structural validation failed. CI build aborted.");
 
-            string version = ResolveVersion();
+            string version = ResolveVersion(projectRoot);
             ConfigurePlayer(version);
 
             var options = new BuildPlayerOptions
             {
                 scenes = CreateCampaignScenes.StagePaths,
-                locationPathName = ExePath,
+                locationPathName = exePath,
                 target = BuildTarget.StandaloneWindows64,
                 options = BuildOptions.CompressWithLz4HC
             };
@@ -56,9 +58,9 @@ namespace NesNewLife.SMB2.EditorTools
                 "Target: Windows x64\n" +
                 "Campaign slots: " + CampaignCatalog.StageCount + "\n" +
                 "Status: alpha development build; original/public-safe placeholder content only.\n";
-            File.WriteAllText(Path.Combine(BuildFolder, "BUILD_INFO.txt"), info);
+            File.WriteAllText(Path.Combine(buildFolder, "BUILD_INFO.txt"), info);
 
-            Debug.Log("[NES New Life CI] Windows executable created at: " + ExePath);
+            Debug.Log("[NES New Life CI] Windows executable created at: " + exePath);
         }
 
         private static bool CampaignScenesExist()
@@ -87,12 +89,13 @@ namespace NesNewLife.SMB2.EditorTools
 #pragma warning restore CS0618
         }
 
-        private static string ResolveVersion()
+        private static string ResolveVersion(string projectRoot)
         {
-            if (!File.Exists(VersionFile))
+            string versionFile = Path.Combine(projectRoot, "VERSION");
+            if (!File.Exists(versionFile))
                 return "0.8.0-alpha";
 
-            string raw = File.ReadAllText(VersionFile).Trim();
+            string raw = File.ReadAllText(versionFile).Trim();
             if (raw.StartsWith("smb2-v", StringComparison.OrdinalIgnoreCase))
                 raw = raw.Substring("smb2-v".Length);
             else if (raw.StartsWith("v", StringComparison.OrdinalIgnoreCase))
