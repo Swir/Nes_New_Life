@@ -21,24 +21,18 @@ namespace NesNewLife.SMB2
             if (textStyle != null)
                 return;
 
-            textStyle = new GUIStyle(GUI.skin.label)
-            {
-                fontSize = 18,
-                normal = { textColor = Color.white }
-            };
+            textStyle = new GUIStyle(GUI.skin.label);
+            textStyle.fontSize = 18;
+            textStyle.normal.textColor = Color.white;
 
-            titleStyle = new GUIStyle(textStyle)
-            {
-                fontSize = 24,
-                fontStyle = FontStyle.Bold
-            };
+            titleStyle = new GUIStyle(textStyle);
+            titleStyle.fontSize = 24;
+            titleStyle.fontStyle = FontStyle.Bold;
 
-            centerStyle = new GUIStyle(titleStyle)
-            {
-                alignment = TextAnchor.MiddleCenter,
-                fontSize = 34,
-                wordWrap = true
-            };
+            centerStyle = new GUIStyle(titleStyle);
+            centerStyle.alignment = TextAnchor.MiddleCenter;
+            centerStyle.fontSize = 34;
+            centerStyle.wordWrap = true;
         }
 
         private void OnGUI()
