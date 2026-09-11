@@ -7,12 +7,13 @@ namespace NesNewLife.SMB2
         private GUIStyle titleStyle;
         private GUIStyle textStyle;
         private GUIStyle centerStyle;
+        private GUIStyle selectStyle;
         private Texture2D panelTexture;
 
         private void Awake()
         {
             panelTexture = new Texture2D(1, 1);
-            panelTexture.SetPixel(0, 0, new Color(0.03f, 0.05f, 0.08f, 0.88f));
+            panelTexture.SetPixel(0, 0, new Color(0.03f, 0.05f, 0.08f, 0.90f));
             panelTexture.Apply();
         }
 
@@ -33,6 +34,11 @@ namespace NesNewLife.SMB2
             centerStyle.alignment = TextAnchor.MiddleCenter;
             centerStyle.fontSize = 34;
             centerStyle.wordWrap = true;
+
+            selectStyle = new GUIStyle(textStyle);
+            selectStyle.alignment = TextAnchor.MiddleCenter;
+            selectStyle.fontSize = 20;
+            selectStyle.wordWrap = true;
         }
 
         private void OnGUI()
@@ -42,30 +48,56 @@ namespace NesNewLife.SMB2
             if (gm == null)
                 return;
 
+            if (gm.State == RunState.CharacterSelect)
+            {
+                DrawCharacterSelect();
+                return;
+            }
+
             PlayerHealth health = FindFirstObjectByType<PlayerHealth>();
             CharacterTuning tuning = CharacterTuning.For(gm.SelectedCharacter);
 
-            Rect panel = new Rect(18, 18, 355, 142);
+            Rect panel = new Rect(18, 18, 390, 142);
             GUI.DrawTexture(panel, panelTexture);
-            GUI.Label(new Rect(34, 28, 320, 30), "NES NEW LIFE #001", titleStyle);
-            GUI.Label(new Rect(34, 62, 320, 26), $"{tuning.DisplayName}   HP: {(health != null ? health.CurrentHealth : 0)}/{(health != null ? health.MaxHealth : 0)}", textStyle);
-            GUI.Label(new Rect(34, 88, 320, 26), $"Lives: {gm.Lives}   Score: {gm.Score:000000}", textStyle);
-            GUI.Label(new Rect(34, 116, 320, 30), "Move A/D • Jump Space • Carry/Throw Shift", textStyle);
-
-            Rect hint = new Rect(Screen.width - 305, 18, 285, 110);
-            GUI.DrawTexture(hint, panelTexture);
-            GUI.Label(new Rect(hint.x + 14, hint.y + 10, 260, 26), "Character hotkeys", titleStyle);
-            GUI.Label(new Rect(hint.x + 14, hint.y + 43, 260, 50), "1 Mario  •  2 Luigi\n3 Peach  •  4 Toad", textStyle);
+            GUI.Label(new Rect(34, 28, 350, 30), "NES NEW LIFE #001", titleStyle);
+            GUI.Label(new Rect(34, 62, 350, 26), $"{tuning.DisplayName}   HP: {(health != null ? health.CurrentHealth : 0)}/{(health != null ? health.MaxHealth : 0)}", textStyle);
+            GUI.Label(new Rect(34, 88, 350, 26), $"Lives: {gm.Lives}   Score: {gm.Score:000000}", textStyle);
+            GUI.Label(new Rect(34, 116, 350, 30), "A/D Move • Space Jump • Shift Carry • P Pause", textStyle);
 
             if (gm.State == RunState.Playing)
                 return;
 
-            Rect overlay = new Rect(Screen.width * 0.5f - 260, Screen.height * 0.5f - 100, 520, 200);
+            Rect overlay = new Rect(Screen.width * 0.5f - 280, Screen.height * 0.5f - 110, 560, 220);
             GUI.DrawTexture(overlay, panelTexture);
-            string message = gm.State == RunState.Won
-                ? $"LEVEL COMPLETE!\nScore: {gm.Score:000000}\n\nPress R to replay"
-                : "GAME OVER\n\nPress R to restart";
+
+            string message;
+            if (gm.State == RunState.Paused)
+                message = "PAUSED\n\nPress P or Esc to continue";
+            else if (gm.State == RunState.Won)
+                message = $"LEVEL COMPLETE!\nScore: {gm.Score:000000}\n\nPress R to replay";
+            else
+                message = "GAME OVER\n\nPress R to restart";
+
             GUI.Label(overlay, message, centerStyle);
+        }
+
+        private void DrawCharacterSelect()
+        {
+            float width = Mathf.Min(760f, Screen.width - 30f);
+            float left = (Screen.width - width) * 0.5f;
+            Rect panel = new Rect(left, Mathf.Max(25f, Screen.height * 0.5f - 210f), width, 420f);
+            GUI.DrawTexture(panel, panelTexture);
+
+            GUI.Label(new Rect(left + 20, panel.y + 22, width - 40, 50), "CHOOSE YOUR CHARACTER", centerStyle);
+            GUI.Label(new Rect(left + 20, panel.y + 76, width - 40, 30), "Press 1, 2, 3 or 4 to start", selectStyle);
+
+            string choices =
+                "1  MARIO\nBalanced speed, jump and throw\n\n" +
+                "2  LUIGI\nHigher jump, looser air control\n\n" +
+                "3  PEACH\nHold jump while falling to float\n\n" +
+                "4  TOAD\nFast movement and strongest throw";
+
+            GUI.Label(new Rect(left + 45, panel.y + 120, width - 90, 270), choices, selectStyle);
         }
 
         private void OnDestroy()
