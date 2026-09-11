@@ -6,9 +6,9 @@ Project #001 in **NES New Life**.
 
 ## Current milestone
 
-**`0.2.0-playable-vertical-slice`**
+**`0.3.0-world-flow-foundation`**
 
-The repository now contains a self-contained Unity project baseline and a one-click level generator that creates a complete playable graybox level from start to finish.
+The Unity project now supports connected rooms and sub-areas instead of only one horizontal test strip. The generated playable level contains a mandatory underground route, a key, a locked exit, room-specific camera bounds and pullable buried items.
 
 ## Recommended editor
 
@@ -23,6 +23,7 @@ The repository now contains a self-contained Unity project baseline and a one-cl
 - coyote time and jump buffering
 - crouch and charged crouch-jump
 - pickup, carry and throw objects
+- crouch + action plant-pulling mechanic
 - thrown objects damage enemies
 - patrol enemies and contact damage
 - 3-point player health system
@@ -30,14 +31,35 @@ The repository now contains a self-contained Unity project baseline and a one-cl
 - three lives, death and checkpoint respawn
 - score collectibles and health pickups
 - pits / fall death zones
-- scrolling camera
-- checkpoint halfway through the level
+- scrolling camera with room-specific world bounds
+- connected doors between surface and underground rooms
+- player key inventory
+- locked doors that consume keys
+- mandatory underground key route in the generated level
+- checkpoint after the locked route
 - final miniboss with 5 HP
 - exit locked until the miniboss is defeated
 - pause, win, game-over and replay states
-- runtime HUD
+- runtime HUD with HP, lives, keys, score and world messages
 - generated local placeholder sprite (no dependency on commercial art)
 - one-click Windows x64 build command
+
+## Generated level flow
+
+The current generated test level is intentionally structured like a real multi-room platform level:
+
+1. choose a character
+2. traverse the opening surface section
+3. use the blue door to enter the underground room
+4. fight through the underground room and collect the key
+5. crouch + Shift near green plants to pull throwable items from the ground
+6. use the key on the gold locked door
+7. return to the late surface route behind the tall barrier
+8. reach the checkpoint
+9. defeat the miniboss
+10. reach the goal
+
+This is still a development level, not a claim that all original SMB2 stages have been recreated.
 
 ## Run it
 
@@ -76,6 +98,8 @@ It also generates its own white placeholder sprite and adds the scene to Build S
 | Jump | Space |
 | Crouch / charge jump | S or Down |
 | Pick up / throw | Left Shift / Right Shift |
+| Pull buried item | Crouch + Shift near a green plant |
+| Enter door | W or Up Arrow |
 | Pause / resume | P or Esc |
 | Replay after win/game over | R |
 
@@ -93,18 +117,21 @@ If the playable scene has not been generated yet, the build command creates it a
 
 ## Current art state
 
-`v0.2` deliberately uses generated colored graybox shapes. This proves the whole gameplay loop before we spend time replacing everything with modern original artwork, animation, VFX, lighting and audio.
+`v0.3` still deliberately uses generated colored graybox shapes. The priority is to prove the complete gameplay architecture first: connected rooms, item interactions, keys, progression gates, combat and reliable level flow. Modern original visuals will replace the graybox later.
 
 ## Next production milestones
 
-- `0.3` modern original art pass and animation state machine
-- `0.4` audio, VFX, particles and stronger camera feedback
-- `0.5` richer enemy roster, doors, keys, vertical rooms and sub-areas
-- `0.6` controller remapping / modern Input System
-- `0.7` save/settings/menu flow
-- `0.8` additional levels and bosses
-- `0.9` QA, balancing and performance pass
+- `0.4` richer enemy roster, vertical rooms, ladders / climbable traversal and more sub-area patterns
+- `0.5` reusable level-data architecture and multiple complete development stages
+- `0.6` modern original art pass, animation state machine, VFX and stronger camera feedback
+- `0.7` audio, controller remapping / modern Input System, settings and save flow
+- `0.8` additional bosses, level-select progression and broader content pass
+- `0.9` QA, balancing, accessibility and performance pass
 - `1.0` first public-safe standalone release
+
+## Validation status
+
+Source and project structure are reviewed statically in ChatGPT. A real Unity 6.3 LTS Editor compile/play-mode test is still required before treating any Windows binary as tested.
 
 ## Legal / repository hygiene
 
