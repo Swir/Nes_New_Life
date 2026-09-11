@@ -8,7 +8,7 @@ namespace NesNewLife.SMB2
 
         private void Start()
         {
-            if (GameObject.Find("V04_RUNTIME_ENCOUNTERS") != null)
+            if (GameObject.Find("CAMPAIGN_RUNTIME_ENCOUNTERS") != null)
                 return;
 
             PlayerController2D player = FindFirstObjectByType<PlayerController2D>();
@@ -20,27 +20,56 @@ namespace NesNewLife.SMB2
             if (sprite == null)
                 return;
 
-            GameObject root = new GameObject("V04_RUNTIME_ENCOUNTERS");
-            CreateHopper(root.transform, new Vector2(-3f, -1.25f), sprite);
-            CreateChaser(root.transform, new Vector2(32f, -1.25f), 30f, 36f, sprite);
-            CreateHopper(root.transform, new Vector2(20f, -19.2f), sprite);
+            CampaignStageDefinition stage = FindFirstObjectByType<CampaignStageDefinition>();
+            int stageNumber = stage != null ? stage.StageNumber : 1;
+
+            GameObject root = new GameObject("CAMPAIGN_RUNTIME_ENCOUNTERS");
+            SpawnStageOne(root.transform, sprite);
+
+            if (stageNumber >= 2)
+                SpawnStageTwoPressure(root.transform, sprite);
+
+            if (stageNumber >= 3)
+                SpawnStageThreePressure(root.transform, sprite);
 
             if (CampaignSave.Clears >= 1)
-                CreateChaser(root.transform, new Vector2(46f, -1.25f), 42f, 51f, sprite);
+                CreateChaser(root.transform, new Vector2(46f, -1.25f), 42f, 51f, 3.8f, sprite);
         }
 
-        private static void CreateHopper(Transform parent, Vector2 position, Sprite sprite)
+        private static void SpawnStageOne(Transform root, Sprite sprite)
+        {
+            CreateHopper(root, new Vector2(-3f, -1.25f), 8.8f, 2.4f, 1.25f, sprite);
+            CreateChaser(root, new Vector2(32f, -1.25f), 30f, 36f, 3.4f, sprite);
+            CreateHopper(root, new Vector2(20f, -19.2f), 8.8f, 2.4f, 1.25f, sprite);
+        }
+
+        private static void SpawnStageTwoPressure(Transform root, Sprite sprite)
+        {
+            CreateHopper(root, new Vector2(7f, -1.25f), 9.6f, 2.9f, 1.05f, sprite);
+            CreateChaser(root, new Vector2(22f, -1.25f), 18f, 26f, 3.8f, sprite);
+            CreateHopper(root, new Vector2(12f, -19.2f), 9.8f, 2.8f, 1.0f, sprite);
+        }
+
+        private static void SpawnStageThreePressure(Transform root, Sprite sprite)
+        {
+            CreateChaser(root, new Vector2(-8f, -1.25f), -12f, -2f, 4.2f, sprite);
+            CreateHopper(root, new Vector2(36f, -1.25f), 10.5f, 3.1f, 0.9f, sprite);
+            CreateChaser(root, new Vector2(25f, -19.2f), 20f, 28f, 4.3f, sprite);
+            CreateHopper(root, new Vector2(47f, -1.25f), 10.8f, 3.2f, 0.85f, sprite);
+        }
+
+        private static void CreateHopper(Transform parent, Vector2 position, float jumpVelocity, float horizontalSpeed, float interval, Sprite sprite)
         {
             GameObject enemy = CreateEnemyBase("Enemy_Hopper", parent, position, new Color(0.96f, 0.48f, 0.18f), sprite);
             EnemyHopper hopper = enemy.AddComponent<EnemyHopper>();
-            hopper.Configure(8.8f, 2.4f, 1.25f, 1 << GroundLayer);
+            hopper.Configure(jumpVelocity, horizontalSpeed, interval, 1 << GroundLayer);
         }
 
-        private static void CreateChaser(Transform parent, Vector2 position, float left, float right, Sprite sprite)
+        private static void CreateChaser(Transform parent, Vector2 position, float left, float right, float chaseSpeed, Sprite sprite)
         {
             GameObject enemy = CreateEnemyBase("Enemy_Chaser", parent, position, new Color(0.92f, 0.18f, 0.42f), sprite);
             EnemyChaser chaser = enemy.AddComponent<EnemyChaser>();
-            chaser.Configure(left, right, 1.3f, 3.4f, 7.5f);
+            chaser.Configure(left, right, 1.3f, chaseSpeed, 7.5f);
         }
 
         private static GameObject CreateEnemyBase(string name, Transform parent, Vector2 position, Color color, Sprite sprite)
