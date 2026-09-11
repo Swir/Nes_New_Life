@@ -52,8 +52,29 @@ namespace NesNewLife.SMB2.EditorTools
                 if (Object.FindFirstObjectByType<GameManager>() == null) { Debug.LogError($"Stage {expectedStage}: missing GameManager."); errors++; }
                 if (Object.FindFirstObjectByType<PlayerController2D>() == null) { Debug.LogError($"Stage {expectedStage}: missing player."); errors++; }
                 if (Object.FindFirstObjectByType<LevelExit>() == null) { Debug.LogError($"Stage {expectedStage}: missing LevelExit."); errors++; }
-                if (Object.FindFirstObjectByType<BossController>() == null) { Debug.LogWarning($"Stage {expectedStage}: no boss/guardian found."); warnings++; }
                 if (Object.FindFirstObjectByType<CameraFollow2D>() == null) { Debug.LogWarning($"Stage {expectedStage}: no CameraFollow2D found."); warnings++; }
+
+                bool hasGuardian = Object.FindFirstObjectByType<BossController>() != null || Object.FindFirstObjectByType<ChargeBossController>() != null;
+                if (!hasGuardian) { Debug.LogError($"Stage {expectedStage}: no guardian archetype found."); errors++; }
+
+                if (Object.FindFirstObjectByType<ClimbableZone2D>() == null)
+                {
+                    Debug.LogError($"Stage {expectedStage}: missing climbable traversal zone.");
+                    errors++;
+                }
+
+                if (expectedStage >= 2)
+                {
+                    if (Object.FindFirstObjectByType<MovingPlatform2D>() == null) { Debug.LogError($"Stage {expectedStage}: missing moving platform."); errors++; }
+                    if (Object.FindFirstObjectByType<CrumblePlatform2D>() == null) { Debug.LogError($"Stage {expectedStage}: missing crumble platform."); errors++; }
+                    if (Object.FindFirstObjectByType<SpikeHazard2D>() == null) { Debug.LogError($"Stage {expectedStage}: missing spike hazard."); errors++; }
+                }
+
+                if (expectedStage == 3 && Object.FindFirstObjectByType<ChargeBossController>() == null)
+                {
+                    Debug.LogError("Stage 3: charge guardian was not generated.");
+                    errors++;
+                }
             }
 
             if (File.Exists(CreateCampaignScenes.Stage01Path))
