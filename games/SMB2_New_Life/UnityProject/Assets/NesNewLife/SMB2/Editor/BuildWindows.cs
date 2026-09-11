@@ -24,7 +24,7 @@ namespace NesNewLife.SMB2.EditorTools
 
             if (!campaignReady)
             {
-                Debug.Log("NES New Life: campaign scenes missing; generating the 3-stage campaign before build.");
+                Debug.Log($"NES New Life: campaign scenes missing; generating the {CampaignCatalog.StageCount}-stage campaign before build.");
                 CreateCampaignScenes.Create();
                 AssetDatabase.Refresh();
             }
@@ -53,7 +53,7 @@ namespace NesNewLife.SMB2.EditorTools
             var report = BuildPipeline.BuildPlayer(options);
             if (report.summary.result == UnityEditor.Build.Reporting.BuildResult.Succeeded)
             {
-                Debug.Log($"NES New Life 3-stage campaign build ready: {OutputPath} ({report.summary.totalSize} bytes)");
+                Debug.Log($"NES New Life {CampaignCatalog.StageCount}-stage campaign build ready: {OutputPath} ({report.summary.totalSize} bytes)");
                 EditorUtility.RevealInFinder(OutputPath);
             }
             else
