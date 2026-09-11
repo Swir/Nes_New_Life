@@ -1,0 +1,61 @@
+# Unity generated folders
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+UserSettings/
+MemoryCaptures/
+Recordings/
+
+# IDE
+.vscode/
+.idea/
+.vs/
+*.csproj
+*.sln
+*.suo
+*.user
+*.userprefs
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Unity crash / cache
+sysinfo.txt
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# Packages / archives
+*.apk
+*.aab
+*.exe
+*.zip
+*.7z
+*.rar
+
+# ROMs and emulator dumps - never commit commercial ROMs
+*.nes
+*.fds
+*.unf
+*.unif
+*.rom
+*.bin
+*.ips
+*.bps
+*.sav
+*.srm
+*.state
+*.slot*
+
+# Local research material
+games/*/Research/Local/
+games/*/ReferenceROMs/
