@@ -33,7 +33,11 @@
 - detect exact duplicate captured graphics so one master redraw can cover every identical occurrence
 - flag visually near-duplicate tiles using a compact perceptual hash to reduce redundant drawing work
 - export one editable master PNG per unique captured graphic with a JSON target manifest
-- propagate one finished master replacement back into every exact matching sheet position while preserving `hires.txt` byte-for-byte
+- persistent `MasterWorkspace/original` + `MasterWorkspace/editable` layout so the artist can edit many masters in one session
+- SHA-256 art-state scan detects edited/TODO/invalid masters without relying on manual status updates
+- reject resized/missing master files before they can corrupt neighboring HD tiles
+- batch-compose every changed master into one combined `final_art` HD Pack in a single pass
+- preserve `hires.txt` byte-for-byte during batch composition
 - player animation replacements first
 - common enemies and projectiles
 - foreground tilesets and scenery
@@ -52,6 +56,6 @@
 - final local full-game verification against the original ROM behavior
 
 ### Current hard blocker to a truthful "complete HD" release
-The repository can now automate capture measurement, prioritization, grouping, workboard generation, duplicate detection, master-tile export, exact replacement propagation, preview processing, validation, readiness reporting and safe packaging. The remaining content-critical work requires a **local complete MesenCE capture plus the actual finished 4x artwork and real full-game visual verification**. Tooling must never infer unseen bosses, routes, animation states or ending screens as complete.
+The repository can automate capture measurement, prioritization, grouping, workboard generation, duplicate detection, master-tile export, persistent batch art editing, exact replacement propagation, preview processing, validation, readiness reporting and safe packaging. The remaining content-critical work requires a **local complete MesenCE capture plus the actual finished 4x artwork and real full-game visual verification**. Tooling must never infer unseen bosses, routes, animation states or ending screens as complete.
 
 The ROM remains the gameplay source throughout all phases. We do not rebuild or redesign its levels, physics or enemy logic.
