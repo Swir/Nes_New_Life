@@ -9,6 +9,8 @@ namespace NesNewLife.SMB2.EditorTools
 {
     public static class CIBuild
     {
+        private const string PrototypeSpritePath = "Assets/NesNewLife/SMB2/Generated/PrototypeSquare.png";
+
         public static void BuildWindows()
         {
             string projectRoot = Directory.GetParent(Application.dataPath)?.FullName
@@ -20,11 +22,13 @@ namespace NesNewLife.SMB2.EditorTools
             Debug.Log("[NES New Life CI] Preparing SMB2 Windows x64 release build...");
             Directory.CreateDirectory(buildFolder);
 
+            PreparePrototypeSprite(projectRoot);
+
             if (!CampaignScenesExist())
             {
                 Debug.Log($"[NES New Life CI] Campaign scenes missing. Generating {CampaignCatalog.StageCount} stages...");
                 CreateCampaignScenes.Create();
-                AssetDatabase.Refresh();
+                AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
             }
 
             if (!CampaignScenesExist())
@@ -61,6 +65,66 @@ namespace NesNewLife.SMB2.EditorTools
             File.WriteAllText(Path.Combine(buildFolder, "BUILD_INFO.txt"), info);
 
             Debug.Log("[NES New Life CI] Windows executable created at: " + exePath);
+        }
+
+        private static void PreparePrototypeSprite(string projectRoot)
+        {
+            string absolutePath = Path.Combine(projectRoot, PrototypeSpritePath.Replace('/', Path.DirectorySeparatorChar));
+            string directory = Path.GetDirectoryName(absolutePath);
+            if (!string.IsNullOrEmpty(directory))
+                Directory.CreateDirectory(directory);
+
+            if (!File.Exists(absolutePath))
+            {
+                Texture2D texture = new Texture2D(16, 16, TextureFormat.RGBA32, false);
+                Color[] pixels = new Color[16 * 16];
+                for (int i = 0; i < pixels.Length; i++)
+                    pixels[i] = Color.white;
+                texture.SetPixels(pixels);
+                texture.Apply();
+                File.WriteAllBytes(absolutePath, texture.EncodeToPNG());
+                UnityEngine.Object.DestroyImmediate(texture);
+            }
+
+            AssetDatabase.ImportAsset(
+                PrototypeSpritePath,
+                ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
+
+            TextureImporter importer = AssetImporter.GetAtPath(PrototypeSpritePath) as TextureImporter;
+            if (importer == null)
+                throw new Exception("Prototype sprite importer was not created for " + PrototypeSpritePath);
+
+            importer.textureType = TextureImporterType.Sprite;
+            importer.spriteImportMode = SpriteImportMode.Single;
+            importer.spritePixelsPerUnit = 16f;
+            importer.mipmapEnabled = false;
+            importer.alphaIsTransparency = true;
+            importer.filterMode = FilterMode.Point;
+            importer.textureCompression = TextureImporterCompression.Uncompressed;
+            importer.wrapMode = TextureWrapMode.Clamp;
+            importer.npotScale = TextureImporterNPOTScale.None;
+            importer.SaveAndReimport();
+
+            AssetDatabase.ImportAsset(
+                PrototypeSpritePath,
+                ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
+
+            Sprite sprite = AssetDatabase.LoadAssetAtPath<Sprite>(PrototypeSpritePath);
+            if (sprite == null)
+            {
+                UnityEngine.Object[] assets = AssetDatabase.LoadAllAssetsAtPath(PrototypeSpritePath);
+                foreach (UnityEngine.Object asset in assets)
+                {
+                    sprite = asset as Sprite;
+                    if (sprite != null)
+                        break;
+                }
+            }
+
+            if (sprite == null)
+                throw new Exception("Prototype PNG exists but Unity did not import it as a Sprite.");
+
+            Debug.Log("[NES New Life CI] Prototype sprite prepared successfully: " + PrototypeSpritePath);
         }
 
         private static bool CampaignScenesExist()
