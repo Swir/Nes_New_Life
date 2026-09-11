@@ -2,6 +2,26 @@
 
 All notable development milestones for Project #001 are recorded here.
 
+## [0.6.0-vertical-traversal-and-hazards] - 2026-09-11
+
+### Added
+- climbable vine/ladder-style traversal zones
+- player climbing state with vertical movement and jump-off behavior
+- moving platform system with configurable travel vectors
+- respawning crumble platforms
+- reusable damage spike hazards
+- mandatory elevated exits in later campaign stages
+- vertical ledges and climb routes generated into the campaign
+- second guardian archetype with timed high-speed charge attacks
+- additional Stage 3 moving-platform pressure
+- campaign validation coverage for climbables, moving platforms, crumble platforms, spikes and the charge guardian
+
+### Changed
+- Stage 1 introduces climbing as a safe traversal mechanic
+- Stage 2 requires climbing after its guardian encounter and introduces environmental hazards
+- Stage 3 combines climbing, moving/crumbling platforms, spikes and the new charge guardian
+- campaign exits now correctly remain locked while either guardian archetype is alive
+
 ## [0.5.0-multi-stage-campaign] - 2026-09-11
 
 ### Added
@@ -99,7 +119,7 @@ All notable development milestones for Project #001 are recorded here.
 - verified iNES reference metadata documentation
 - Unity 2D player movement foundation
 - acceleration and deceleration
-- variable-height jump
+- variable jump
 - coyote time and jump buffering
 - crouch and charged-jump prototype hook
 - pickup / carry / throw system
