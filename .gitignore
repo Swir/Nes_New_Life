@@ -6,15 +6,18 @@
 roms/
 ROMs/
 
-# Local remaster workspaces (can contain ROM-derived captures)
+# Local remaster workspaces (can contain ROM-derived captures/derivatives)
 work/
 projects/**/work/
 projects/**/reference_chr/
 projects/**/captures/
 projects/**/MesenPack/
+projects/**/MesenCapture/
+projects/**/ModernizedPack/
 
 # Local third-party emulator install (downloaded by setup script)
 projects/**/vendor/
+vendor/
 
 # Python
 __pycache__/
