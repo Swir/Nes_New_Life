@@ -2,6 +2,30 @@
 
 All notable development milestones for Project #001 are recorded here.
 
+## [0.8.0-persistent-checkpoints-and-settings] - 2026-09-11
+
+### Added
+- persistent per-stage checkpoint position stored with active campaign saves
+- Continue now restores the player to the latest checkpoint inside the saved stage
+- persistent `F10` settings/accessibility overlay
+- master-volume setting
+- adjustable HUD text scale
+- reduced-flashing accessibility option for post-hit invulnerability
+- assist-health option (+2 HP on newly loaded players)
+- extra-lives option (new campaigns start with at least 5 lives)
+- settings reset action
+- campaign validator checks GameHud, PlayerHealth and checkpoint coverage
+
+### Changed
+- stage completion clears the previous stage checkpoint before advancing
+- new campaigns, campaign clear, abandon and progress reset clear stale checkpoint data
+- Windows x64 builder now runs structural campaign validation and aborts before BuildPipeline when validation has errors
+- HUD exposes the settings shortcut and reflects adjustable text scale
+
+### Validation note
+- source/configuration received static review only
+- real Unity 6.3 LTS compile, Play Mode, checkpoint-resume test and Windows executable launch are still required before publishing a tested binary
+
 ## [0.7.0-seven-world-campaign-framework] - 2026-09-11
 
 ### Added
