@@ -6,28 +6,47 @@ Project #001 in **NES New Life**.
 
 ## Current milestone
 
-**`0.6.0-vertical-traversal-and-hazards`**
+**`0.7.0-seven-world-campaign-framework`**
 
-The campaign now supports genuinely different traversal patterns instead of only horizontal variants. Stages can contain climbable vertical routes, moving platforms, crumble platforms, environmental damage hazards and multiple guardian archetypes.
+The project now has a complete campaign-scale progression framework: **7 worlds and 20 stage slots**, matching the useful high-level scope of a full-length classic campaign while keeping all generated layouts, names and presentation original/public-safe.
+
+This is not a claim that the original commercial levels have been recreated 1:1. The 20 generated scenes are development stages built from reusable systems so every future handcrafted level has a real slot, save path, transition, validation path and build target already in place.
 
 ## Recommended editor
 
-**Unity 6.3 LTS** (`6000.3.x`). The project pins `6000.3.0f1` as its minimum baseline; newer 6000.3 LTS patches can upgrade it.
+**Unity 6.3 LTS** (`6000.3.x`). The project pins `6000.3.0f1` as its baseline.
 
-## Campaign architecture now playable
+## Campaign architecture
 
-- generated three-stage campaign: `SMB2_Stage_01`, `SMB2_Stage_02`, `SMB2_Stage_03`
-- persistent active-stage save
-- selected character, lives and accumulated score preserved between scenes
-- highest unlocked stage stored locally
-- Continue returns to the saved campaign stage
-- stage completion bonuses and final-stage campaign completion
-- per-stage visual treatment and encounter pressure
-- Stage 1 introduces a safe climb route
-- Stage 2 adds mandatory elevated exit traversal, moving platforms, crumble platforms and spikes
-- Stage 3 combines the vertical/hazard systems with a faster charge guardian
-- Windows build automatically generates missing campaign scenes and includes all three in order
-- campaign-wide structural validator covers the critical v0.6 systems
+- 7 worlds
+- 20 generated campaign stages
+- world structure: `3 + 3 + 3 + 3 + 3 + 3 + 2`
+- stage IDs/names from `1-1` through `7-2`
+- scene naming `SMB2_Stage_01` through `SMB2_Stage_20`
+- automatic stage-to-world mapping
+- persistent current stage and highest unlocked stage
+- selected character, lives and score preserved between scenes
+- Continue returns to the exact unfinished stage
+- unlocked-stage selector from the start screen (`Q/E`, then `Enter`)
+- world finales detected by the catalog
+- later world finales use the charge-guardian archetype
+- final Stage 20 is marked as the campaign finale
+- Windows build includes all 20 scenes in progression order
+- campaign validator checks all 20 generated scenes
+
+## Generated world progression
+
+The generator now scales encounters and traversal across the full campaign instead of cloning three identical development levels:
+
+- World 1 introduces climbing and basic moving traversal
+- World 2 increases moving-platform pressure and adds environmental hazards
+- World 3 adds crumble traversal and charge-guardian finales
+- World 4 adds horizontal moving-platform challenges
+- World 5 adds denser vertical/crumble combinations
+- World 6 increases hazard and guardian pressure further
+- World 7 contains the two-stage final world with the strongest generated guardian configuration
+
+Each world also receives a distinct public-safe color treatment and simple geometric landmarks. These are placeholders for the later original art pass.
 
 ## Existing gameplay systems
 
@@ -35,11 +54,11 @@ The campaign now supports genuinely different traversal patterns instead of only
 - Peach-style temporary air float
 - variable-height jumping, coyote time and jump buffering
 - crouch and charged crouch-jump
-- climbable vine/ladder-style traversal with jump-off support
+- climbable traversal with jump-off support
 - pickup, carry, throw and crouch+action plant pulling
 - thrown-object combat
 - patrol, hopping and proximity-chasing enemies
-- two guardian archetypes: jumping guardian and timed charge guardian
+- jumping and charge guardian archetypes
 - contact damage, 3-point health, knockback and invulnerability
 - moving platforms, respawning crumble platforms and spike hazards
 - lives, death, checkpoint respawn and pits
@@ -51,82 +70,69 @@ The campaign now supports genuinely different traversal patterns instead of only
 - pause, game-over and campaign-complete states
 - persistent best score, clear count and total deaths
 - runtime HUD and contextual messages
-- generated public-safe placeholder sprite
 
-## Generate and run the campaign
+## Generate and run
 
-1. Clone/download the repository.
-2. In Unity Hub choose **Add project from disk**.
-3. Select `games/SMB2_New_Life/UnityProject`.
-4. Open it with Unity **6.3 LTS**.
-5. If Unity reports that the legacy input API is disabled, set **Active Input Handling** to **Both** or **Input Manager (Old)** in Player settings and restart Unity if requested.
-6. Wait until scripts finish compiling.
-7. Select `NES New Life > SMB2 > Create 3-Stage Campaign`.
-8. Run `NES New Life > SMB2 > Validate 3-Stage Campaign`.
-9. Open/play `Assets/NesNewLife/SMB2/Campaign/SMB2_Stage_01.unity`.
-10. Choose a character with `1`, `2`, `3` or `4`.
+1. Open `games/SMB2_New_Life/UnityProject` in Unity 6.3 LTS.
+2. Wait for scripts to compile.
+3. Select `NES New Life > SMB2 > Create 20-Stage Campaign`.
+4. Run `NES New Life > SMB2 > Validate 20-Stage Campaign`.
+5. Open/play `Assets/NesNewLife/SMB2/Campaign/SMB2_Stage_01.unity`.
+6. Choose a character with `1`, `2`, `3` or `4`.
 
-The generator creates the gameplay template and then produces three configured stage scenes in `Assets/NesNewLife/SMB2/Campaign/`.
+The generator registers all twenty scenes in Build Settings automatically.
 
-## Campaign flow
-
-1. choose a character and begin Stage 1
-2. complete the surface/underground/key route and defeat the guardian
-3. learn the climb mechanic on the Stage 1 vertical route
-4. reach the exit; score/lives/character are saved and Stage 2 loads automatically
-5. Stage 2 introduces moving and crumbling platforms, spike hazards and a mandatory climb to the elevated exit
-6. Stage 3 combines the hazard set with additional moving-platform pressure and a charge-focused guardian
-7. clear Stage 3 to record a full campaign completion
-8. `R` after completion/game-over begins a fresh campaign
-9. `C` on the start screen resumes an unfinished saved campaign at its saved stage
-
-These are still development stages built from reusable original/public-safe systems; they are not a claim that all original commercial SMB2 stages have been recreated.
-
-## Controls
+## Start-screen progression controls
 
 | Action | Key |
 |---|---|
 | Select Mario / Luigi / Peach / Toad | 1 / 2 / 3 / 4 |
-| Continue saved campaign | C |
+| Continue unfinished campaign | C |
+| Previous unlocked stage | Q or `[` |
+| Next unlocked stage | E or `]` |
+| Start selected unlocked stage | Enter |
 | Reset local progress | N |
+
+Stage select never allows a stage above the highest unlocked save value.
+
+## Gameplay controls
+
+| Action | Key |
+|---|---|
 | Move | A/D or Left/Right |
 | Jump | Space |
 | Crouch / charge jump | S or Down |
-| Climb | W/S or Up/Down while touching a green climbable zone |
+| Climb | W/S or Up/Down in climbable zone |
 | Jump away from climbable | Space |
 | Pick up / throw | Left Shift / Right Shift |
-| Pull buried item | Crouch + Shift near a green plant |
+| Pull buried item | Crouch + Shift near plant |
 | Enter door | W or Up Arrow |
 | Pause / resume | P or Esc |
 | New campaign after win/game over | R |
 
-## Build a Windows EXE
+## Build Windows x64
 
 Choose `NES New Life > SMB2 > Build Windows x64`.
 
-If the three campaign scenes do not exist, the build command generates them automatically. The build includes Stage 1, Stage 2 and Stage 3 in that order and writes locally to `Builds/Windows/NES_New_Life_SMB2.exe`.
+If campaign scenes are missing, the builder generates all 20 first. Output remains:
 
-`Builds/` and compiled executables are intentionally ignored by Git. A tested build can later be attached to a GitHub Release.
+`Builds/Windows/NES_New_Life_SMB2.exe`
 
-## Validation
-
-Use `NES New Life > SMB2 > Validate 3-Stage Campaign`. It checks stage metadata, GameManager, player, exit, camera, guardian presence and the v0.6 traversal/hazard requirements. Stage 2+ must contain moving platforms, crumble platforms and spikes; Stage 3 must contain the charge guardian.
-
-## Current art state
-
-`v0.6` still deliberately uses generated colored graybox shapes. Gameplay and campaign architecture are being proven before the production pass replaces prototype presentation with modern original art, animation, VFX and audio.
-
-## Next production milestones
-
-- `0.7` richer room archetypes, more enemy behaviors, throwable/bomb interactions and additional boss logic
-- `0.8` modern original art pass, animation state machine, VFX and stronger camera feedback
-- `0.9` audio, modern Input System/controller remapping, settings, accessibility, balancing and QA
-- `1.0` first public-safe standalone release
+Compiled builds are ignored by Git and should only be published after a real Unity compile/play/build smoke test.
 
 ## Validation status
 
-Source and project structure are reviewed statically. A real Unity 6.3 LTS Editor compile/play-mode test is still required before treating any Windows binary as tested. The repository intentionally does not claim a successful binary build until that real smoke test exists.
+Source and project structure are reviewed statically. **A real Unity 6.3 LTS Editor compile, Play Mode pass and Windows executable launch have not been performed in this run.** The repository therefore does not claim a tested binary yet.
+
+## Next production milestones
+
+- replace generated development layouts with richer handcrafted original rooms while retaining the 20-stage campaign framework
+- add more enemy families, projectile/bomb interactions and boss archetypes
+- modern original art, animation, VFX and camera feedback
+- audio, modern Input System/controller remapping, settings and accessibility
+- automated Unity CI compile/test/build once repository secrets are configured
+- balancing, QA and first tested standalone release
 
 ## Legal / repository hygiene
 
-Do not commit ROMs or commercial asset dumps. The root `.gitignore` blocks common ROM/dump/archive/executable formats. Reference material should stay local.
+Do not commit ROMs or commercial asset dumps. Public builds must use original or properly licensed assets.
