@@ -1,5 +1,16 @@
 # Changelog — Project #002 Tiny Toon Visual Remaster
 
+## 0.5.0 — Batch master-art workspace
+
+- added persistent `MasterWorkspace/original` and `MasterWorkspace/editable` folders for real multi-asset production sessions
+- added SHA-256 scan that automatically marks master graphics as TODO, EDITED or INVALID
+- added strict dimension checks so an edited master cannot overwrite neighboring HD tiles
+- added batch apply that composes all edited masters into one combined HD Pack instead of rebuilding from the original pack once per tile
+- preserved `hires.txt` byte-for-byte during batch art composition
+- generated `ART_STATE.csv`, `WORKSPACE.json` and `ART_APPLY_RESULT.json` for reproducible local progress tracking
+- integrated Create master workspace, Scan art progress and Apply all master edits directly into Remaster Studio
+- added synthetic CI tests for multiple simultaneous edits, mapping preservation and resized-master rejection
+
 ## 0.4.0 — HD readiness, art grouping and safe release packaging
 
 - added evidence-based HD release gate instead of a guessed whole-game completion percentage
