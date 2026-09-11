@@ -10,7 +10,7 @@
 
 First research target: **Super Mario Bros. 2 (USA) (Rev 1)**.
 
-Current milestone: **`0.3.0-world-flow-foundation`**
+Current milestone: **`0.5.0-multi-stage-campaign`**
 
 Already implemented:
 - self-contained Unity 6.3 LTS project baseline
@@ -19,19 +19,24 @@ Already implemented:
 - object pickup / carry / throw combat
 - crouch + action pullable plants / buried items
 - health, lives, score, checkpoints and respawn
-- patrol enemies and contact damage
+- patrol, hopping and proximity-chasing enemies
 - collectibles and healing
 - pits / kill zones
 - connected surface and underground rooms
 - key inventory and key-gated doors
 - room-specific camera bounds
 - mandatory sub-area progression route
-- final miniboss and locked goal
-- pause, win, game-over and replay states
-- runtime HUD with contextual world messages
+- guardian/miniboss gated exits
+- persistent best score, clears and deaths
+- active campaign save with current stage, character, lives and run score
+- generated three-stage campaign with automatic Stage 1 → Stage 2 → Stage 3 transitions
+- progressively stronger encounters and guardians across stages
+- pause, game-over, campaign-complete and Continue flows
+- runtime HUD with stage progress and contextual world messages
 - generated public-safe placeholder visuals
-- one-click playable level generation
-- one-click Windows x64 build command
+- one-click three-stage campaign generation
+- campaign-wide structural validator
+- one-click Windows x64 build command that includes all campaign scenes
 
 ## Repository layout
 
@@ -49,7 +54,6 @@ Nes_New_Life/
 
 Each game gets its own version stream and GitHub Releases. Release tags should use the game prefix, for example:
 
-- `smb2-v0.3.0`
 - `smb2-v0.5.0-beta`
 - `smb2-v1.0.0`
 
@@ -61,4 +65,4 @@ The goal is **faithful game feel, modern implementation**. Systems that are usef
 
 ## Status
 
-🚧 Active development — Project #001 now has connected rooms, sub-areas, keys, locked doors, pullable plants and a complete development-level progression loop. Work continues toward multiple full stages and a public-safe standalone release.
+🚧 Active development — Project #001 now has persistent multi-stage campaign progression, generated stage variants, sub-areas, keys, locked doors, pullable plants, multiple enemy behaviors and guardian-gated exits. Work continues toward vertical traversal, richer hazards, additional boss archetypes, original production art/audio and a tested public-safe standalone release.
