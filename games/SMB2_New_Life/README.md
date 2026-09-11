@@ -10,31 +10,48 @@ Rebuild the gameplay feel of the NES reference in Unity using a modern codebase 
 
 `0.1.0-foundation`
 
+## Recommended editor
+
+**Unity 6.3 LTS** is the baseline for this project.
+
+The current prototype deliberately avoids extra gameplay packages. It uses `Rigidbody2D`, `Physics2D` and Unity's classic input API so the first milestone stays easy to run and debug.
+
 ### Implemented in source
 - player horizontal movement
 - acceleration / deceleration
-- variable jump
+- variable-height jump
+- coyote time and jump buffering
 - ground detection
 - crouch state
-- optional charged crouch jump hook
-- carryable object interface
+- charged crouch-jump prototype hook
 - pickup / carry / throw foundation
+- smooth camera follow
+- one-click prototype scene generator
 
-## Unity setup
+## Fastest way to run the prototype
 
-1. Create/open a Unity 2D project.
-2. Copy the contents of `UnityProject/Assets` into the Unity project's `Assets` folder.
-3. Create a `Player` GameObject with:
-   - `Rigidbody2D`
-   - `Collider2D`
-   - `PlayerController2D`
-   - `CarrySystem2D`
-4. Add a child transform called `GroundCheck` near the feet and assign it to `PlayerController2D`.
-5. Add a child transform called `CarryAnchor` above/in front of the player and assign it to `CarrySystem2D`.
-6. Put floor colliders on a layer included in the player's `groundMask`.
-7. Create a test object with `Rigidbody2D`, `Collider2D` and `CarryableObject2D`.
+1. Create a Unity **2D** project using Unity 6.3 LTS.
+2. Copy `UnityProject/Assets/NesNewLife` from this repository into the Unity project's `Assets` folder.
+3. If the project uses the new Input System exclusively, set **Active Input Handling** to `Both` or `Input Manager (Old)` for this foundation milestone.
+4. Wait for scripts to compile.
+5. From the Unity menu select:
 
-The first code uses Unity's classic input axes (`Horizontal`, `Jump`) plus configurable keys for crouch/action so it can run without an additional package. A dedicated input abstraction will replace this in a later milestone.
+   `NES New Life > SMB2 > Create Prototype Scene`
+
+6. Open/keep `Assets/NesNewLife/SMB2/Prototype/SMB2_Prototype.unity`.
+7. Press **Play**.
+
+The generator creates a visible graybox test room, player, platforms, two carryable objects and a following camera automatically.
+
+## Manual scene setup
+
+If you prefer to build a scene yourself, create a `Player` GameObject with:
+- `Rigidbody2D`
+- `Collider2D`
+- `PlayerController2D`
+- `CarrySystem2D`
+
+Add child transforms named `GroundCheck`, `PickupPoint` and `CarryAnchor`, then assign them in the Inspector. Add a test object with `Rigidbody2D`, `Collider2D` and `CarryableObject2D`.
 
 ## Controls in the prototype
 
@@ -46,3 +63,5 @@ The first code uses Unity's classic input axes (`Horizontal`, `Jump`) plus confi
 ## Important
 
 All physics values in the current foundation are **prototype defaults**, not claims about the exact original game. Verified measurements should replace them once captured during reference testing.
+
+The reference ROM and ripped commercial assets are intentionally excluded from the public repository.
