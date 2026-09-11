@@ -2,66 +2,110 @@
 
 Project #001 in **NES New Life**.
 
-## Goal
-
-Rebuild the gameplay feel of the NES reference in Unity using a modern codebase and original/public-safe presentation assets.
+> Public-safe modernization experiment inspired by the gameplay structure of a classic NES platformer. Commercial ROMs, ripped graphics, music and Nintendo-owned assets are not included.
 
 ## Current milestone
 
-`0.1.0-foundation`
+**`0.2.0-playable-vertical-slice`**
+
+The repository now contains a self-contained Unity project baseline and a one-click level generator that creates a complete playable graybox level from start to finish.
 
 ## Recommended editor
 
-**Unity 6.3 LTS** is the baseline for this project.
+**Unity 6.3 LTS** (`6000.3.x`). The project pins `6000.3.0f1` as its minimum baseline; newer 6000.3 LTS patches can upgrade it.
 
-The current prototype deliberately avoids extra gameplay packages. It uses `Rigidbody2D`, `Physics2D` and Unity's classic input API so the first milestone stays easy to run and debug.
+## What is playable now
 
-### Implemented in source
-- player horizontal movement
-- acceleration / deceleration
-- variable-height jump
+- start screen with four character choices: Mario / Luigi / Peach / Toad
+- different speed, acceleration, jump, air control and throw power per character
+- Peach-style temporary air float
+- variable-height jumping
 - coyote time and jump buffering
-- ground detection
-- crouch state
-- charged crouch-jump prototype hook
-- pickup / carry / throw foundation
-- smooth camera follow
-- one-click prototype scene generator
+- crouch and charged crouch-jump
+- pickup, carry and throw objects
+- thrown objects damage enemies
+- patrol enemies and contact damage
+- 3-point player health system
+- invulnerability blink and knockback
+- three lives, death and checkpoint respawn
+- score collectibles and health pickups
+- pits / fall death zones
+- scrolling camera
+- checkpoint halfway through the level
+- final miniboss with 5 HP
+- exit locked until the miniboss is defeated
+- pause, win, game-over and replay states
+- runtime HUD
+- generated local placeholder sprite (no dependency on commercial art)
+- one-click Windows x64 build command
 
-## Fastest way to run the prototype
+## Run it
 
-1. Create a Unity **2D** project using Unity 6.3 LTS.
-2. Copy `UnityProject/Assets/NesNewLife` from this repository into the Unity project's `Assets` folder.
-3. If the project uses the new Input System exclusively, set **Active Input Handling** to `Both` or `Input Manager (Old)` for this foundation milestone.
-4. Wait for scripts to compile.
-5. From the Unity menu select:
+1. Clone/download the repository.
+2. In Unity Hub choose **Add project from disk**.
+3. Select:
 
-   `NES New Life > SMB2 > Create Prototype Scene`
+   `games/SMB2_New_Life/UnityProject`
 
-6. Open/keep `Assets/NesNewLife/SMB2/Prototype/SMB2_Prototype.unity`.
-7. Press **Play**.
+4. Open it with Unity **6.3 LTS**.
+5. If Unity reports that the legacy input API is disabled, go to:
 
-The generator creates a visible graybox test room, player, platforms, two carryable objects and a following camera automatically.
+   `Edit > Project Settings > Player > Other Settings > Active Input Handling`
 
-## Manual scene setup
+   and choose **Both** (or **Input Manager (Old)**), then restart Unity if requested.
+6. Wait until scripts finish compiling.
+7. From Unity's top menu select:
 
-If you prefer to build a scene yourself, create a `Player` GameObject with:
-- `Rigidbody2D`
-- `Collider2D`
-- `PlayerController2D`
-- `CarrySystem2D`
+   `NES New Life > SMB2 > Create PLAYABLE Level`
 
-Add child transforms named `GroundCheck`, `PickupPoint` and `CarryAnchor`, then assign them in the Inspector. Add a test object with `Rigidbody2D`, `Collider2D` and `CarryableObject2D`.
+8. Press **Play**.
+9. Choose a character with `1`, `2`, `3` or `4` to begin.
 
-## Controls in the prototype
+The generator creates and saves:
 
-- Left / Right: `Horizontal` axis (default arrows / A-D)
-- Jump: `Jump` button (default Space)
-- Crouch: Down Arrow / S
-- Pick up / throw: Left Shift
+`Assets/NesNewLife/SMB2/Prototype/SMB2_Playable.unity`
 
-## Important
+It also generates its own white placeholder sprite and adds the scene to Build Settings automatically.
 
-All physics values in the current foundation are **prototype defaults**, not claims about the exact original game. Verified measurements should replace them once captured during reference testing.
+## Controls
 
-The reference ROM and ripped commercial assets are intentionally excluded from the public repository.
+| Action | Key |
+|---|---|
+| Select Mario / Luigi / Peach / Toad | 1 / 2 / 3 / 4 |
+| Move | A/D or Left/Right |
+| Jump | Space |
+| Crouch / charge jump | S or Down |
+| Pick up / throw | Left Shift / Right Shift |
+| Pause / resume | P or Esc |
+| Replay after win/game over | R |
+
+## Build a Windows EXE
+
+Choose:
+
+`NES New Life > SMB2 > Build Windows x64`
+
+If the playable scene has not been generated yet, the build command creates it automatically first. Unity writes the local build to:
+
+`Builds/Windows/NES_New_Life_SMB2.exe`
+
+`Builds/` and compiled executables are intentionally ignored by Git. A tested build can later be attached to a GitHub Release.
+
+## Current art state
+
+`v0.2` deliberately uses generated colored graybox shapes. This proves the whole gameplay loop before we spend time replacing everything with modern original artwork, animation, VFX, lighting and audio.
+
+## Next production milestones
+
+- `0.3` modern original art pass and animation state machine
+- `0.4` audio, VFX, particles and stronger camera feedback
+- `0.5` richer enemy roster, doors, keys, vertical rooms and sub-areas
+- `0.6` controller remapping / modern Input System
+- `0.7` save/settings/menu flow
+- `0.8` additional levels and bosses
+- `0.9` QA, balancing and performance pass
+- `1.0` first public-safe standalone release
+
+## Legal / repository hygiene
+
+Do not commit ROMs or commercial asset dumps. The root `.gitignore` blocks common ROM/dump/archive/executable formats. Reference material should stay local.
