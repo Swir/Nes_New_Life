@@ -25,3 +25,17 @@ jobs:
         run: python -m py_compile projects/002_tiny_toon_visual_remaster/tools/*.py
       - name: Run unit tests
         run: python -m unittest discover -s projects/002_tiny_toon_visual_remaster/tests -v
+      - name: Parse Windows PowerShell scripts
+        shell: pwsh
+        run: |
+          $failed = $false
+          Get-ChildItem 'projects/002_tiny_toon_visual_remaster/windows' -Filter '*.ps1' | ForEach-Object {
+            $tokens = $null
+            $errors = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$tokens, [ref]$errors)
+            if ($errors.Count -gt 0) {
+              $failed = $true
+              Write-Error ("PowerShell parse error in {0}: {1}" -f $_.Name, ($errors | Out-String))
+            }
+          }
+          if ($failed) { exit 1 }

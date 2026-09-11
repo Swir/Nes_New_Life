@@ -13,6 +13,9 @@ projects/**/reference_chr/
 projects/**/captures/
 projects/**/MesenPack/
 
+# Local third-party emulator install (downloaded by setup script)
+projects/**/vendor/
+
 # Python
 __pycache__/
 *.py[cod]
