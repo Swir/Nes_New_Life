@@ -2,6 +2,26 @@
 
 All notable development milestones for Project #001 are recorded here.
 
+## [0.3.0-world-flow-foundation] - 2026-09-11
+
+### Added
+- connected door portals between separate gameplay rooms
+- player key inventory and key pickups
+- key-gated doors with optional key consumption
+- room-specific camera zones and world bounds
+- HUD key counter and contextual world messages
+- mandatory underground sub-area in the generated level
+- progression barrier that requires the underground route
+- crouch + action pullable-plant interaction
+- buried throwable items generated on both surface and underground routes
+- underground enemies, collectibles, healing and dedicated fall zone
+
+### Changed
+- generated playable level is now multi-room instead of one continuous strip
+- camera can switch bounds when entering different rooms
+- checkpoint moved behind the key-gated progression route
+- controls documentation now includes doors and plant pulling
+
 ## [0.2.0-playable-vertical-slice] - 2026-09-11
 
 ### Added
