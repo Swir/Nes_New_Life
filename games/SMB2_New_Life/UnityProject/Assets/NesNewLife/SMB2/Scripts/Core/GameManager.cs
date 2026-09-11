@@ -8,6 +8,7 @@ namespace NesNewLife.SMB2
         CharacterSelect,
         Playing,
         Paused,
+        Settings,
         Won,
         GameOver
     }
@@ -24,6 +25,7 @@ namespace NesNewLife.SMB2
         private int lives;
         private int score;
         private RunState state;
+        private RunState stateBeforeSettings;
         private string notificationText = string.Empty;
         private float notificationUntil;
         private CampaignStageDefinition stageDefinition;
@@ -55,6 +57,7 @@ namespace NesNewLife.SMB2
             }
 
             Instance = this;
+            GameSettings.ApplyRuntime();
             stageDefinition = FindFirstObjectByType<CampaignStageDefinition>();
             if (stageDefinition != null)
             {
@@ -68,7 +71,8 @@ namespace NesNewLife.SMB2
 
             CampaignRuntimeBridge.ResumeAfterSceneTransition = false;
             selectedCharacter = CampaignSave.HasSave ? CampaignSave.LastCharacter : selectedCharacter;
-            lives = resumeTransition ? Mathf.Max(1, CampaignSave.RunLives) : Mathf.Max(1, startingLives);
+            int configuredLives = GameSettings.StartingLives(startingLives);
+            lives = resumeTransition ? Mathf.Max(1, CampaignSave.RunLives) : Mathf.Max(1, configuredLives);
             score = resumeTransition ? CampaignSave.RunScore : 0;
             state = resumeTransition ? RunState.Playing : RunState.CharacterSelect;
             Time.timeScale = resumeTransition ? 1f : 0f;
@@ -85,6 +89,15 @@ namespace NesNewLife.SMB2
                 player = controller.transform;
                 checkpoint = player.position;
                 ApplyCharacter(selectedCharacter);
+
+                if (CampaignSave.CampaignActive && CampaignSave.TryGetCheckpoint(stageNumber, out Vector3 savedCheckpoint))
+                {
+                    checkpoint = savedCheckpoint;
+                    player.position = savedCheckpoint;
+                    Rigidbody2D body = player.GetComponent<Rigidbody2D>();
+                    if (body != null)
+                        body.linearVelocity = Vector2.zero;
+                }
             }
 
             if (state == RunState.Playing)
@@ -93,6 +106,15 @@ namespace NesNewLife.SMB2
 
         private void Update()
         {
+            if (Input.GetKeyDown(KeyCode.F10))
+            {
+                ToggleSettings();
+                return;
+            }
+
+            if (state == RunState.Settings)
+                return;
+
             if (state == RunState.CharacterSelect)
             {
                 if (CampaignSave.CampaignActive && Input.GetKeyDown(KeyCode.C))
@@ -137,6 +159,20 @@ namespace NesNewLife.SMB2
             }
         }
 
+        public void ToggleSettings()
+        {
+            if (state == RunState.Settings)
+            {
+                state = stateBeforeSettings;
+                Time.timeScale = state == RunState.Playing ? 1f : 0f;
+                return;
+            }
+
+            stateBeforeSettings = state;
+            state = RunState.Settings;
+            Time.timeScale = 0f;
+        }
+
         public void RegisterPlayer(Transform playerTransform)
         {
             player = playerTransform;
@@ -147,9 +183,10 @@ namespace NesNewLife.SMB2
         public void StartWithCharacter(CharacterType type)
         {
             ApplyCharacter(type);
-            lives = Mathf.Max(1, startingLives);
+            lives = Mathf.Max(1, GameSettings.StartingLives(startingLives));
             score = 0;
             CampaignSave.BeginCampaign(type, stageNumber, lives, score);
+            checkpoint = player != null ? player.position : checkpoint;
             state = RunState.Playing;
             Time.timeScale = 1f;
             string difficulty = CampaignSave.Clears > 0 ? $"Veteran campaign {CampaignSave.Clears + 1}" : "New campaign";
@@ -177,6 +214,13 @@ namespace NesNewLife.SMB2
             }
 
             ApplyCharacter(selectedCharacter);
+            if (CampaignSave.TryGetCheckpoint(stageNumber, out Vector3 savedCheckpoint))
+            {
+                checkpoint = savedCheckpoint;
+                if (player != null)
+                    player.position = savedCheckpoint;
+            }
+
             state = RunState.Playing;
             Time.timeScale = 1f;
             ShowMessage($"Continue — {stageName}", 2f);
@@ -215,8 +259,9 @@ namespace NesNewLife.SMB2
         public void SetCheckpoint(Vector3 worldPosition)
         {
             checkpoint = worldPosition;
+            CampaignSave.SaveCheckpoint(stageNumber, checkpoint);
             PersistRun();
-            ShowMessage("Checkpoint reached", 1.6f);
+            ShowMessage("Checkpoint saved", 1.6f);
         }
 
         public void PlayerDied()
@@ -275,6 +320,7 @@ namespace NesNewLife.SMB2
                 ? stageDefinition.NextSceneName
                 : CampaignCatalog.SceneForStage(nextStage);
 
+            CampaignSave.ClearCheckpoint();
             CampaignSave.SaveRun(selectedCharacter, nextStage, lives, score);
             CampaignRuntimeBridge.ResumeAfterSceneTransition = true;
             Time.timeScale = 1f;
