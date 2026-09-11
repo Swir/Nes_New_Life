@@ -22,6 +22,7 @@ namespace NesNewLife.SMB2
 
         private void Awake()
         {
+            maxHealth = Mathf.Max(1, maxHealth + GameSettings.HealthBonus);
             currentHealth = maxHealth;
             spriteRenderer = GetComponent<SpriteRenderer>();
             body = GetComponent<Rigidbody2D>();
@@ -69,11 +70,19 @@ namespace NesNewLife.SMB2
         {
             invulnerable = true;
             float elapsed = 0f;
-            while (elapsed < invulnerabilitySeconds)
+
+            if (GameSettings.ReducedFlash)
             {
-                spriteRenderer.enabled = !spriteRenderer.enabled;
-                yield return new WaitForSeconds(0.08f);
-                elapsed += 0.08f;
+                yield return new WaitForSeconds(invulnerabilitySeconds);
+            }
+            else
+            {
+                while (elapsed < invulnerabilitySeconds)
+                {
+                    spriteRenderer.enabled = !spriteRenderer.enabled;
+                    yield return new WaitForSeconds(0.08f);
+                    elapsed += 0.08f;
+                }
             }
 
             spriteRenderer.enabled = true;
