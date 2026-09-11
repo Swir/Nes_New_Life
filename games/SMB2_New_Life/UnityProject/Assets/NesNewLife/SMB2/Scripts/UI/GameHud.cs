@@ -56,7 +56,7 @@ namespace NesNewLife.SMB2
 
             if (gm.State == RunState.CharacterSelect)
             {
-                DrawCharacterSelect();
+                DrawCharacterSelect(gm);
                 return;
             }
 
@@ -64,12 +64,13 @@ namespace NesNewLife.SMB2
             PlayerInventory inventory = FindFirstObjectByType<PlayerInventory>();
             CharacterTuning tuning = CharacterTuning.For(gm.SelectedCharacter);
 
-            Rect panel = new Rect(18, 18, 430, 150);
+            Rect panel = new Rect(18, 18, 470, 176);
             GUI.DrawTexture(panel, panelTexture);
-            GUI.Label(new Rect(34, 28, 390, 30), "NES NEW LIFE #001", titleStyle);
-            GUI.Label(new Rect(34, 62, 390, 26), $"{tuning.DisplayName}   HP: {(health != null ? health.CurrentHealth : 0)}/{(health != null ? health.MaxHealth : 0)}", textStyle);
-            GUI.Label(new Rect(34, 88, 390, 26), $"Lives: {gm.Lives}   Keys: {(inventory != null ? inventory.Keys : 0)}   Score: {gm.Score:000000}", textStyle);
-            GUI.Label(new Rect(34, 116, 390, 30), "A/D Move • Space Jump • Shift Carry • ↑/W Door • P Pause", textStyle);
+            GUI.Label(new Rect(34, 28, 430, 30), "NES NEW LIFE #001", titleStyle);
+            GUI.Label(new Rect(34, 62, 430, 26), $"{tuning.DisplayName}   HP: {(health != null ? health.CurrentHealth : 0)}/{(health != null ? health.MaxHealth : 0)}", textStyle);
+            GUI.Label(new Rect(34, 88, 430, 26), $"Lives: {gm.Lives}   Keys: {(inventory != null ? inventory.Keys : 0)}   Score: {gm.Score:000000}", textStyle);
+            GUI.Label(new Rect(34, 114, 430, 26), $"Best: {gm.BestScore:000000}   Clears: {gm.Clears}   Deaths: {gm.TotalDeaths}", textStyle);
+            GUI.Label(new Rect(34, 142, 430, 30), "A/D Move • Space Jump • Shift Carry • ↑/W Door • P Pause", textStyle);
 
             if (gm.HasNotification)
             {
@@ -82,29 +83,33 @@ namespace NesNewLife.SMB2
             if (gm.State == RunState.Playing)
                 return;
 
-            Rect overlay = new Rect(Screen.width * 0.5f - 280, Screen.height * 0.5f - 110, 560, 220);
+            Rect overlay = new Rect(Screen.width * 0.5f - 280, Screen.height * 0.5f - 120, 560, 240);
             GUI.DrawTexture(overlay, panelTexture);
 
             string message;
             if (gm.State == RunState.Paused)
                 message = "PAUSED\n\nPress P or Esc to continue";
             else if (gm.State == RunState.Won)
-                message = $"LEVEL COMPLETE!\nScore: {gm.Score:000000}\n\nPress R to replay";
+                message = $"LEVEL COMPLETE!\nScore: {gm.Score:000000}   Best: {gm.BestScore:000000}\nClears: {gm.Clears}\n\nPress R for another run";
             else
-                message = "GAME OVER\n\nPress R to restart";
+                message = $"GAME OVER\nTotal deaths: {gm.TotalDeaths}\n\nPress R to restart";
 
             GUI.Label(overlay, message, centerStyle);
         }
 
-        private void DrawCharacterSelect()
+        private void DrawCharacterSelect(GameManager gm)
         {
-            float width = Mathf.Min(760f, Screen.width - 30f);
+            float width = Mathf.Min(780f, Screen.width - 30f);
             float left = (Screen.width - width) * 0.5f;
-            Rect panel = new Rect(left, Mathf.Max(25f, Screen.height * 0.5f - 210f), width, 420f);
+            Rect panel = new Rect(left, Mathf.Max(20f, Screen.height * 0.5f - 245f), width, 490f);
             GUI.DrawTexture(panel, panelTexture);
 
             GUI.Label(new Rect(left + 20, panel.y + 22, width - 40, 50), "CHOOSE YOUR CHARACTER", centerStyle);
-            GUI.Label(new Rect(left + 20, panel.y + 76, width - 40, 30), "Press 1, 2, 3 or 4 to start", selectStyle);
+
+            string saveLine = gm.HasSave
+                ? $"C = continue as {CharacterTuning.For(CampaignSave.LastCharacter).DisplayName}   •   N = reset progress\nBest {gm.BestScore:000000}   Clears {gm.Clears}   Deaths {gm.TotalDeaths}"
+                : "No save yet — choose 1, 2, 3 or 4 to begin";
+            GUI.Label(new Rect(left + 25, panel.y + 75, width - 50, 58), saveLine, selectStyle);
 
             string choices =
                 "1  MARIO\nBalanced speed, jump and throw\n\n" +
@@ -112,7 +117,7 @@ namespace NesNewLife.SMB2
                 "3  PEACH\nHold jump while falling to float\n\n" +
                 "4  TOAD\nFast movement and strongest throw";
 
-            GUI.Label(new Rect(left + 45, panel.y + 120, width - 90, 270), choices, selectStyle);
+            GUI.Label(new Rect(left + 45, panel.y + 145, width - 90, 315), choices, selectStyle);
         }
 
         private void OnDestroy()

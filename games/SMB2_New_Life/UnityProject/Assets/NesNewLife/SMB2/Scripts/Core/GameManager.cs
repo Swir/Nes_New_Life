@@ -35,6 +35,10 @@ namespace NesNewLife.SMB2
         public Transform PlayerTransform => player;
         public string NotificationText => Time.unscaledTime <= notificationUntil ? notificationText : string.Empty;
         public bool HasNotification => !string.IsNullOrEmpty(NotificationText);
+        public int BestScore => CampaignSave.BestScore;
+        public int Clears => CampaignSave.Clears;
+        public int TotalDeaths => CampaignSave.Deaths;
+        public bool HasSave => CampaignSave.HasSave;
 
         private void Awake()
         {
@@ -46,8 +50,12 @@ namespace NesNewLife.SMB2
 
             Instance = this;
             lives = Mathf.Max(1, startingLives);
+            selectedCharacter = CampaignSave.HasSave ? CampaignSave.LastCharacter : selectedCharacter;
             state = RunState.CharacterSelect;
             Time.timeScale = 0f;
+
+            if (GetComponent<LevelRuntimeEnhancer>() == null)
+                gameObject.AddComponent<LevelRuntimeEnhancer>();
         }
 
         private void Start()
@@ -65,6 +73,20 @@ namespace NesNewLife.SMB2
         {
             if (state == RunState.CharacterSelect)
             {
+                if (CampaignSave.HasSave && Input.GetKeyDown(KeyCode.C))
+                {
+                    StartWithCharacter(CampaignSave.LastCharacter);
+                    return;
+                }
+
+                if (Input.GetKeyDown(KeyCode.N))
+                {
+                    CampaignSave.ResetProgress();
+                    selectedCharacter = CharacterType.Mario;
+                    ShowMessage("Progress reset — choose 1, 2, 3 or 4", 2f);
+                    return;
+                }
+
                 if (Input.GetKeyDown(KeyCode.Alpha1)) StartWithCharacter(CharacterType.Mario);
                 else if (Input.GetKeyDown(KeyCode.Alpha2)) StartWithCharacter(CharacterType.Luigi);
                 else if (Input.GetKeyDown(KeyCode.Alpha3)) StartWithCharacter(CharacterType.Peach);
@@ -100,9 +122,11 @@ namespace NesNewLife.SMB2
         public void StartWithCharacter(CharacterType type)
         {
             ApplyCharacter(type);
+            CampaignSave.MarkStarted(type);
             state = RunState.Playing;
             Time.timeScale = 1f;
-            ShowMessage("Find the key and explore the sub-area", 2.4f);
+            string difficulty = CampaignSave.Clears > 0 ? $"Veteran run {CampaignSave.Clears + 1}" : "First run";
+            ShowMessage($"{difficulty} — find the key and explore the sub-area", 2.6f);
         }
 
         public void ApplyCharacter(CharacterType type)
@@ -145,6 +169,7 @@ namespace NesNewLife.SMB2
             if (state != RunState.Playing)
                 return;
 
+            CampaignSave.RecordDeath();
             lives--;
             if (lives <= 0)
             {
@@ -179,6 +204,7 @@ namespace NesNewLife.SMB2
                 return;
 
             score += 5000;
+            CampaignSave.RecordClear(score, selectedCharacter);
             state = RunState.Won;
             Time.timeScale = 0f;
         }

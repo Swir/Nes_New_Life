@@ -2,6 +2,28 @@
 
 All notable development milestones for Project #001 are recorded here.
 
+## [0.4.0-progression-and-enemy-variety] - 2026-09-11
+
+### Added
+- persistent local campaign progress using Unity PlayerPrefs
+- saved last selected character
+- persistent best score, clear count and death count
+- continue shortcut from the character-select screen
+- explicit local progress reset shortcut
+- veteran-run difficulty hook based on completed runs
+- hopping enemy archetype that aims jumps toward the player
+- proximity chaser enemy archetype with patrol fallback
+- runtime encounter enhancer that injects new enemy archetypes into surface and underground sections
+- additional veteran-run chaser encounter after the first clear
+- HUD campaign statistics
+- one-click playable-scene structural validator in the Unity editor
+
+### Changed
+- deaths and successful clears are now recorded persistently
+- character selection now restores the last played character for continue flow
+- level-complete screen shows best score and clear count
+- generated v0.3 scene receives richer encounters without requiring commercial assets
+
 ## [0.3.0-world-flow-foundation] - 2026-09-11
 
 ### Added
