@@ -135,15 +135,19 @@ namespace NesNewLife.SMB2
             if (state != RunState.Playing)
                 return;
 
+            score += 5000;
             state = RunState.Won;
-            AddScore(5000);
             Time.timeScale = 0f;
         }
 
         public void RestartScene()
         {
             Time.timeScale = 1f;
-            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+            Scene active = SceneManager.GetActiveScene();
+            if (active.buildIndex >= 0)
+                SceneManager.LoadScene(active.buildIndex);
+            else
+                SceneManager.LoadScene(active.name);
         }
 
         private void OnDestroy()
