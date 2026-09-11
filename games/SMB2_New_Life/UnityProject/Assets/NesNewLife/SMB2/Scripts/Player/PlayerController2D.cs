@@ -90,10 +90,12 @@ namespace NesNewLife.SMB2
 
         private void ReadInput()
         {
-            horizontalInput = Input.GetAxisRaw("Horizontal");
-            jumpHeld = Input.GetButton("Jump");
+            bool left = Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow);
+            bool right = Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow);
+            horizontalInput = (right ? 1f : 0f) - (left ? 1f : 0f);
 
-            if (Input.GetButtonDown("Jump"))
+            jumpHeld = Input.GetKey(KeyCode.Space);
+            if (Input.GetKeyDown(KeyCode.Space))
                 jumpBufferCounter = jumpBufferTime;
 
             isCrouching = Input.GetKey(crouchKey) || Input.GetKey(crouchAlternateKey);
