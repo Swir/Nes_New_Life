@@ -57,9 +57,24 @@ The playtest builder creates a QA-gated HD Pack and can deploy it into the user'
 
 The current high-impact path is:
 
-`MesenCE capture → Capture Mission Control → Capture Gap Planner → incremental sync → Visual Context Audit → Animation Family Workbench → Final Art Priority Board → Final Art Sprint Kit → master art → build-bound Pixel QA → one-click playtest → exact-build regression → Unified Release Candidate Gate → gated ZIP`
+`MesenCE capture → Capture Mission Control → PRODUCTION SPRINT → Capture Gap Planner → incremental sync → Visual Context Audit → Animation Family Workbench → Final Art Priority Board → Final Art Sprint Kit → build-bound Pixel QA → one-click playtest → exact-build regression → Unified Release Candidate Gate → gated ZIP`
 
-`tools/TinyToonRemasterStudio.py` remains the preferred GUI command center for capture, art, QA, playtest and release evidence. `studio_command_center.py` exposes capture-gap, visual-context, animation-family, final-art-priority and sprint orchestration for GUI integration and automation.
+`tools/TinyToonRemasterStudio.py` is now the preferred end-to-end interface. The main window exposes the recent capture-gap, visual-context, animation-family, priority-board and Final Art Sprint tools directly instead of requiring separate CLI commands.
+
+### Production Sprint Control Center
+
+The **PRODUCTION SPRINT** button is the normal starting point after selecting a current MesenCE capture. It writes `Reports/ProductionSprint/PRODUCTION_SPRINT.html` and combines:
+
+- Capture Mission Control completion,
+- capture regressions / next capture targets,
+- Visual Context pending/stale review,
+- Animation Family review,
+- MasterWorkspace TODO/INVALID progress,
+- highest-impact Final Art Priority items.
+
+The dashboard produces one ordered **DO THIS NEXT** list. It remains evidence-driven: it never marks unseen game states complete and does not replace the final full-game regression gate.
+
+See `PRODUCTION_SPRINT_CONTROL_CENTER.md`.
 
 ## Capture coverage
 
@@ -163,9 +178,9 @@ python tools/art_sprint_kit.py finish \
   --overwrite
 ```
 
-The finish path is conflict-safe and performs `safe import → composition → hires.txt preservation → validation → pixel QA`. If the same workspace master changed after sprint export, import blocks instead of overwriting newer work. See `FINAL_ART_SPRINT_KIT.md`.
+The finish path is conflict-safe and performs `safe import → composition → hires.txt preservation → validation → pixel QA`. If the same workspace master changed after sprint export, import blocks instead of overwriting newer work. In Studio these are the **Create Top-N Art Sprint** and **Finish Sprint + Pixel QA** buttons.
 
-See also `FINAL_ART_PRIORITY_BOARD.md`, `ANIMATION_WORKBENCH.md` and `VISUAL_CONTEXT_AUDIT.md`.
+See also `FINAL_ART_SPRINT_KIT.md`, `FINAL_ART_PRIORITY_BOARD.md`, `ANIMATION_WORKBENCH.md` and `VISUAL_CONTEXT_AUDIT.md`.
 
 ## Art production
 
@@ -209,6 +224,7 @@ python tools/release_candidate.py audit "C:\\TinyToonWork\\ModernizedPack\\final
 - `hdpack_pipeline.py` — structural capture analysis/diffing, queue, preview and reports
 - `capture_mission_control.py` — explicit full-game capture mission tracking
 - `capture_gap_planner.py` — repeated-capture regression detection and ranked `CAPTURE NEXT` planning
+- `production_sprint.py` — unified metadata-only `DO THIS NEXT` dashboard across capture/review/art evidence
 - `production_sync.py` — resume-safe repeated-capture synchronization
 - `art_production.py` — workboards, exact dedupe, near-duplicate hints and master propagation
 - `visual_context_audit.py` — palette/condition/visual-variant family risk audit
@@ -221,7 +237,7 @@ python tools/release_candidate.py audit "C:\\TinyToonWork\\ModernizedPack\\final
 - `rapid_hd_playtest.py` — capture → sync → baseline → apply → QA → optional MesenCE deploy
 - `release_candidate.py` — authoritative final release gate
 - `studio_command_center.py` — GUI-facing orchestration layer
-- `TinyToonRemasterStudio.py` — production command center
+- `TinyToonRemasterStudio.py` — main Production Sprint / art / QA / release GUI
 - `windows/Start_Remaster.bat` — one-click Windows launcher
 - `windows/Build_HD_Playtest.bat` — one-click QA-gated HD playtest build/deploy
 
