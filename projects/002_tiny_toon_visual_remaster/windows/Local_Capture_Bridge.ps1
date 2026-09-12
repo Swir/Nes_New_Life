@@ -1,5 +1,7 @@
 param(
-    [switch]$NoGitHubPrompt
+    [switch]$NoGitHubPrompt,
+    [string]$CurrentCapture,
+    [string]$PreviousCapture
 )
 
 $ErrorActionPreference = 'Stop'
@@ -34,18 +36,30 @@ function Invoke-Python([string[]]$Prefix, [string[]]$Arguments) {
 }
 
 $Python = Get-PythonCommand
-$Current = Select-Folder 'Select CURRENT MesenCE HD Pack capture. Capture PNGs stay local.'
+$Current = $CurrentCapture
+if (-not $Current) {
+    $Current = Select-Folder 'Select CURRENT MesenCE HD Pack capture. Capture PNGs stay local.'
+}
 if (-not $Current) { exit 2 }
+$Current = (Resolve-Path $Current).Path
+if (-not (Test-Path (Join-Path $Current 'hires.txt'))) {
+    throw 'Current capture must contain hires.txt.'
+}
 
-$Previous = $null
-$compare = [System.Windows.Forms.MessageBox]::Show(
-    'Compare this capture with the previous accepted capture? Recommended: YES.',
-    'Project #002 Local Capture Bridge',
-    [System.Windows.Forms.MessageBoxButtons]::YesNo,
-    [System.Windows.Forms.MessageBoxIcon]::Question
-)
-if ($compare -eq [System.Windows.Forms.DialogResult]::Yes) {
-    $Previous = Select-Folder 'Select PREVIOUS accepted MesenCE capture'
+$Previous = $PreviousCapture
+if ($Previous) {
+    $Previous = (Resolve-Path $Previous).Path
+    if (-not (Test-Path (Join-Path $Previous 'hires.txt'))) { throw 'Previous capture must contain hires.txt.' }
+} elseif (-not $CurrentCapture) {
+    $compare = [System.Windows.Forms.MessageBox]::Show(
+        'Compare this capture with the previous accepted capture? Recommended: YES.',
+        'Project #002 Local Capture Bridge',
+        [System.Windows.Forms.MessageBoxButtons]::YesNo,
+        [System.Windows.Forms.MessageBoxIcon]::Question
+    )
+    if ($compare -eq [System.Windows.Forms.DialogResult]::Yes) {
+        $Previous = Select-Folder 'Select PREVIOUS accepted MesenCE capture'
+    }
 }
 
 New-Item -ItemType Directory -Force -Path $Reports | Out-Null
