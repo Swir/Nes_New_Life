@@ -41,6 +41,7 @@ class AuthoritativeRemasterStudioTests(unittest.TestCase):
     def test_studio_source_names_current_authoritative_gates(self) -> None:
         source = (TOOLS / "AuthoritativeRemasterStudio.py").read_text(encoding="utf-8")
         for token in (
+            "GUIDED CAPTURE MARATHON",
             "Local Capture Bridge",
             "High-Impact Sprint",
             "Verified fullscreen playtest",
