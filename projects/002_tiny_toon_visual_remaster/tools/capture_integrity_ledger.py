@@ -1,0 +1,140 @@
+from __future__ import annotations
+
+import argparse
+import hashlib
+import html
+import json
+from datetime import datetime, timezone
+from pathlib import Path
+
+from capture_mission_control import load_manifest, snapshot_capture
+
+METRIC_KEYS = ("tile_rules", "unique_tile_ids", "unique_palettes", "images")
+
+
+def capture_fingerprint(capture_dir: Path) -> str:
+    capture_dir = Path(capture_dir)
+    hires = capture_dir / "hires.txt"
+    if not hires.is_file():
+        raise ValueError("Capture folder must contain hires.txt")
+    digest = hashlib.sha256()
+    digest.update(hires.read_bytes())
+    referenced = []
+    for line in hires.read_text(encoding="utf-8", errors="replace").splitlines():
+        line = line.strip()
+        if line.lower().startswith("<img>"):
+            name = line[5:].strip()
+            if name:
+                referenced.append(name)
+    for name in sorted(set(referenced)):
+        path = capture_dir / name
+        digest.update(name.encode("utf-8", errors="replace"))
+        if path.is_file():
+            digest.update(path.read_bytes())
+        else:
+            digest.update(b"<MISSING>")
+    return digest.hexdigest()
+
+
+def build_ledger(manifest_path: Path, capture_dir: Path) -> dict:
+    data = load_manifest(manifest_path)
+    current = snapshot_capture(capture_dir)
+    fingerprint = capture_fingerprint(capture_dir)
+    sessions = list(data.get("sessions", []))
+    historical_max = {key: 0 for key in METRIC_KEYS}
+    regressions = []
+    for session in sessions:
+        snap = session.get("capture", {})
+        for key in METRIC_KEYS:
+            historical_max[key] = max(historical_max[key], int(snap.get(key, 0) or 0))
+    for key in METRIC_KEYS:
+        now = int(current.get(key, 0) or 0)
+        old = int(historical_max[key])
+        if now < old:
+            regressions.append({"metric": key, "current": now, "historical_max": old, "delta": now - old})
+
+    at_risk = []
+    by_id = {int(s.get("id", 0)): s for s in sessions if s.get("id") is not None}
+    for key, mission in data["missions"].items():
+        if not mission.get("done"):
+            continue
+        sid = mission.get("last_session")
+        session = by_id.get(int(sid)) if sid is not None else None
+        if session is None:
+            at_risk.append({"mission": key, "reason": "missing_session_evidence", "session": sid})
+            continue
+        snap = session.get("capture", {})
+        lost = [metric for metric in METRIC_KEYS if int(current.get(metric, 0) or 0) < int(snap.get(metric, 0) or 0)]
+        if lost:
+            at_risk.append({"mission": key, "reason": "current_capture_below_verified_session", "session": sid, "metrics": lost})
+
+    done = sum(1 for item in data["missions"].values() if item.get("done"))
+    total = len(data["missions"])
+    blockers = []
+    if int(current.get("scale", 0) or 0) != 4:
+        blockers.append("capture_scale_is_not_4x")
+    if current.get("missing_images"):
+        blockers.append("missing_referenced_images")
+    if regressions:
+        blockers.append("capture_regression_against_verified_history")
+    if at_risk:
+        blockers.append("verified_mission_evidence_at_risk")
+    if done != total:
+        blockers.append("capture_missions_incomplete")
+
+    return {
+        "schema": "swir.project002.capture-integrity-ledger.v1",
+        "generated_utc": datetime.now(timezone.utc).isoformat(),
+        "capture_fingerprint_sha256": fingerprint,
+        "capture": current,
+        "historical_max": historical_max,
+        "missions": {"done": done, "total": total, "percent": round((done / total) * 100, 1) if total else 0.0},
+        "regressions": regressions,
+        "at_risk_missions": at_risk,
+        "blockers": blockers,
+        "integrity_gate": "PASS" if not blockers else "BLOCKED",
+        "policy": "Mission completion remains explicit human gameplay evidence. This ledger can block stale/regressed evidence but never auto-completes a mission.",
+    }
+
+
+def write_dashboard(manifest_path: Path, capture_dir: Path, output: Path) -> Path:
+    ledger = build_ledger(manifest_path, capture_dir)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    regression_rows = "".join(
+        f"<tr><td>{html.escape(r['metric'])}</td><td>{r['historical_max']}</td><td>{r['current']}</td><td>{r['delta']}</td></tr>"
+        for r in ledger["regressions"]
+    ) or "<tr><td colspan='4'>No structural regression against verified history.</td></tr>"
+    risk_rows = "".join(
+        f"<tr><td><code>{html.escape(r['mission'])}</code></td><td>{html.escape(r['reason'])}</td><td>{html.escape(', '.join(r.get('metrics', [])) or str(r.get('session', '—')))}</td></tr>"
+        for r in ledger["at_risk_missions"]
+    ) or "<tr><td colspan='3'>No completed mission is structurally at risk.</td></tr>"
+    blockers = "".join(f"<li>{html.escape(item)}</li>" for item in ledger["blockers"]) or "<li>None</li>"
+    output.write_text(
+        f"""<!doctype html><meta charset='utf-8'><title>Project #002 Capture Integrity Ledger</title>
+<style>body{{font:15px system-ui;max-width:1100px;margin:30px auto;padding:0 22px;background:#0d1117;color:#e6edf3}}.card{{background:#161b22;border:1px solid #30363d;border-radius:14px;padding:16px;margin:12px 0}}table{{width:100%;border-collapse:collapse}}td,th{{padding:8px;border-bottom:1px solid #30363d;text-align:left}}code{{color:#79c0ff}}</style>
+<h1>Capture Integrity Ledger</h1><div class='card'><h2>Integrity gate: {ledger['integrity_gate']}</h2><p>Missions: {ledger['missions']['done']}/{ledger['missions']['total']} ({ledger['missions']['percent']}%)</p><p>Fingerprint: <code>{ledger['capture_fingerprint_sha256']}</code></p><ul>{blockers}</ul><p>{html.escape(ledger['policy'])}</p></div>
+<div class='card'><h2>Structural regression check</h2><table><tr><th>Metric</th><th>Historical max</th><th>Current</th><th>Delta</th></tr>{regression_rows}</table></div>
+<div class='card'><h2>Verified mission evidence at risk</h2><table><tr><th>Mission</th><th>Reason</th><th>Details</th></tr>{risk_rows}</table></div>""",
+        encoding="utf-8",
+    )
+    output.with_suffix(".json").write_text(json.dumps(ledger, indent=2), encoding="utf-8")
+    return output
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Project #002 capture integrity ledger")
+    parser.add_argument("manifest", type=Path)
+    parser.add_argument("capture", type=Path)
+    parser.add_argument("--output", type=Path)
+    args = parser.parse_args()
+    if args.output:
+        print(write_dashboard(args.manifest, args.capture, args.output))
+        ledger = build_ledger(args.manifest, args.capture)
+    else:
+        ledger = build_ledger(args.manifest, args.capture)
+        print(json.dumps(ledger, indent=2))
+    return 0 if ledger["integrity_gate"] == "PASS" else 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
