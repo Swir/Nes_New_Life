@@ -1,16 +1,18 @@
 # Project #002 — HD Completion Roadmap
 
-## Current milestone: capture-gap planning + animation-family production workbench
+## Current milestone: final-art priority board + targeted capture planning
 
 The production path is now:
 
-`MesenCE capture → Capture Mission Control → Capture Gap Planner → incremental production sync → Visual Context Audit → Animation Family Workbench → automatic baseline → master-art batch → build-bound pixel QA → one-click MesenCE playtest → build-bound full-game regression → Unified Release Candidate Gate → gated ZIP`
+`MesenCE capture → Capture Mission Control → Capture Gap Planner → incremental production sync → Visual Context Audit → Animation Family Workbench → Final Art Priority Board → master-art batch → build-bound pixel QA → one-click MesenCE playtest → build-bound full-game regression → Unified Release Candidate Gate → gated ZIP`
 
-The new Capture Gap Planner compares repeated local captures and produces a ranked **CAPTURE NEXT** queue. Coverage that existed in an older capture but disappears from the current one is treated as a high-priority regression. PLAYER/BOSS/ENEMY families also receive advisory missing-state suggestions so local play sessions can target the most likely visual gaps first.
+The Capture Gap Planner compares repeated local captures and produces a ranked **CAPTURE NEXT** queue. Coverage that existed in an older capture but disappears from the current one is treated as a high-priority regression. PLAYER/BOSS/ENEMY families also receive advisory missing-state suggestions so local play sessions can target the most likely visual gaps first.
 
-These state suggestions are heuristic and never auto-complete a mission. Capture Mission Control remains the explicit source of truth for full-game coverage.
+The new Final Art Priority Board converts the latest accepted capture plus art/review evidence into a ranked **FINAL ART NEXT** queue. It combines reuse, PLAYER/BOSS/ENEMY importance, Visual Context risk, Animation Family risk, MasterWorkspace state and classification blockers. Already edited masters disappear from the queue, so every art session attacks the highest-impact unfinished captured graphics first.
 
-Visual Context Review is an authoritative release requirement. Missing, pending or stale high-risk visual-context review blocks the final release gate. Animation Family Workbench remains a production accelerator; exact-build full-game regression is authoritative for animation correctness.
+These rankings are production accelerators, not proof of whole-game completeness. Capture Mission Control remains the explicit source of truth for full-game coverage and exact-build regression remains authoritative for final animation correctness.
+
+Visual Context Review is an authoritative release requirement. Missing, pending or stale high-risk visual-context review blocks the final release gate.
 
 ## Gate A — Complete local capture
 
@@ -34,11 +36,12 @@ Use Studio **Capture Mission Control** / **Record capture session** or `capture_
 - [ ] Run resume-safe sync against the latest complete, non-regressed capture
 - [ ] Generate `VISUAL_CONTEXT_REVIEW.csv` and clear every high-risk palette/condition/variant family
 - [ ] Generate `ANIMATION_FAMILY_REVIEW.csv` and inspect high-risk player/enemy/boss animation families
+- [ ] Generate `FINAL_ART_NEXT.csv` and work the highest-scoring unfinished masters first
 - [ ] Use local animation contact sheets for transition/seam review where useful
-- [ ] Seed untouched masters for full-pack baseline visibility
 - [ ] Replace PLAYER/BOSS masters with final-quality art first
 - [ ] Finish ENEMY/WORLD/UI/EFFECTS masters
 - [ ] Resolve every UNASSIGNED art-queue row
+- [ ] Re-run Final Art Priority Board after each substantial art batch so completed masters fall out of the queue
 - [ ] Re-run visual-context and animation-family audits after major capture/art changes
 - [ ] Zero TODO/INVALID masters
 
@@ -74,9 +77,9 @@ The largest remaining blockers are now primarily local content/evidence work:
 
 1. complete local MesenCE capture of every route/state/boss/effect/ending,
 2. use Capture Gap Planner between sessions and eliminate capture regressions / high-priority PLAYER-BOSS-ENEMY gaps,
-3. clear the enforced Visual Context Review on the latest final-art pack,
-4. inspect high-risk animation families and condition-cooccurrence candidates in-game,
-5. finish the real 4x art pass for every captured master,
+3. sync the accepted capture and generate the Final Art Priority Board,
+4. clear the enforced Visual Context Review and inspect high-risk animation families,
+5. finish the real 4x art pass by repeatedly working `FINAL_ART_NEXT.csv` until zero TODO/INVALID masters remain,
 6. resolve every art-queue classification,
 7. run full-game visual regression on the exact final fingerprint,
 8. only then create the gated public HD Pack ZIP (without ROM/emulator/save-state content).
