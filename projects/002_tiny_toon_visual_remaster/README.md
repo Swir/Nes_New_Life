@@ -2,31 +2,27 @@
 
 ## Goal
 
-This project does **not** rebuild the game from scratch. The user supplies their own NES ROM locally. The ROM remains responsible for gameplay, physics, level layouts, enemy behavior, scrolling and timing. Our work is the presentation layer: higher-resolution replacement graphics and a production workflow for a safe MesenCE HD Pack.
+Project #002 is a **visual remaster workflow**, not a rewrite of the game. The user supplies their own NES ROM locally; that ROM remains the source of gameplay, physics, level layouts, enemies, scrolling, timing and logic. The project builds a higher-resolution presentation layer through **MesenCE HD Packs**.
 
-The target workflow is **MesenCE HD Packs**. MesenCE's HD-pack tooling records tile/palette combinations seen during gameplay into PNG sheets plus a `hires.txt` mapping. We redraw/replace the recorded graphics while the original game continues to run underneath.
+MesenCE records tile/palette combinations seen during gameplay into PNG sheets plus `hires.txt`. We modernize only the captured presentation data while preserving the original ROM-driven game underneath.
 
-> MesenCE is the actively maintained Community Edition successor. Project #002 targets `nesdev-org/MesenCE` going forward.
+> Project #002 targets the actively maintained `nesdev-org/MesenCE` Community Edition workflow.
 
-## Verified source ROM profile
+## Verified local ROM profile
 
-The uploaded local test ROM was detected as:
-
-- iNES magic: valid
+- iNES: valid
 - PRG ROM: 128 KiB
 - CHR ROM: 128 KiB
 - mapper: 4 (MMC3)
 - mirroring: horizontal
 - trainer: no
 - battery flag: no
-- full-file SHA-1: `110796622e50c2e8c20b1430acadc5bae5f36586`
-- full-file SHA-256: `688fe19096d8060decf9581165d52400a6d9b1cab79e7ef4cf9a66a794baf45f`
+- SHA-1: `110796622e50c2e8c20b1430acadc5bae5f36586`
+- SHA-256: `688fe19096d8060decf9581165d52400a6d9b1cab79e7ef4cf9a66a794baf45f`
 
-These hashes are used only to identify the local ROM. The ROM itself must never be committed.
+The hashes identify the user's local ROM only. The ROM itself must never be committed.
 
-## Controls
-
-Recommended MesenCE mapping:
+## Recommended controls
 
 | PC key | NES control |
 |---|---|
@@ -37,82 +33,90 @@ Recommended MesenCE mapping:
 | Right Shift | Select |
 | Esc | Emulator/menu |
 
-Gamepads are configured through MesenCE Input settings. The remaster does not alter the ROM's controls, physics or timing.
+Gamepads are configured through MesenCE. The remaster does not alter the original control logic.
 
-## Windows 11 — easiest start
+## Windows 11 quick start
 
-From `projects/002_tiny_toon_visual_remaster/windows/` run:
+From `projects/002_tiny_toon_visual_remaster/windows/`:
 
 ```text
 Start_Remaster.bat
 ```
 
-It downloads/verifies the current official MesenCE Windows build if needed, installs it under the local gitignored `vendor/MesenCE`, asks for the user-supplied `.nes`, verifies the Project #002 fingerprint and launches the ROM without copying it into the repository.
+This installs/verifies MesenCE locally, asks for the user-supplied ROM, verifies the Project #002 fingerprint and launches it without copying the ROM into the repository.
 
-For the fastest capture-to-playtest loop use:
+For the fastest capture-to-playtest loop:
 
 ```text
 Build_HD_Playtest.bat
 ```
 
-This creates a QA-gated current HD pack and can deploy it into the user's local MesenCE `HdPacks/<ROM stem>` folder with a backup of the previously installed pack.
+The playtest builder creates a QA-gated HD Pack and can deploy it into the user's local MesenCE `HdPacks/<ROM stem>` folder while backing up the previously installed pack.
 
-## Remaster Studio — production command center
+## Production workflow
 
-`tools/TinyToonRemasterStudio.py` is now the preferred GUI workflow. It exposes the authoritative production path instead of the older standalone readiness/package flow:
+The current high-impact path is:
 
-1. Open the user-supplied ROM locally.
-2. Prepare the local workspace. Studio initializes Capture Mission Control and build-bound final-regression evidence.
-3. Capture with MesenCE HD Pack Builder at **4x Prescale**.
-4. Use **Capture Mission Control** and **Record capture session** to verify menus, player states, routes, enemies, bosses, UI, effects and ending coverage.
-5. Generate/sync the grouped art queue and MasterWorkspace.
-6. Edit only `Artwork/MasterWorkspace/editable/*.png` while keeping dimensions unchanged.
-7. Use **Apply + build-bound QA**. Studio composes the batch and fingerprints the exact runtime pack.
-8. Use **One-click HD Playtest** to build/deploy the current result into MesenCE.
-9. Complete final regression against that exact build fingerprint.
-10. Run **Release Candidate Audit**.
-11. **GATED release ZIP** is enabled in practice only when the unified release gate returns PASS.
+`MesenCE capture → Capture Mission Control → incremental sync → Visual Context Audit → baseline / master art → build-bound Pixel QA → one-click playtest → exact-build regression → Unified Release Candidate Gate → gated ZIP`
 
-Changing `hires.txt` or any referenced runtime PNG after QA/regression makes previous evidence stale automatically.
+`tools/TinyToonRemasterStudio.py` remains the preferred GUI command center for capture, art, QA, playtest and release evidence. CLI tools remain available for automation and detailed inspection.
 
-## Capture progress and art queue
+## Capture coverage
 
-`capture_mission_control.py` tracks explicit gameplay coverage while `hdpack_pipeline.py` measures structural capture growth. Tile-count growth alone never auto-completes a gameplay mission.
+Capture at **4x Prescale** with MesenCE HD Pack Builder and deliberately trigger every relevant menu, route, movement/action state, enemy, boss phase, HUD/text state, effect, transition and ending screen.
+
+`capture_mission_control.py` tracks explicit gameplay coverage. Structural capture growth alone never auto-completes a mission.
 
 ```bash
 python tools/capture_mission_control.py init "C:\\TinyToonWork\\CAPTURE_MISSIONS.json"
 python tools/capture_mission_control.py record "C:\\TinyToonWork\\CAPTURE_MISSIONS.json" "C:\\TinyToonWork\\MesenCapture" --complete player_idle_walk_run
-python tools/capture_mission_control.py dashboard "C:\\TinyToonWork\\CAPTURE_MISSIONS.json" "C:\\TinyToonWork\\Reports\\CAPTURE_MISSION_CONTROL.html"
-
 python tools/hdpack_pipeline.py compare "C:\\TinyToonWork\\Capture_A" "C:\\TinyToonWork\\Capture_B"
-python tools/hdpack_pipeline.py art-queue "C:\\TinyToonWork\\MesenCapture" --output "C:\\TinyToonWork\\Artwork\\ART_QUEUE.csv"
 ```
 
-Unknown artwork stays `UNASSIGNED`; the unified release gate blocks shipping until every art-queue row is both classified and finished.
+## Visual Context & Animation Risk Audit
 
-## Instant HD Preview
+Before final polish, run the new `visual_context_audit.py`. It groups captured uses by tile ID and ranks families that are most likely to cause visible HD mistakes because they appear across multiple palettes, Mesen conditions or visually distinct captured variants.
 
 ```bash
-python tools/hdpack_pipeline.py analyze "C:\\TinyToonWork\\MesenCapture" --json
-python tools/hdpack_pipeline.py preview "C:\\TinyToonWork\\MesenCapture" "C:\\TinyToonWork\\ModernizedPack\\vibrant" --style vibrant --overwrite
-python tools/hdpack_pipeline.py report "C:\\TinyToonWork\\ModernizedPack\\vibrant"
+python tools/visual_context_audit.py sync \
+  "C:\\TinyToonWork\\ModernizedPack\\final_art" \
+  "C:\\TinyToonWork\\Artwork\\VISUAL_CONTEXT_REVIEW.csv" \
+  --queue "C:\\TinyToonWork\\Artwork\\ART_QUEUE.csv"
+
+python tools/visual_context_audit.py audit \
+  "C:\\TinyToonWork\\ModernizedPack\\final_art" \
+  "C:\\TinyToonWork\\Artwork\\VISUAL_CONTEXT_REVIEW.csv" \
+  "C:\\TinyToonWork\\Reports\\VisualContext" \
+  --queue "C:\\TinyToonWork\\Artwork\\ART_QUEUE.csv"
 ```
 
-The preview is a fast baseline, not final artwork. It preserves alpha, dimensions and `hires.txt` mapping coordinates.
+The report is metadata-only: no captured artwork is embedded. High-risk families require explicit local review. Review evidence is fingerprinted; if the family's palette/condition/visual composition changes later, the old review becomes stale automatically.
+
+See `VISUAL_CONTEXT_AUDIT.md` for the review flow.
+
+## Art production
+
+Generate the ranked/grouped art queue, build the persistent `MasterWorkspace`, then edit only `Artwork/MasterWorkspace/editable/*.png` while keeping dimensions unchanged.
+
+- exact duplicates may be propagated safely,
+- near duplicates remain review hints only,
+- `UNASSIGNED` stays explicit until classified,
+- automatic baseline art is only a fast playable starting point, not a claim of final artwork,
+- Pixel QA blocks unauthorized changes outside approved master regions.
 
 ## Final release gate
 
-The authoritative final gate is `release_candidate.py`, not the legacy readiness dashboard by itself. PASS requires all of the following on the **same current runtime build**:
+`release_candidate.py` is the authoritative final release decision. PASS requires the same current runtime build to have:
 
 - structurally valid 4x HD Pack,
 - complete Capture Mission Control evidence,
 - zero TODO art-queue rows,
 - zero UNASSIGNED art-queue rows,
-- build-bound Pixel Art QA PASS,
-- every final full-game regression case completed against the current runtime fingerprint,
+- current build-bound Pixel Art QA PASS,
+- completed full-game visual regression for the current runtime fingerprint,
 - no ROM/save-state/patch payloads.
 
-Audit example:
+The Visual Context Audit is an additional production-review gate in the roadmap: every high-risk family should be current and reviewed before declaring the visual pass final.
 
 ```bash
 python tools/release_candidate.py audit "C:\\TinyToonWork\\ModernizedPack\\final_art" \
@@ -123,30 +127,27 @@ python tools/release_candidate.py audit "C:\\TinyToonWork\\ModernizedPack\\final
   --output "C:\\TinyToonWork\\Reports\\ReleaseCandidate"
 ```
 
-The Studio's **GATED release ZIP** action uses this same gate and refuses to package a BLOCKED build. This closes the old GUI bypass where a structurally valid pack could be zipped before complete capture/current-build QA/regression evidence existed.
+## Main tools
 
-## Tools
+- `rom_probe.py` — local ROM inspector and CHR reference exporter
+- `prepare_workspace.py` — local workspace preparation without copying the ROM
+- `validate_hdpack.py` — `hires.txt`, PNG and coordinate validation
+- `hdpack_pipeline.py` — capture analysis/diffing, queue, preview and reports
+- `capture_mission_control.py` — explicit full-game capture mission tracking
+- `production_sync.py` — resume-safe repeated-capture synchronization
+- `art_production.py` — workboards, exact dedupe, near-duplicate hints and master propagation
+- `visual_context_audit.py` — palette/condition/visual-variant family risk audit
+- `art_workspace.py` — persistent batch master-art workspace
+- `auto_art_pass.py` — automatic baseline modernization for untouched masters
+- `art_qa.py` / `bound_art_qa.py` — pixel-safe QA and exact-build binding
+- `rapid_hd_playtest.py` — capture → sync → baseline → apply → QA → optional MesenCE deploy
+- `release_candidate.py` — authoritative final release gate
+- `studio_command_center.py` — GUI-facing orchestration layer
+- `TinyToonRemasterStudio.py` — production command center
+- `windows/Start_Remaster.bat` — one-click Windows launcher
+- `windows/Build_HD_Playtest.bat` — one-click QA-gated HD playtest build/deploy
 
-- `rom_probe.py` — CLI ROM inspector and local CHR reference exporter.
-- `prepare_workspace.py` — creates a local remaster workspace without copying the ROM.
-- `validate_hdpack.py` — validates `hires.txt`, referenced PNG files and tile coordinates.
-- `hdpack_pipeline.py` — capture analysis/diffing, ranked queue, preview and reports.
-- `capture_mission_control.py` — explicit full-game capture mission tracking.
-- `production_sync.py` — resume-safe repeated-capture synchronization.
-- `art_production.py` — workboards, exact dedupe, near-duplicate hints and master propagation.
-- `art_workspace.py` — persistent batch master-art workspace.
-- `auto_art_pass.py` — automatic baseline modernization for untouched masters.
-- `art_qa.py` / `bound_art_qa.py` — pixel-safe QA and exact-build fingerprint binding.
-- `rapid_hd_playtest.py` — capture → sync → baseline → apply → QA → optional MesenCE deployment.
-- `release_candidate.py` — single authoritative final release gate.
-- `studio_command_center.py` — safe GUI-facing orchestration layer for evidence, playtest, audit and gated packaging.
-- `TinyToonRemasterStudio.py` — GUI production command center.
-- `windows/setup_mesence.ps1` — downloads/verifies the official MesenCE Windows build.
-- `windows/launch_remaster.ps1` — verifies the ROM fingerprint and launches it locally.
-- `windows/Start_Remaster.bat` — one-click Windows launcher.
-- `windows/Build_HD_Playtest.bat` — one-click QA-gated HD playtest build/deploy.
-
-## Python install
+## Python
 
 Python 3.11+ is recommended.
 
@@ -154,8 +155,8 @@ Python 3.11+ is recommended.
 python -m pip install -r requirements.txt
 ```
 
-Pillow is used for PNG export, validation, preview processing and QA.
+Pillow is used for PNG processing, workboards, validation and QA.
 
 ## Copyright / repository rule
 
-Do not commit ROMs, emulator save states, Mesen captures made from commercial graphics, ripped game artwork/audio, locally generated derivative preview/final packs, or downloaded emulator binaries. `reference_chr`, `captures`, `MesenPack`, `ModernizedPack`, `work`, `Release`, `Reports`, and `vendor` remain local/gitignored by design. The public repository contains tooling, tests using synthetic graphics, documentation and original project metadata only.
+Do not commit ROMs, emulator save states, Mesen captures made from commercial graphics, ripped game artwork/audio, locally generated derivative preview/final packs or downloaded emulator binaries. Local capture/art/release/report folders remain gitignored by design. Public commits contain tooling, synthetic tests, documentation and original project metadata only.

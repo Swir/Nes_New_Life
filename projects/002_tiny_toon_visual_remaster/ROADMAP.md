@@ -1,14 +1,14 @@
 # Project #002 — HD Completion Roadmap
 
-## Current milestone: Studio production command center + unified build-bound release gate
+## Current milestone: visual-context / animation-risk production audit
 
 The production path is now:
 
-`MesenCE capture → Capture Mission Control → incremental production sync → automatic baseline → master-art batch → build-bound pixel QA → one-click MesenCE playtest → build-bound full-game regression → Unified Release Candidate Gate → gated ZIP`
+`MesenCE capture → Capture Mission Control → incremental production sync → visual-context risk audit → automatic baseline → master-art batch → build-bound pixel QA → one-click MesenCE playtest → build-bound full-game regression → Unified Release Candidate Gate → gated ZIP`
 
-Remaster Studio now exposes that same authoritative path. The old GUI-level direct ZIP path has been removed: Studio packaging is blocked unless the unified release gate passes for the exact current runtime fingerprint.
+The new Visual Context Audit targets the highest-risk real-art cases before final polish: tile families reused across multiple palettes, Mesen conditions or visually distinct captured forms. It produces a local metadata-only review queue and invalidates a prior `REVIEWED` decision when that family's fingerprint changes.
 
-The final gate intentionally refuses stale evidence: changing `hires.txt` or any referenced runtime PNG invalidates previous final Art QA and full-game regression completion for the older build.
+The final release gate still refuses stale exact-build QA/regression evidence: changing `hires.txt` or any referenced runtime PNG invalidates previous final Art QA and full-game regression completion for the older build.
 
 ## Gate A — Complete local capture
 
@@ -29,13 +29,15 @@ Use Studio **Capture Mission Control** / **Record capture session** or `capture_
 ## Gate B — HD art production
 
 - [ ] Run resume-safe sync against the latest complete capture
+- [ ] Generate `VISUAL_CONTEXT_REVIEW.csv` and clear the highest-risk palette/condition/variant families first
 - [ ] Seed untouched masters for full-pack baseline visibility
 - [ ] Replace PLAYER/BOSS masters with final-quality art first
 - [ ] Finish ENEMY/WORLD/UI/EFFECTS masters
 - [ ] Resolve every UNASSIGNED art-queue row
+- [ ] Re-run Visual Context Audit after major capture/art changes; stale reviews must be rechecked
 - [ ] Zero TODO/INVALID masters
 
-Studio's MasterWorkspace remains the primary local batch-edit surface. Exact duplicates can be propagated safely; near-duplicates remain review hints only.
+Studio's MasterWorkspace remains the primary local batch-edit surface. Exact duplicates can be propagated safely; near-duplicates remain review hints only. `visual_context_audit.py` adds a separate family-level check so visually distinct palette/condition contexts are not accidentally treated as interchangeable.
 
 ## Gate C — QA and exact-build regression
 
@@ -54,6 +56,7 @@ Studio's MasterWorkspace remains the primary local batch-edit surface. Exact dup
 - [ ] Studio **Release Candidate Audit** / `release_candidate.py audit` reports `RELEASE GATE: PASS`
 - [ ] Capture missions are complete
 - [ ] Art queue has 0 TODO and 0 UNASSIGNED rows
+- [ ] Visual Context Audit has no pending/stale high-risk family review
 - [ ] Current-build pixel QA is PASS
 - [ ] Current-build full-game visual regression is complete
 - [ ] Runtime pack contains no ROM/save-state/patch payloads
@@ -62,12 +65,13 @@ Studio's MasterWorkspace remains the primary local batch-edit surface. Exact dup
 
 ## Highest-impact remaining work
 
-The tooling path is now substantially closed end-to-end. The remaining blockers are overwhelmingly content/evidence work that cannot be fabricated in CI:
+The tooling path is substantially closed end-to-end. The largest remaining blockers are content/evidence work that cannot be fabricated in CI:
 
 1. complete local MesenCE capture of every route/state/boss/effect/ending,
-2. finish the real 4x art pass for every captured master,
-3. resolve every art-queue classification,
-4. run full-game visual regression on the exact final fingerprint,
-5. only then create the gated public HD Pack ZIP (without ROM/emulator/save-state content).
+2. run Visual Context Audit and verify the highest-risk palette/condition/animation families in-game,
+3. finish the real 4x art pass for every captured master,
+4. resolve every art-queue classification,
+5. run full-game visual regression on the exact final fingerprint,
+6. only then create the gated public HD Pack ZIP (without ROM/emulator/save-state content).
 
-A toolchain milestone is not the same as a finished remaster. Full HD completion still requires the user's local full-game capture, final artwork and real MesenCE regression testing. The unified gate and Studio command center now make those boundaries explicit and prevent old or partial evidence from being treated as release-ready.
+A toolchain milestone is not the same as a finished remaster. Full HD completion still requires the user's local full-game capture, final artwork and real MesenCE regression testing.
