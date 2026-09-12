@@ -11,6 +11,7 @@ from pathlib import Path
 from PIL import Image
 
 from art_production import export_master_tiles
+from art_qa import audit_art_apply
 from validate_hdpack import validate
 
 STATE_FIELDS = ("master_file", "group", "tile_id", "palette", "uses", "status", "original_sha256", "editable_sha256")
@@ -78,6 +79,7 @@ def init_workspace(pack_dir: Path, output_dir: Path, queue: Path | None = None, 
             "Edit PNG files only inside editable/.",
             "Keep every master PNG at exactly the same pixel dimensions.",
             "Run scan to update TODO/EDITED state, then apply to build one combined HD pack.",
+            "Every batch apply runs pixel QA and is blocked if pixels outside edited master targets changed.",
             "Never edit original/; it is the pixel-accurate baseline used for change detection.",
         ],
     }
@@ -199,6 +201,18 @@ def apply_workspace(pack_dir: Path, workspace: Path, output_dir: Path, overwrite
     if errors:
         raise ValueError("Generated HD pack failed validation: " + "; ".join(errors))
 
+    qa_dir = workspace / "qa_latest"
+    if qa_dir.exists():
+        shutil.rmtree(qa_dir)
+    qa = audit_art_apply(pack_dir, output_dir, workspace, qa_dir)
+    if qa["qa_gate"] != "PASS":
+        raise ValueError(
+            "Generated HD pack failed pixel QA: "
+            f"unauthorized_pixels={qa['unauthorized_changed_pixels']}, "
+            f"no_effect_masters={len(qa['edited_masters_with_no_output_difference'])}. "
+            f"See {qa_dir / 'ART_QA_REPORT.html'}"
+        )
+
     result = {
         "changed_masters": changed_masters,
         "targets_updated": targets_updated,
@@ -207,6 +221,8 @@ def apply_workspace(pack_dir: Path, workspace: Path, output_dir: Path, overwrite
         "validation_warnings": warnings,
         "validation_stats": stats,
         "workspace_scan": scan,
+        "pixel_qa": qa,
+        "qa_report": str(qa_dir / "ART_QA_REPORT.html"),
     }
     (output_dir / "ART_APPLY_RESULT.json").write_text(json.dumps(result, indent=2), encoding="utf-8")
     return result
