@@ -47,9 +47,12 @@
 - master-workspace sync identifies artwork by exact source RGBA hash, so finished edits survive larger later captures
 - newly discovered graphics are added as hash-stable masters instead of rebuilding and renumbering the entire workspace
 - one incremental command refreshes queue, master targets, workboards, capture report and readiness evidence
-- automatic baseline master-art pass can now modernize every still-untouched master in one operation while preserving manual edits
+- automatic baseline master-art pass can modernize every still-untouched master in one operation while preserving manual edits
 - group-aware baseline styles distinguish PLAYER/ENEMY/BOSS/WORLD/UI/EFFECTS and preserve dimensions plus alpha exactly
-- use the baseline pass to produce an immediately testable modernized pack, then replace important masters with final hand-finished art
+- **one-click Rapid HD Playtest now chains capture sync → baseline → batch apply → pixel QA → validation → local MesenCE deployment**
+- existing installed MesenCE pack is backed up before each successful playtest deployment
+- runtime deployment refuses ROM/save/patch payloads and copies only HD-pack runtime assets
+- use the rapid playtest loop after every meaningful capture/art batch, then replace baseline masters with final hand-finished art
 - player animation replacements first
 - common enemies and projectiles
 - foreground tilesets and scenery
@@ -63,11 +66,12 @@
 - release dashboard combines validator results, 4x target, art queue status and manual full-game evidence
 - visual regression checklist covers boot/menu, player actions, all routes, enemies, bosses, HUD/text, effects and ending/credits
 - safe ZIP packager refuses ROM/save/patch files and structurally invalid packs
+- Windows one-click rapid playtest installs the QA-passed current pack under `MesenCE/HdPacks/<ROM stem>` for immediate testing
 - optional audio replacement
 - controller profile documentation
 - final local full-game verification against the original ROM behavior
 
 ### Current hard blocker to a truthful "complete HD" release
-The repository can automate capture measurement, prioritization, grouping, resume-safe capture synchronization, workboard generation, duplicate detection, master-tile export, persistent batch art editing, automatic baseline modernization, exact replacement propagation, pixel-safe batch QA, preview processing, validation, readiness reporting and safe packaging. The remaining content-critical work requires a **local complete MesenCE capture plus final manual art review/finishing and real full-game visual verification**. The automatic baseline makes unseen TODO art much faster to turn into a playable HD starting point, but tooling must never infer unseen bosses, routes, animation states or ending screens as complete.
+The repository can automate capture measurement, prioritization, grouping, resume-safe capture synchronization, workboard generation, duplicate detection, master-tile export, persistent batch art editing, automatic baseline modernization, exact replacement propagation, pixel-safe batch QA, preview processing, validation, readiness reporting, MesenCE playtest deployment and safe packaging. The remaining content-critical work requires a **local complete MesenCE capture plus final manual art review/finishing and real full-game visual verification**. The one-click playtest pipeline removes most tooling friction between a new capture and seeing the current HD result in MesenCE, but tooling must never infer unseen bosses, routes, animation states or ending screens as complete.
 
 The ROM remains the gameplay source throughout all phases. We do not rebuild or redesign its levels, physics or enemy logic.
