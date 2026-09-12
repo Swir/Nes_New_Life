@@ -10,6 +10,12 @@ from pathlib import Path
 from capture_mission_control import load_manifest, snapshot_capture
 
 METRIC_KEYS = ("tile_rules", "unique_tile_ids", "unique_palettes", "images")
+STRUCTURAL_BLOCKERS = {
+    "capture_scale_is_not_4x",
+    "missing_referenced_images",
+    "capture_regression_against_verified_history",
+    "verified_mission_evidence_at_risk",
+}
 
 
 def capture_fingerprint(capture_dir: Path) -> str:
@@ -79,11 +85,13 @@ def build_ledger(manifest_path: Path, capture_dir: Path) -> dict:
         blockers.append("capture_regression_against_verified_history")
     if at_risk:
         blockers.append("verified_mission_evidence_at_risk")
+    structural_blockers = [item for item in blockers if item in STRUCTURAL_BLOCKERS]
+    admission_gate = "PASS" if not structural_blockers else "BLOCKED"
     if done != total:
         blockers.append("capture_missions_incomplete")
 
     return {
-        "schema": "swir.project002.capture-integrity-ledger.v1",
+        "schema": "swir.project002.capture-integrity-ledger.v2",
         "generated_utc": datetime.now(timezone.utc).isoformat(),
         "capture_fingerprint_sha256": fingerprint,
         "capture": current,
@@ -91,10 +99,20 @@ def build_ledger(manifest_path: Path, capture_dir: Path) -> dict:
         "missions": {"done": done, "total": total, "percent": round((done / total) * 100, 1) if total else 0.0},
         "regressions": regressions,
         "at_risk_missions": at_risk,
+        "structural_blockers": structural_blockers,
+        "admission_gate": admission_gate,
         "blockers": blockers,
         "integrity_gate": "PASS" if not blockers else "BLOCKED",
-        "policy": "Mission completion remains explicit human gameplay evidence. This ledger can block stale/regressed evidence but never auto-completes a mission.",
+        "policy": "Mission completion remains explicit human gameplay evidence. Structural admission must PASS before a new mission can be recorded; this ledger can block stale/regressed evidence but never auto-completes a mission.",
     }
+
+
+def assert_capture_admissible(manifest_path: Path, capture_dir: Path) -> dict:
+    ledger = build_ledger(manifest_path, capture_dir)
+    if ledger["admission_gate"] != "PASS":
+        details = ", ".join(ledger["structural_blockers"]) or "unknown_capture_integrity_blocker"
+        raise ValueError(f"Capture admission blocked: {details}")
+    return ledger
 
 
 def write_dashboard(manifest_path: Path, capture_dir: Path, output: Path) -> Path:
@@ -109,10 +127,11 @@ def write_dashboard(manifest_path: Path, capture_dir: Path, output: Path) -> Pat
         for r in ledger["at_risk_missions"]
     ) or "<tr><td colspan='3'>No completed mission is structurally at risk.</td></tr>"
     blockers = "".join(f"<li>{html.escape(item)}</li>" for item in ledger["blockers"]) or "<li>None</li>"
+    structural = "".join(f"<li>{html.escape(item)}</li>" for item in ledger["structural_blockers"]) or "<li>None</li>"
     output.write_text(
         f"""<!doctype html><meta charset='utf-8'><title>Project #002 Capture Integrity Ledger</title>
 <style>body{{font:15px system-ui;max-width:1100px;margin:30px auto;padding:0 22px;background:#0d1117;color:#e6edf3}}.card{{background:#161b22;border:1px solid #30363d;border-radius:14px;padding:16px;margin:12px 0}}table{{width:100%;border-collapse:collapse}}td,th{{padding:8px;border-bottom:1px solid #30363d;text-align:left}}code{{color:#79c0ff}}</style>
-<h1>Capture Integrity Ledger</h1><div class='card'><h2>Integrity gate: {ledger['integrity_gate']}</h2><p>Missions: {ledger['missions']['done']}/{ledger['missions']['total']} ({ledger['missions']['percent']}%)</p><p>Fingerprint: <code>{ledger['capture_fingerprint_sha256']}</code></p><ul>{blockers}</ul><p>{html.escape(ledger['policy'])}</p></div>
+<h1>Capture Integrity Ledger</h1><div class='card'><h2>Mission admission gate: {ledger['admission_gate']}</h2><p>Missions: {ledger['missions']['done']}/{ledger['missions']['total']} ({ledger['missions']['percent']}%)</p><p>Fingerprint: <code>{ledger['capture_fingerprint_sha256']}</code></p><h3>Structural blockers</h3><ul>{structural}</ul><h3>Full release-integrity blockers</h3><ul>{blockers}</ul><p>{html.escape(ledger['policy'])}</p></div>
 <div class='card'><h2>Structural regression check</h2><table><tr><th>Metric</th><th>Historical max</th><th>Current</th><th>Delta</th></tr>{regression_rows}</table></div>
 <div class='card'><h2>Verified mission evidence at risk</h2><table><tr><th>Mission</th><th>Reason</th><th>Details</th></tr>{risk_rows}</table></div>""",
         encoding="utf-8",
@@ -126,6 +145,7 @@ def main() -> int:
     parser.add_argument("manifest", type=Path)
     parser.add_argument("capture", type=Path)
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--admission-only", action="store_true")
     args = parser.parse_args()
     if args.output:
         print(write_dashboard(args.manifest, args.capture, args.output))
@@ -133,7 +153,8 @@ def main() -> int:
     else:
         ledger = build_ledger(args.manifest, args.capture)
         print(json.dumps(ledger, indent=2))
-    return 0 if ledger["integrity_gate"] == "PASS" else 2
+    gate = ledger["admission_gate"] if args.admission_only else ledger["integrity_gate"]
+    return 0 if gate == "PASS" else 2
 
 
 if __name__ == "__main__":
