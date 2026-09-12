@@ -46,7 +46,21 @@ Start_Remaster.bat
 
 This installs/verifies MesenCE locally, asks for the user-supplied ROM, verifies the Project #002 fingerprint and launches it without copying the ROM into the repository.
 
-For the fastest capture-to-playtest loop:
+### Guided Capture Marathon — fastest Gate A route
+
+For a structured full-game capture session, use:
+
+```text
+Guided_Capture_Marathon.bat
+```
+
+This is now the preferred path for reducing the real Gate A blocker. It launches the user's local ROM through the verified-fullscreen MesenCE launcher, loads all eleven authoritative Capture Mission Control missions, shows focused gameplay cues for each mission and records completion only after explicit **V = verified in game** confirmation.
+
+A skipped mission is not completed. Tile/palette/image-count growth never completes another mission automatically. At the end of the session the launcher refreshes the metadata-only Capture Marathon dashboard and runs Local Capture Bridge on the same capture, so the user does not have to select the capture folder again.
+
+See `GUIDED_CAPTURE_MARATHON.md`.
+
+For the fastest capture-to-playtest loop after art work:
 
 ```text
 Build_HD_Playtest.bat
@@ -66,6 +80,8 @@ windows/Local_Capture_Bridge.bat
 
 The bridge reads the current MesenCE capture locally, optionally compares it with the previous accepted capture, and writes only metadata under `Reports/LocalCaptureBridge/`: mapping/tile/palette/condition counts, PLAYER/BOSS/ENEMY/WORLD/UI/EFFECTS group counts, image dimensions/sizes/SHA-256 hashes, Capture Mission Control state and capture-regression metadata. It does **not** copy image pixels, ROM bytes, save states, emulator binaries or absolute local paths into the handoff.
 
+The PowerShell bridge also accepts scripted `-CurrentCapture` / `-PreviousCapture` inputs, which is how Guided Capture Marathon hands off the exact session without duplicate folder selection.
+
 `capture_evidence_validator.py` validates the privacy contract. If GitHub CLI (`gh`) is installed and authenticated, the Windows bridge can optionally send only `SAFE_CAPTURE_HANDOFF.json` to a new GitHub evidence PR through the API. `.github/workflows/project-002-capture-evidence.yml` validates the evidence again before it can be trusted. Evidence arrival never auto-completes ROADMAP Gate A–D.
 
 See `LOCAL_CAPTURE_BRIDGE.md`.
@@ -84,9 +100,9 @@ See `CAPTURE_EVIDENCE_TRIAGE.md`.
 
 The current high-impact path is:
 
-`MesenCE capture → Local Capture Bridge → GitHub Capture Evidence Triage → Capture Mission Control → Capture Promotion Director → incremental sync → Visual Context Audit → Animation Family Workbench → Visual Completion Matrix → Final Art Priority / high-impact batch → Final Art Sprint Kit → build-bound Pixel QA → one-click verified-fullscreen playtest → Final Regression Cockpit → Final Release Readiness Director → gated ZIP`
+`Guided fullscreen MesenCE capture → explicit Capture Mission Control attestation → Local Capture Bridge → GitHub Capture Evidence Triage → Capture Promotion Director → incremental sync → Visual Context Audit → Animation Family Workbench → Visual Completion Matrix → Final Art Priority / high-impact batch → Final Art Sprint Kit → build-bound Pixel QA → one-click verified-fullscreen playtest → Final Regression Cockpit → Final Release Readiness Director → gated ZIP`
 
-`tools/AuthoritativeRemasterStudio.py` is the preferred current production interface. F4 launches the Local Capture Bridge, F5 runs regression-safe capture promotion, and the remaining Studio actions follow the current high-impact art / QA / release path. The older `TinyToonRemasterStudio.py` remains available for compatibility.
+`tools/AuthoritativeRemasterStudio.py` remains the preferred production command center for capture handoff, promotion, art, QA and release. `windows/Guided_Capture_Marathon.bat` is the preferred long-form Gate A capture session launcher. The older `TinyToonRemasterStudio.py` remains available for compatibility.
 
 ### Production Sprint Control Center
 
@@ -113,6 +129,8 @@ Capture at **4x Prescale** with MesenCE HD Pack Builder and deliberately trigger
 python tools/capture_mission_control.py init "C:\\TinyToonWork\\CAPTURE_MISSIONS.json"
 python tools/capture_mission_control.py record "C:\\TinyToonWork\\CAPTURE_MISSIONS.json" "C:\\TinyToonWork\\MesenCapture" --complete player_idle_walk_run
 ```
+
+For evidence-first capture work, prefer `windows/Guided_Capture_Marathon.bat`; it wraps those same missions with fullscreen launch, mission cues and explicit in-game attestation.
 
 ### Capture Gap Planner
 
@@ -274,6 +292,7 @@ See `FINAL_RELEASE_READINESS_DIRECTOR.md` and `FINAL_REGRESSION_COCKPIT.md`.
 - `validate_hdpack.py` — `hires.txt`, PNG and coordinate validation
 - `hdpack_pipeline.py` — structural capture analysis/diffing, queue, preview and reports
 - `capture_mission_control.py` — explicit full-game capture mission tracking
+- `guided_capture_marathon.py` — explicit-attestation mission queue and metadata-only marathon dashboard
 - `capture_gap_planner.py` — repeated-capture regression detection and ranked `CAPTURE NEXT` planning
 - `local_capture_bridge.py` — privacy-safe local capture → metadata-only GitHub evidence handoff
 - `capture_evidence_validator.py` — schema/privacy guard that rejects paths and forbidden payloads
@@ -298,6 +317,7 @@ See `FINAL_RELEASE_READINESS_DIRECTOR.md` and `FINAL_REGRESSION_COCKPIT.md`.
 - `AuthoritativeRemasterStudio.py` — current F4–F11 privacy/capture/art/QA/release production GUI
 - `TinyToonRemasterStudio.py` — legacy-compatible broader production GUI
 - `windows/Start_Remaster.bat` — one-click Windows launcher
+- `windows/Guided_Capture_Marathon.bat` — verified-fullscreen mission-by-mission Gate A capture + safe handoff
 - `windows/Local_Capture_Bridge.bat` — one-click privacy-safe local evidence + optional GitHub PR
 - `windows/Build_HD_Playtest.bat` — one-click QA-gated build/deploy + verified-fullscreen MesenCE launch
 - `windows/Visual_Completion_Matrix.bat` — one-click captured-art completion dashboard and high-impact batch
