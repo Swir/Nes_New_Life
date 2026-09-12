@@ -1,5 +1,20 @@
 # Changelog — Project #002 Tiny Toon Visual Remaster
 
+## 1.0.0-rc1 — Unified build-bound release candidate gate
+
+- added `release_candidate.py` as the single authoritative final release gate for Project #002
+- release PASS now requires structural validation, complete Capture Mission Control evidence, a fully finished/classified art queue, current-build pixel QA and current-build full-game visual regression
+- added a stable SHA-256 runtime fingerprint derived from `hires.txt` plus every referenced HD PNG
+- final regression evidence is bound to that exact fingerprint, so any later runtime art/mapping change automatically invalidates the older regression pass
+- added `bound_art_qa.py` so the existing pixel-safe Art QA result can be bound to the exact output HD Pack fingerprint
+- stale Art QA is explicitly blocked even when the older report itself says PASS
+- added ten final regression cases covering boot/menu, player movement, actions/damage/death, primary and alternate routes, enemies, bosses, HUD/text, effects/transitions and ending/credits
+- gated packaging refuses to create the final ZIP until every authoritative evidence source passes for the current build
+- added local HTML + JSON `RELEASE_CANDIDATE` dashboard with exact blockers and stale-evidence reporting
+- added synthetic CI tests proving a previously green build becomes BLOCKED after runtime art changes and proving TODO/UNASSIGNED art cannot pass release
+- added `RELEASE_CANDIDATE_GATE.md` and advanced the roadmap from separate readiness indicators to one build-bound final gate
+- no ROM, save state, ROM-derived capture, commercial art/audio, emulator binary or final derivative pack is committed
+
 ## 0.9.0 — One-click QA-gated MesenCE HD playtest
 
 - added `rapid_hd_playtest.py` to turn a local MesenCE capture into an installed playable HD pack in one production command
