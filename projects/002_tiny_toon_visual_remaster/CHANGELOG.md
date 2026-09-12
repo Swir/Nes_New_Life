@@ -1,5 +1,18 @@
 # Changelog — Project #002 Tiny Toon Visual Remaster
 
+## 1.0.0-rc14 — Visual Completion Matrix + high-impact art batch
+
+- added `visual_completion_matrix.py` to quantify captured-art completion by PLAYER / BOSS / ENEMY / WORLD / UI / EFFECTS / UNASSIGNED
+- joins Mesen HD-pack mappings, `ART_QUEUE.csv` classification and `MasterWorkspace/ART_STATE.csv` without copying captured PNG payloads into reports
+- added master-count, usage-weighted and production-weighted completion metrics so visible player/boss/enemy work carries more production importance than low-impact tiles
+- invalid masters, UNASSIGNED classification blockers and high-reuse graphics are promoted automatically
+- added bounded `NEXT_HIGH_IMPACT_ART_BATCH.csv` so each art session starts from the strongest visible-impact backlog instead of a flat TODO list
+- added metadata-only JSON/CSV/HTML Visual Completion reports and Windows one-click `Visual_Completion_Matrix.bat` + PowerShell picker
+- added synthetic tests for per-group completion, invalid-boss prioritization, bounded batches and report privacy
+- advanced README/ROADMAP to insert Visual Completion Matrix between capture/review and final-art sprint execution
+- PR #39 merged only after green Python compile, unit tests and PowerShell parse; post-merge main CI also passed
+- no ROM, save state, ROM-derived capture, ripped commercial art/audio, emulator binary or local derivative artwork is committed
+
 ## 1.0.0-rc13 — Final Release Readiness Director
 
 - added `final_release_director.py` as the final packaging-authoritative Project #002 decision layer
