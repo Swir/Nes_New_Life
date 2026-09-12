@@ -1,5 +1,18 @@
 # Changelog — Project #002 Tiny Toon Visual Remaster
 
+## 0.9.0 — One-click QA-gated MesenCE HD playtest
+
+- added `rapid_hd_playtest.py` to turn a local MesenCE capture into an installed playable HD pack in one production command
+- chains resume-safe capture sync, automatic baseline seeding, combined batch art apply, pixel QA, HD-pack validation and readiness reporting
+- existing manual master edits remain protected because the automatic baseline only seeds still-untouched masters
+- added atomic MesenCE `HdPacks/<ROM stem>` deployment with a timestamped backup of the previously installed pack
+- deployment refuses ROM, save-state and patch payloads and excludes generated JSON/HTML/CSV reports from runtime assets
+- verifies mapping preservation and requires pixel QA PASS before declaring the captured content playtest-ready
+- added `windows/Build_HD_Playtest.bat` + PowerShell folder/ROM picker so the complete loop can be launched by double-clicking on Windows 11
+- added synthetic CI tests for end-to-end build, backup deployment, prohibited-file blocking and runtime metadata filtering
+- added `RAPID_HD_PLAYTEST.md` with the capture → build → install → reload workflow
+- `PLAYTEST READY` remains intentionally different from `FULL GAME COMPLETE`: unseen game states still require real MesenCE capture and final art review
+
 ## 0.8.0 — Automatic baseline master-art pass
 
 - added `auto_art_pass.py` to seed every still-untouched master graphic with a coherent automatic modernization pass
