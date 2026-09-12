@@ -11,6 +11,7 @@ from capture_gap_planner import build_capture_queue, write_outputs as write_capt
 from capture_mission_control import ensure_manifest, mission_status, record_session, write_dashboard as write_capture_dashboard
 from final_art_priority import write_priority_board
 from hd_readiness import package_hd_pack
+from production_sprint import build_and_write as build_production_sprint
 from rapid_hd_playtest import build_playtest, default_mesence_hdpacks
 from release_candidate import audit_release_candidate, ensure_regression_manifest, write_release_dashboard
 from visual_context_audit import write_dashboard as write_visual_context_dashboard
@@ -118,6 +119,25 @@ def final_art_priority_dashboard(project_root: Path, pack_dir: Path, *, top: int
         workspace=workspace if (workspace / "ART_STATE.csv").is_file() else None,
         visual_review=paths.visual_review if paths.visual_review.is_file() else None,
         animation_review=paths.animation_review if paths.animation_review.is_file() else None,
+        top=top,
+    )
+
+
+def production_sprint_dashboard(
+    project_root: Path,
+    current_capture: Path,
+    pack_dir: Path,
+    *,
+    previous_capture: Path | None = None,
+    top: int = 20,
+) -> dict:
+    paths = initialize_project_evidence(project_root)
+    return build_production_sprint(
+        paths.root,
+        Path(current_capture),
+        Path(pack_dir),
+        paths.reports / "ProductionSprint",
+        previous_capture=Path(previous_capture) if previous_capture else None,
         top=top,
     )
 

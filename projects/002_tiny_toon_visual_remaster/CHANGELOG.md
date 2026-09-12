@@ -1,5 +1,18 @@
 # Changelog — Project #002 Tiny Toon Visual Remaster
 
+## 1.0.0-rc8 — Production Sprint Control Center
+
+- added `production_sprint.py` to combine Capture Mission Control, Capture Gap, Visual Context, Animation Family, MasterWorkspace and Final Art Priority evidence into one metadata-only `DO THIS NEXT` dashboard
+- added `Reports/ProductionSprint/PRODUCTION_SPRINT.html` + JSON output with ordered next actions instead of separate disconnected reports
+- promoted capture regressions and incomplete capture missions above art work so a newer-but-poorer capture cannot silently become the production baseline
+- upgraded the main `TinyToonRemasterStudio.py` GUI to expose Capture Gap Planner, Visual Context, Animation Families, Final Art Priority and Final Art Sprint actions directly
+- added adjustable Top-N sprint size plus GUI `Create Top-N Art Sprint`, `Open CurrentArtSprint` and `Finish Sprint + Pixel QA`
+- Studio workspace instructions now describe the actual capture → Production Sprint → art sprint → QA → playtest loop
+- wired the unified Production Sprint dashboard through `studio_command_center.py`
+- added synthetic tests for combined production status, actionable capture/art blockers, metadata-only output and Studio orchestration
+- added `PRODUCTION_SPRINT_CONTROL_CENTER.md` and refreshed README/ROADMAP around the GUI-first workflow
+- no ROM, save state, ROM-derived capture, ripped commercial art/audio, emulator binary, sprint graphic or derivative final pack is committed
+
 ## 1.0.0-rc7 — Final Art Sprint Kit
 
 - added `art_sprint_kit.py` to turn the evidence-driven Top-N Final Art Priority list into a focused local batch-edit folder
