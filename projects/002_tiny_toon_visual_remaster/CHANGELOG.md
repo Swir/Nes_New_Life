@@ -1,5 +1,18 @@
 # Changelog — Project #002 Tiny Toon Visual Remaster
 
+## 0.7.0 — Resume-safe incremental production sync
+
+- added `production_sync.py` to turn repeated MesenCE captures into one resumable production workflow
+- art queue regeneration now preserves existing non-TODO status, non-UNASSIGNED artist grouping and notes for matching tile+palette entries
+- mappings that disappear from a newer capture are exported to `ART_QUEUE_RETIRED.csv` instead of being silently forgotten
+- master-workspace synchronization now identifies existing artwork by exact source RGBA hash instead of fragile numeric filenames
+- already edited master PNGs survive capture growth; only their target lists are refreshed against the newest `hires.txt`
+- newly discovered graphics receive stable hash-based master filenames and are added without rebuilding the whole art workspace
+- synchronization refreshes `ART_STATE.csv`, grouped workboards, capture report and HD-readiness report in one command
+- added machine-readable `PRODUCTION_SYNC.json`, `WORKSPACE_SYNC.json` and queue sync evidence
+- added synthetic regression tests proving artist state and edited master pixels survive a larger second capture
+- added `INCREMENTAL_PRODUCTION.md` with the recommended capture → sync → redraw → QA loop
+
 ## 0.6.0 — Pixel-safe batch art QA gate
 
 - added `art_qa.py` to compare the original MesenCE capture against the composed `final_art` pack at pixel level

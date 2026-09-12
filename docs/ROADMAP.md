@@ -22,6 +22,8 @@
 - generate a ranked CSV art queue from real tile/palette usage
 - infer PLAYER / ENEMY / BOSS / WORLD / UI / EFFECTS groups only when condition names provide evidence
 - leave unknown tiles explicitly `UNASSIGNED` instead of inventing semantics
+- resume-safe incremental sync preserves artist status, grouping and notes when a newer capture is imported
+- retired mappings are retained for inspection instead of silently disappearing
 - keep generated derivative packs local/gitignored
 - next: record every world, menu, animation, boss and effect
 - next: use capture diffs after each play session until growth approaches zero
@@ -42,6 +44,9 @@
 - block batch output when RGB or alpha changes occur outside authorized master rectangles
 - generate marker-only diff overlays and HTML/JSON QA evidence for every art batch
 - detect edited masters that unexpectedly produce no visible output change
+- master-workspace sync identifies artwork by exact source RGBA hash, so finished edits survive larger later captures
+- newly discovered graphics are added as hash-stable masters instead of rebuilding and renumbering the entire workspace
+- one incremental command refreshes queue, master targets, workboards, capture report and readiness evidence
 - player animation replacements first
 - common enemies and projectiles
 - foreground tilesets and scenery
@@ -60,6 +65,6 @@
 - final local full-game verification against the original ROM behavior
 
 ### Current hard blocker to a truthful "complete HD" release
-The repository can automate capture measurement, prioritization, grouping, workboard generation, duplicate detection, master-tile export, persistent batch art editing, exact replacement propagation, pixel-safe batch QA, preview processing, validation, readiness reporting and safe packaging. The remaining content-critical work requires a **local complete MesenCE capture plus the actual finished 4x artwork and real full-game visual verification**. Tooling must never infer unseen bosses, routes, animation states or ending screens as complete.
+The repository can automate capture measurement, prioritization, grouping, resume-safe capture synchronization, workboard generation, duplicate detection, master-tile export, persistent batch art editing, exact replacement propagation, pixel-safe batch QA, preview processing, validation, readiness reporting and safe packaging. The remaining content-critical work requires a **local complete MesenCE capture plus the actual finished 4x artwork and real full-game visual verification**. Tooling must never infer unseen bosses, routes, animation states or ending screens as complete.
 
 The ROM remains the gameplay source throughout all phases. We do not rebuild or redesign its levels, physics or enemy logic.
