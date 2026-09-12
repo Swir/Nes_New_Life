@@ -135,7 +135,7 @@ def write_dashboard(result: dict, output_dir: Path) -> dict:
         for row in result["capture_gap"]["next"]
     ) or "<tr><td colspan='3'>No capture-gap rows.</td></tr>"
     art_rows = "".join(
-        f"<tr><td>{row.get('score', row.get('priority_score', ''))}</td><td>{html.escape(str(row.get('art_group', '')))}</td><td><code>{html.escape(str(row.get('master_id') or row.get('master') or row.get('tile_id') or '')))}</code></td><td>{html.escape(str(row.get('reason') or row.get('reasons') or ''))}</td></tr>"
+        f"<tr><td>{row.get('priority_score', '')}</td><td>{html.escape(str(row.get('group', '')))}</td><td><code>{html.escape(str(row.get('tile_id') or ''))}</code></td><td>{html.escape(', '.join(row.get('reasons', [])))}</td></tr>"
         for row in result["final_art"]["next"]
     ) or "<tr><td colspan='4'>Priority board unavailable until ART_QUEUE + MasterWorkspace exist.</td></tr>"
 
@@ -149,7 +149,7 @@ def write_dashboard(result: dict, output_dir: Path) -> dict:
 <div class='grid'><div class='card'><b>Capture</b><p>{capture.get('done',0)}/{capture.get('total',0)} verified · gate {capture.get('release_capture_gate','BLOCKED')}</p></div><div class='card'><b>Capture regressions</b><p>{result['capture_gap']['regressions']}</p></div><div class='card'><b>Master art</b><p>{master.get('edited',0)}/{master.get('masters',0)} edited · TODO {master.get('todo',0)} · invalid {master.get('invalid',0)}</p></div><div class='card'><b>Visual review</b><p>{visual.get('gate','BLOCKED')} · pending {visual.get('pending',0)} · stale {visual.get('stale',0)}</p></div><div class='card'><b>Animation review</b><p>{animation.get('gate','BLOCKED')} · pending {animation.get('pending',0)} · stale {animation.get('stale',0)}</p></div></div>
 <div class='card'><h2>Do this next</h2><table><tr><th>Priority</th><th>Stage</th><th>Action</th></tr>{action_rows}</table></div>
 <div class='card'><h2>Capture next</h2><table><tr><th>Priority</th><th>Type</th><th>Target</th></tr>{capture_rows}</table></div>
-<div class='card'><h2>Final art next</h2><table><tr><th>Score</th><th>Group</th><th>Master/tile</th><th>Reason</th></tr>{art_rows}</table></div>
+<div class='card'><h2>Final art next</h2><table><tr><th>Score</th><th>Group</th><th>Tile</th><th>Why now</th></tr>{art_rows}</table></div>
 </body></html>"""
     html_path.write_text(document, encoding="utf-8")
     return {"json": str(json_path), "dashboard": str(html_path)}
