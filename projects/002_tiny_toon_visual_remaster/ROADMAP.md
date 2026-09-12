@@ -1,16 +1,18 @@
 # Project #002 — HD Completion Roadmap
 
-## Current milestone: Production Sprint Control Center + direct final-art execution
+## Current milestone: exact-build Final Regression Cockpit + direct final-art execution
 
 The production path is now:
 
-`MesenCE capture → Capture Mission Control → PRODUCTION SPRINT → Capture Gap Planner → incremental production sync → Visual Context Audit → Animation Family Workbench → Final Art Priority Board → Final Art Sprint Kit → build-bound Pixel QA → one-click MesenCE playtest → build-bound full-game regression → Unified Release Candidate Gate → gated ZIP`
+`MesenCE capture → Capture Mission Control → PRODUCTION SPRINT → Capture Gap Planner → incremental production sync → Visual Context Audit → Animation Family Workbench → Final Art Priority Board → Final Art Sprint Kit → build-bound Pixel QA → one-click MesenCE playtest → Final Regression Cockpit → Unified Release Candidate Gate → gated ZIP`
 
-The main Remaster Studio now exposes the recent capture/art intelligence directly. **PRODUCTION SPRINT** combines Capture Mission Control, capture regressions, Visual Context Review, Animation Family Review, MasterWorkspace progress and Final Art Priority into one metadata-only **DO THIS NEXT** dashboard. This closes the usability gap where rc5-rc7 existed in backend tooling but were not reachable from the primary GUI.
+The main production stack now covers capture planning, prioritized art execution and exact-build verification. **PRODUCTION SPRINT** combines Capture Mission Control, capture regressions, Visual Context Review, Animation Family Review, MasterWorkspace progress and Final Art Priority into one metadata-only **DO THIS NEXT** dashboard.
 
 Final Art Priority and Final Art Sprint remain focused on real captured graphics: Top-N unfinished masters are exported into `Artwork/CurrentArtSprint`, edited locally, then imported through stale-conflict checks, exact dimensions, `hires.txt` preservation, validation and Pixel QA.
 
-These production accelerators do not prove whole-game completeness. Capture Mission Control remains the explicit source of truth for full-game coverage and exact-build regression remains authoritative for final animation correctness.
+The **Final Regression Cockpit** turns the last manual QA phase into a fingerprint-bound workflow. Each of the ten authoritative full-game cases is marked PASS/FAIL only after real MesenCE verification. FAIL results carry a defect category and stay blocking until re-tested. Any later runtime PNG or `hires.txt` change makes older PASS evidence STALE automatically.
+
+These production accelerators do not prove whole-game completeness. Capture Mission Control remains the explicit source of truth for full-game capture coverage and real in-game MesenCE regression remains authoritative for final animation/context correctness.
 
 Visual Context Review is an authoritative release requirement. Missing, pending or stale high-risk visual-context review blocks the final release gate.
 
@@ -58,8 +60,11 @@ Studio's MasterWorkspace remains the authoritative local source of final art. Sp
 - [ ] No missing referenced PNGs
 - [ ] 4x target preserved
 - [ ] Build/deploy the current pack through **One-click HD Playtest**
-- [ ] Complete all final regression cases in MesenCE against the exact current fingerprint
-- [ ] No animation seams, wrong palette contexts or transparency regressions
+- [ ] Open `windows/Final_Regression_Cockpit.bat` (or the CLI cockpit) against the exact deployed/final pack
+- [ ] Work the cockpit's `DO THIS NEXT` case in real MesenCE gameplay
+- [ ] Record visible problems as FAIL with defect category; fix them and re-test the same case
+- [ ] Complete all ten cases with current-build PASS evidence
+- [ ] No animation seams, wrong palette contexts, missing HD coverage, mapping errors or transparency regressions
 - [ ] Re-run stale QA/regression evidence after any late runtime-art change
 
 ## Gate D — Release
@@ -69,21 +74,21 @@ Studio's MasterWorkspace remains the authoritative local source of final art. Sp
 - [ ] Art queue has 0 TODO and 0 UNASSIGNED rows
 - [ ] Visual Context Review exists and has no pending/stale high-risk families
 - [ ] Current-build pixel QA is PASS
-- [ ] Current-build full-game visual regression is complete
+- [ ] Final Regression Cockpit has 10/10 PASS for the exact current fingerprint
 - [ ] Runtime pack contains no ROM/save-state/patch payloads
 - [ ] Final release ZIP built only through Studio **GATED release ZIP** or the gated `release_candidate.py package` command
 - [ ] README screenshots/video captured from the user's local legally supplied game environment
 
 ## Highest-impact remaining work
 
-The tooling is now concentrated into the main Studio instead of scattered scripts. The largest remaining blockers are local content/evidence work:
+The tooling now reaches from capture through exact-build regression. The largest remaining blockers are local content/evidence work:
 
 1. complete local MesenCE capture of every route/state/boss/effect/ending,
 2. use **PRODUCTION SPRINT** after each session and eliminate capture regressions / high-priority PLAYER-BOSS-ENEMY gaps,
 3. sync the accepted capture and clear Visual Context / high-risk animation reviews,
 4. repeatedly create and finish Top-N Final Art Sprints until captured TODO/INVALID work is exhausted,
 5. resolve every art-queue classification,
-6. run the QA-gated MesenCE playtest and full-game visual regression on the exact final fingerprint,
+6. run the QA-gated playtest and drive **Final Regression Cockpit** from FAIL/STALE/PENDING to 10/10 current-build PASS,
 7. only then create the gated public HD Pack ZIP (without ROM/emulator/save-state content).
 
 A toolchain milestone is not the same as a finished remaster. Full HD completion still requires the user's local full-game capture, final artwork and real MesenCE regression testing.
