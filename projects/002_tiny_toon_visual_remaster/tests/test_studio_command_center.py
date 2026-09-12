@@ -17,6 +17,7 @@ from capture_mission_control import default_manifest  # noqa: E402
 from release_candidate import REGRESSION_CASES, complete_regression_case, pack_fingerprint  # noqa: E402
 from studio_command_center import (  # noqa: E402
     animation_family_dashboard,
+    capture_gap_dashboard,
     evidence_paths,
     gated_release_package,
     initialize_project_evidence,
@@ -28,16 +29,18 @@ from visual_context_audit import sync_review  # noqa: E402
 
 class StudioCommandCenterTests(unittest.TestCase):
     @staticmethod
-    def _write_pack(folder: Path) -> None:
+    def _write_pack(folder: Path, include_jump: bool = False) -> None:
         folder.mkdir(parents=True, exist_ok=True)
-        image = Image.new("RGBA", (64, 32), (50, 100, 180, 255))
+        image = Image.new("RGBA", (96, 32), (50, 100, 180, 255))
         image.save(folder / "tiles.png")
-        (folder / "hires.txt").write_text(
-            "<ver>106\n<scale>4\n<img>tiles.png\n"
-            "[hero_walk_1]<tile>0,2E,FF16360F,0,0,1,N\n"
-            "[hero_walk_2]<tile>0,2F,FF16360F,32,0,1,N\n",
-            encoding="utf-8",
-        )
+        lines = [
+            "<ver>106", "<scale>4", "<img>tiles.png",
+            "[hero_walk_1]<tile>0,2E,FF16360F,0,0,1,N",
+            "[hero_walk_2]<tile>0,2F,FF16360F,32,0,1,N",
+        ]
+        if include_jump:
+            lines.append("[hero_jump_1]<tile>0,30,FF16360F,64,0,1,N")
+        (folder / "hires.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
     @staticmethod
     def _complete_capture(path: Path) -> None:
@@ -55,6 +58,7 @@ class StudioCommandCenterTests(unittest.TestCase):
             writer.writerow(["tile_id", "palette", "status", "art_group"])
             writer.writerow(["2E", "FF16360F", "DONE", "PLAYER"])
             writer.writerow(["2F", "FF16360F", "DONE", "PLAYER"])
+            writer.writerow(["30", "FF16360F", "DONE", "PLAYER"])
 
     def _make_green_evidence(self, root: Path, pack: Path) -> None:
         paths = initialize_project_evidence(root)
@@ -101,6 +105,18 @@ class StudioCommandCenterTests(unittest.TestCase):
             self.assertTrue(Path(visual["dashboard"]).is_file())
             self.assertTrue(Path(animation["dashboard"]).is_file())
             self.assertIn("contact_sheets", animation)
+
+    def test_studio_capture_gap_dashboard_prioritizes_new_state_progress(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td); old = root / "old"; new = root / "new"
+            self._write_pack(old, include_jump=False)
+            self._write_pack(new, include_jump=True)
+            paths = initialize_project_evidence(root)
+            self._write_done_queue(paths.art_queue)
+            result = capture_gap_dashboard(root, new, previous_capture=old)
+            self.assertTrue(result["comparison"]["progressed"])
+            self.assertTrue((root / "Reports" / "CaptureGapPlanner" / "CAPTURE_NEXT.csv").is_file())
+            self.assertTrue(Path(result["outputs"]["html"]).is_file())
 
     def test_gated_studio_packaging_requires_and_preserves_green_build_evidence(self) -> None:
         with tempfile.TemporaryDirectory() as td:

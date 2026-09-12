@@ -1,5 +1,19 @@
 # Changelog — Project #002 Tiny Toon Visual Remaster
 
+## 1.0.0-rc5 — Capture gap planner + targeted capture queue
+
+- added `capture_gap_planner.py` to compare repeated local MesenCE captures and build a ranked `CAPTURE NEXT` queue
+- coverage present in an older capture but missing from the current one is promoted to `CAPTURE_REGRESSION` with the highest planner priority
+- added advisory PLAYER / BOSS / ENEMY state-gap suggestions derived from semantic animation families and a generic state vocabulary
+- pending Capture Mission Control items are merged into the same queue so manual whole-game coverage and structural animation evidence can be worked together
+- mixed / UNASSIGNED families are promoted as classification-capture targets where a clearer gameplay context can improve grouping
+- added `CAPTURE_NEXT.csv`, `CAPTURE_GAP_PLAN.json` and a metadata-only HTML dashboard; no captured artwork is embedded in reports
+- explicitly kept state-gap suggestions advisory: they never prove a state exists and never auto-complete Capture Mission Control
+- wired capture-gap reports into `studio_command_center.py`
+- added synthetic tests for state-gap detection, new-state progress, capture-regression detection, mission prioritization, Studio orchestration and report privacy
+- updated README/ROADMAP and added `CAPTURE_GAP_PLANNER.md`
+- no ROM, save state, ROM-derived capture, ripped commercial art/audio, emulator binary or derivative pack is committed
+
 ## 1.0.0-rc4 — Animation family workbench + enforced visual-context release gate
 
 - added `animation_workbench.py` to group Mesen condition-driven states into semantic animation families for player/enemy/boss production review

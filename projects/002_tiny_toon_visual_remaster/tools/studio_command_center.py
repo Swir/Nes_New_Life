@@ -6,6 +6,7 @@ from pathlib import Path
 
 from animation_workbench import write_contact_sheets, write_dashboard as write_animation_dashboard
 from bound_art_qa import audit_bound_art_apply
+from capture_gap_planner import build_capture_queue, write_outputs as write_capture_gap_outputs
 from capture_mission_control import ensure_manifest, mission_status, record_session, write_dashboard as write_capture_dashboard
 from hd_readiness import package_hd_pack
 from rapid_hd_playtest import build_playtest, default_mesence_hdpacks
@@ -64,6 +65,20 @@ def capture_dashboard(project_root: Path) -> dict:
     paths = initialize_project_evidence(project_root)
     dashboard = write_capture_dashboard(paths.capture_manifest, paths.reports / "CAPTURE_MISSION_CONTROL.html")
     return {"status": mission_status(paths.capture_manifest), "dashboard": str(dashboard)}
+
+
+def capture_gap_dashboard(project_root: Path, current_capture: Path, *, previous_capture: Path | None = None) -> dict:
+    paths = initialize_project_evidence(project_root)
+    queue = paths.art_queue if paths.art_queue.is_file() else None
+    result = build_capture_queue(
+        Path(current_capture),
+        queue,
+        Path(previous_capture) if previous_capture else None,
+        queue,
+        paths.capture_manifest,
+    )
+    outputs = write_capture_gap_outputs(result, paths.reports / "CaptureGapPlanner")
+    return {**result, "outputs": outputs}
 
 
 def visual_context_dashboard(project_root: Path, pack_dir: Path) -> dict:

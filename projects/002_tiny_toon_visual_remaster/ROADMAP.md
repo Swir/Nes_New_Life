@@ -1,14 +1,16 @@
 # Project #002 — HD Completion Roadmap
 
-## Current milestone: animation-family production workbench + enforced visual-context release gate
+## Current milestone: capture-gap planning + animation-family production workbench
 
 The production path is now:
 
-`MesenCE capture → Capture Mission Control → incremental production sync → Visual Context Audit → Animation Family Workbench → automatic baseline → master-art batch → build-bound pixel QA → one-click MesenCE playtest → build-bound full-game regression → Unified Release Candidate Gate → gated ZIP`
+`MesenCE capture → Capture Mission Control → Capture Gap Planner → incremental production sync → Visual Context Audit → Animation Family Workbench → automatic baseline → master-art batch → build-bound pixel QA → one-click MesenCE playtest → build-bound full-game regression → Unified Release Candidate Gate → gated ZIP`
 
-Visual Context Review is now an actual authoritative release requirement rather than documentation-only guidance. Missing, pending or stale high-risk visual-context review blocks the final release gate.
+The new Capture Gap Planner compares repeated local captures and produces a ranked **CAPTURE NEXT** queue. Coverage that existed in an older capture but disappears from the current one is treated as a high-priority regression. PLAYER/BOSS/ENEMY families also receive advisory missing-state suggestions so local play sessions can target the most likely visual gaps first.
 
-The Animation Family Workbench groups condition-driven states into semantic families and emits condition co-occurrence candidates for local inspection. It deliberately does not infer on-screen sprite geometry from HD texture-sheet coordinates. Local contact sheets can be generated for production review and remain gitignored.
+These state suggestions are heuristic and never auto-complete a mission. Capture Mission Control remains the explicit source of truth for full-game coverage.
+
+Visual Context Review is an authoritative release requirement. Missing, pending or stale high-risk visual-context review blocks the final release gate. Animation Family Workbench remains a production accelerator; exact-build full-game regression is authoritative for animation correctness.
 
 ## Gate A — Complete local capture
 
@@ -23,12 +25,13 @@ The Animation Family Workbench groups condition-driven states into semantic fami
 - [ ] HUD, text, pause/status/result screens
 - [ ] Effects, projectiles and transitions
 - [ ] Ending, credits and post-game states
+- [ ] Compare repeated captures and resolve any `CAPTURE_REGRESSION` rows before promoting a newer capture to production baseline
 
-Use Studio **Capture Mission Control** / **Record capture session** or `capture_mission_control.py`. Tile-count growth never auto-completes a mission; the capture gate stays BLOCKED until coverage is explicitly verified.
+Use Studio **Capture Mission Control** / **Record capture session** or `capture_mission_control.py`. After each targeted session, run `capture_gap_planner.py` (or Studio orchestration) against the previous and current capture and work from the top of `CAPTURE_NEXT.csv`. Tile-count growth never auto-completes a mission.
 
 ## Gate B — HD art production
 
-- [ ] Run resume-safe sync against the latest complete capture
+- [ ] Run resume-safe sync against the latest complete, non-regressed capture
 - [ ] Generate `VISUAL_CONTEXT_REVIEW.csv` and clear every high-risk palette/condition/variant family
 - [ ] Generate `ANIMATION_FAMILY_REVIEW.csv` and inspect high-risk player/enemy/boss animation families
 - [ ] Use local animation contact sheets for transition/seam review where useful
@@ -70,11 +73,12 @@ Studio's MasterWorkspace remains the primary local batch-edit surface. Exact dup
 The largest remaining blockers are now primarily local content/evidence work:
 
 1. complete local MesenCE capture of every route/state/boss/effect/ending,
-2. clear the enforced Visual Context Review on the latest final-art pack,
-3. inspect high-risk animation families and condition-cooccurrence candidates in-game,
-4. finish the real 4x art pass for every captured master,
-5. resolve every art-queue classification,
-6. run full-game visual regression on the exact final fingerprint,
-7. only then create the gated public HD Pack ZIP (without ROM/emulator/save-state content).
+2. use Capture Gap Planner between sessions and eliminate capture regressions / high-priority PLAYER-BOSS-ENEMY gaps,
+3. clear the enforced Visual Context Review on the latest final-art pack,
+4. inspect high-risk animation families and condition-cooccurrence candidates in-game,
+5. finish the real 4x art pass for every captured master,
+6. resolve every art-queue classification,
+7. run full-game visual regression on the exact final fingerprint,
+8. only then create the gated public HD Pack ZIP (without ROM/emulator/save-state content).
 
 A toolchain milestone is not the same as a finished remaster. Full HD completion still requires the user's local full-game capture, final artwork and real MesenCE regression testing.

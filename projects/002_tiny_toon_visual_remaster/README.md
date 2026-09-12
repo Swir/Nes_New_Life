@@ -57,9 +57,9 @@ The playtest builder creates a QA-gated HD Pack and can deploy it into the user'
 
 The current high-impact path is:
 
-`MesenCE capture → Capture Mission Control → incremental sync → Visual Context Audit → Animation Family Workbench → baseline / master art → build-bound Pixel QA → one-click playtest → exact-build regression → Unified Release Candidate Gate → gated ZIP`
+`MesenCE capture → Capture Mission Control → Capture Gap Planner → incremental sync → Visual Context Audit → Animation Family Workbench → baseline / master art → build-bound Pixel QA → one-click playtest → exact-build regression → Unified Release Candidate Gate → gated ZIP`
 
-`tools/TinyToonRemasterStudio.py` remains the preferred GUI command center for capture, art, QA, playtest and release evidence. `studio_command_center.py` also exposes visual-context and animation-family review orchestration for GUI integration and automation.
+`tools/TinyToonRemasterStudio.py` remains the preferred GUI command center for capture, art, QA, playtest and release evidence. `studio_command_center.py` exposes capture-gap, visual-context and animation-family orchestration for GUI integration and automation.
 
 ## Capture coverage
 
@@ -70,8 +70,24 @@ Capture at **4x Prescale** with MesenCE HD Pack Builder and deliberately trigger
 ```bash
 python tools/capture_mission_control.py init "C:\\TinyToonWork\\CAPTURE_MISSIONS.json"
 python tools/capture_mission_control.py record "C:\\TinyToonWork\\CAPTURE_MISSIONS.json" "C:\\TinyToonWork\\MesenCapture" --complete player_idle_walk_run
-python tools/hdpack_pipeline.py compare "C:\\TinyToonWork\\Capture_A" "C:\\TinyToonWork\\Capture_B"
 ```
+
+### Capture Gap Planner
+
+Between targeted play sessions, compare the previous and current capture:
+
+```bash
+python tools/capture_gap_planner.py \
+  "C:\\TinyToonWork\\Capture_Current" \
+  --previous "C:\\TinyToonWork\\Capture_Previous" \
+  --queue "C:\\TinyToonWork\\Artwork\\ART_QUEUE.csv" \
+  --capture-manifest "C:\\TinyToonWork\\CAPTURE_MISSIONS.json" \
+  --output "C:\\TinyToonWork\\Reports\\CaptureGapPlanner"
+```
+
+The planner creates `CAPTURE_NEXT.csv` and a metadata-only dashboard. It puts lost previous coverage at the top as `CAPTURE_REGRESSION`, then combines pending Capture Mission Control items with advisory PLAYER/BOSS/ENEMY state gaps and classification targets.
+
+The generic missing-state vocabulary is **advisory only**. It never proves that a specific state exists in this game and never marks Capture Mission Control complete. See `CAPTURE_GAP_PLANNER.md`.
 
 ## Visual Context Audit
 
@@ -84,7 +100,7 @@ python tools/visual_context_audit.py sync \
   --queue "C:\\TinyToonWork\\Artwork\\ART_QUEUE.csv"
 ```
 
-The authoritative release gate now **requires** this review file to exist and have no pending/stale high-risk families.
+The authoritative release gate **requires** this review file to exist and have no pending/stale high-risk families.
 
 ## Animation Family Workbench
 
@@ -142,8 +158,9 @@ python tools/release_candidate.py audit "C:\\TinyToonWork\\ModernizedPack\\final
 - `rom_probe.py` — local ROM inspector and CHR reference exporter
 - `prepare_workspace.py` — local workspace preparation without copying the ROM
 - `validate_hdpack.py` — `hires.txt`, PNG and coordinate validation
-- `hdpack_pipeline.py` — capture analysis/diffing, queue, preview and reports
+- `hdpack_pipeline.py` — structural capture analysis/diffing, queue, preview and reports
 - `capture_mission_control.py` — explicit full-game capture mission tracking
+- `capture_gap_planner.py` — repeated-capture regression detection and ranked `CAPTURE NEXT` planning
 - `production_sync.py` — resume-safe repeated-capture synchronization
 - `art_production.py` — workboards, exact dedupe, near-duplicate hints and master propagation
 - `visual_context_audit.py` — palette/condition/visual-variant family risk audit
