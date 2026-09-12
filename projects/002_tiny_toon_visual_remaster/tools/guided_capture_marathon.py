@@ -6,6 +6,7 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
+from capture_integrity_ledger import assert_capture_admissible, build_ledger
 from capture_mission_control import MISSION_ITEMS, ensure_manifest, load_manifest, mission_status, record_session
 
 ATTESTATION = "VERIFIED_IN_GAME"
@@ -68,7 +69,7 @@ def _mission_index() -> dict[str, int]:
     return {key: index for index, (key, _, _, _) in enumerate(MISSION_ITEMS)}
 
 
-def build_plan(manifest_path: Path) -> dict:
+def build_plan(manifest_path: Path, capture_dir: Path | None = None) -> dict:
     ensure_manifest(manifest_path)
     data = load_manifest(manifest_path)
     index = _mission_index()
@@ -89,18 +90,22 @@ def build_plan(manifest_path: Path) -> dict:
     pending.sort(key=lambda row: (-row["priority"], row["order"]))
     completed = [row for row in missions if row["done"]]
     status = mission_status(manifest_path)
+    ledger = build_ledger(manifest_path, capture_dir) if capture_dir is not None else None
     return {
-        "schema": "swir.project002.guided-capture-marathon.v1",
+        "schema": "swir.project002.guided-capture-marathon.v2",
         "generated_utc": datetime.now(timezone.utc).isoformat(),
         "attestation_required": ATTESTATION,
         "done": status["done"],
         "total": status["total"],
         "percent": status["percent"],
         "release_capture_gate": status["release_capture_gate"],
+        "capture_admission_gate": ledger["admission_gate"] if ledger else "NOT_CHECKED",
+        "capture_structural_blockers": ledger["structural_blockers"] if ledger else [],
+        "capture_fingerprint_sha256": ledger["capture_fingerprint_sha256"] if ledger else None,
         "pending": pending,
         "completed": completed,
         "next": pending[0] if pending else None,
-        "important_note": "Missions are completed only by explicit in-game attestation after real MesenCE gameplay. Tile-count growth never auto-completes a mission.",
+        "important_note": "Missions are completed only by explicit in-game attestation after real MesenCE gameplay, and only when the current capture passes structural integrity admission. Tile-count growth never auto-completes a mission.",
     }
 
 
@@ -124,24 +129,34 @@ def confirm_mission(
         return {
             "status": "ALREADY_COMPLETE",
             "mission": mission_key,
-            "plan": build_plan(manifest_path),
+            "plan": build_plan(manifest_path, capture),
         }
-    audit_note = "Guided Capture Marathon: VERIFIED_IN_GAME"
+
+    preflight = assert_capture_admissible(manifest_path, capture)
+    audit_note = "Guided Capture Marathon: VERIFIED_IN_GAME; integrity admission PASS; fingerprint=" + preflight["capture_fingerprint_sha256"]
     if notes.strip():
         audit_note += " — " + notes.strip()
     session = record_session(manifest_path, capture, [mission_key], audit_note)
-    plan = build_plan(manifest_path)
+    postflight = build_ledger(manifest_path, capture)
+    if postflight["admission_gate"] != "PASS":
+        raise RuntimeError("Capture became structurally inadmissible immediately after mission recording")
+    plan = build_plan(manifest_path, capture)
     return {
         "status": "RECORDED",
         "mission": mission_key,
         "session": session,
+        "capture_integrity": {
+            "admission_gate": postflight["admission_gate"],
+            "fingerprint_sha256": postflight["capture_fingerprint_sha256"],
+            "structural_blockers": postflight["structural_blockers"],
+        },
         "stagnating_warning": all(int(value) <= 0 for value in session["delta"].values()),
         "plan": plan,
     }
 
 
-def write_dashboard(manifest_path: Path, output: Path) -> Path:
-    plan = build_plan(manifest_path)
+def write_dashboard(manifest_path: Path, output: Path, capture_dir: Path | None = None) -> Path:
+    plan = build_plan(manifest_path, capture_dir)
     output.parent.mkdir(parents=True, exist_ok=True)
     cards = []
     for row in plan["pending"]:
@@ -161,10 +176,13 @@ def write_dashboard(manifest_path: Path, output: Path) -> Path:
             "</section>"
         )
     body = "".join(cards) or "<p>No mission entries.</p>"
+    admission = html.escape(plan["capture_admission_gate"])
+    structural = ", ".join(plan["capture_structural_blockers"]) or "none"
+    fingerprint = plan["capture_fingerprint_sha256"] or "not checked"
     output.write_text(
         f"""<!doctype html><html><head><meta charset='utf-8'><title>Project #002 Guided Capture Marathon</title>
 <style>body{{font:15px system-ui;max-width:1100px;margin:30px auto;padding:0 22px;background:#0d1117;color:#e6edf3}}.hero,.mission{{background:#161b22;border:1px solid #30363d;border-radius:14px;padding:16px;margin:12px 0}}.pending{{border-left:5px solid #f2cc60}}.done{{border-left:5px solid #3fb950}}code{{color:#79c0ff}}li{{margin:5px 0}}</style></head><body>
-<div class='hero'><h1>Guided Capture Marathon</h1><h2>{plan['done']}/{plan['total']} missions · {plan['percent']}% capture missions</h2><p>Gate: <b>{plan['release_capture_gate']}</b></p><p>{html.escape(plan['important_note'])}</p></div>{body}</body></html>""",
+<div class='hero'><h1>Guided Capture Marathon</h1><h2>{plan['done']}/{plan['total']} missions · {plan['percent']}% capture missions</h2><p>Mission gate: <b>{plan['release_capture_gate']}</b> · Capture admission: <b>{admission}</b></p><p>Structural blockers: {html.escape(structural)}</p><p>Capture fingerprint: <code>{html.escape(fingerprint)}</code></p><p>{html.escape(plan['important_note'])}</p></div>{body}</body></html>""",
         encoding="utf-8",
     )
     output.with_suffix(".json").write_text(json.dumps(plan, indent=2), encoding="utf-8")
@@ -176,6 +194,7 @@ def main() -> int:
     sub = parser.add_subparsers(dest="command", required=True)
     plan = sub.add_parser("plan")
     plan.add_argument("manifest", type=Path)
+    plan.add_argument("--capture", type=Path)
     confirm = sub.add_parser("confirm")
     confirm.add_argument("manifest", type=Path)
     confirm.add_argument("capture", type=Path)
@@ -185,15 +204,16 @@ def main() -> int:
     dashboard = sub.add_parser("dashboard")
     dashboard.add_argument("manifest", type=Path)
     dashboard.add_argument("output", type=Path)
+    dashboard.add_argument("--capture", type=Path)
     args = parser.parse_args()
 
     if args.command == "plan":
-        print(json.dumps(build_plan(args.manifest), indent=2))
+        print(json.dumps(build_plan(args.manifest, args.capture), indent=2))
         return 0
     if args.command == "confirm":
         print(json.dumps(confirm_mission(args.manifest, args.capture, args.mission, attestation=args.attestation, notes=args.notes), indent=2))
         return 0
-    print(write_dashboard(args.manifest, args.output))
+    print(write_dashboard(args.manifest, args.output, args.capture))
     return 0
 
 
