@@ -1,5 +1,18 @@
 # Changelog — Project #002 Tiny Toon Visual Remaster
 
+## 1.0.0-rc18 — GitHub Capture Evidence Triage
+
+- added `capture_evidence_triage.py` as the GitHub/CI-side consumer for privacy-safe Local Capture Bridge snapshots
+- evidence history now reports mapping growth, added/removed tile IDs, palettes and condition names, per-group mapping deltas and Capture Mission Control progress deltas
+- latest safe snapshot receives an explicit `PASS_INCREMENTAL` / `BLOCKED` evidence gate and one ordered `DO THIS NEXT` action
+- non-4x snapshots, missing referenced capture images, invalid metadata/privacy declarations and explicit `CAPTURE_REGRESSION` block the evidence baseline
+- added Gate A `CANDIDATE_REVIEW` hints from condition-name signals while explicitly forbidding automatic ROADMAP checkbox completion
+- upgraded `Project 002 Capture Evidence Guard` so evidence PRs are validated and triaged in CI with a human-readable GitHub Actions summary
+- added synthetic tests for clean incremental evidence, explicit regression blocking, missing-image blocking, history deltas and ROADMAP non-auto-completion
+- added `CAPTURE_EVIDENCE_TRIAGE.md` and advanced ROADMAP to include GitHub-side safe-evidence review before capture promotion
+- ROADMAP Gate A–D remains 0/52 because tooling and heuristic signals are not local gameplay/art/QA proof
+- no ROM, save state, capture image payload, ripped commercial art/audio or emulator binary is committed
+
 ## 1.0.0-rc17 — Privacy-safe Local Capture Bridge to GitHub evidence
 
 - added `local_capture_bridge.py` to inspect a local MesenCE capture and emit a strict metadata-only `SAFE_CAPTURE_HANDOFF.json` / CSV / HTML dashboard
@@ -77,7 +90,7 @@
 - added `capture_promotion_director.py` to turn a fresh local MesenCE capture into a safe high-speed production handoff
 - candidate capture is validated and compared with the previous accepted capture before production state is touched
 - any `CAPTURE_REGRESSION` blocks promotion and preserves the existing art queue/workspace
-- a clean promotion can run resume-safe sync, Visual Context, Animation Family, Final Art Priority and Production Sprint refresh in one pass
+- a clean candidate can then run resume-safe sync, Visual Context, Animation Family, Final Art Priority and Production Sprint refresh in one pass
 - optional sprint creation prepares the next Top-N art batch immediately
 - added metadata-only Capture Promotion reports, Windows launcher, synthetic regression-protection tests and `CAPTURE_PROMOTION_DIRECTOR.md`
 - no capture art, ROM, save state, ripped commercial asset or emulator binary is committed

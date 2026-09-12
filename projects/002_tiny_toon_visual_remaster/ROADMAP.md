@@ -1,6 +1,6 @@
 # Project #002 — HD Completion Roadmap
 
-## Current milestone: privacy-safe Local Capture Bridge + authoritative Remaster Studio + final release gate
+## Current milestone: GitHub Capture Evidence Triage + privacy-safe Local Capture Bridge + authoritative final path
 
 <!-- SWIR-ROADMAP-STANDARD:v1 -->
 <!-- ROADMAP-PROGRESS:START -->
@@ -26,9 +26,11 @@
 
 The production path is now:
 
-`MesenCE capture → Local Capture Bridge (safe metadata evidence) → Capture Mission Control → Capture Promotion Director → resume-safe sync → Visual Context Audit → Animation Family Workbench → Visual Completion Matrix → High-Impact Art Sprint → build-bound Pixel QA → one-click verified-fullscreen MesenCE playtest → Final Regression Cockpit → Final Release Readiness Director → gated ZIP`
+`MesenCE capture → Local Capture Bridge → GitHub Capture Evidence Triage → Capture Mission Control → Capture Promotion Director → resume-safe sync → Visual Context Audit → Animation Family Workbench → Visual Completion Matrix → High-Impact Art Sprint → build-bound Pixel QA → one-click verified-fullscreen MesenCE playtest → Final Regression Cockpit → Final Release Readiness Director → gated ZIP`
 
-The **Local Capture Bridge** closes the operational gap between a legally supplied local MesenCE session and the GitHub-hosted project. `windows/Local_Capture_Bridge.bat` inspects the current capture locally and emits only validator-approved metadata: mapping/tile/palette/condition counts, PLAYER/BOSS/ENEMY/WORLD/UI/EFFECTS group counts, image dimensions/sizes/SHA-256 hashes, Capture Mission Control status and capture-regression metadata. It never uploads ROM bytes, save states, capture pixels, emulator binaries or absolute local paths. When authenticated GitHub CLI is available, the launcher can send only the validated `SAFE_CAPTURE_HANDOFF.json` to a dedicated evidence PR; `.github/workflows/project-002-capture-evidence.yml` then re-validates the privacy contract. Evidence arrival never auto-completes Gate A–D.
+The **GitHub Capture Evidence Triage** consumes only validator-approved safe snapshots from `evidence/capture/`. It compares evidence history, reports added/removed tile IDs, palettes and condition names, mapping/group growth, Capture Mission Control progress and explicit regressions, then emits one **DO THIS NEXT** action in the GitHub Actions summary. A snapshot with invalid metadata, non-4x scale, missing referenced capture images or explicit `CAPTURE_REGRESSION` is blocked from becoming an accepted evidence baseline. Gate A condition-name matches are only `CANDIDATE_REVIEW` hints and never auto-complete a ROADMAP checkbox.
+
+The **Local Capture Bridge** closes the operational gap between a legally supplied local MesenCE session and the GitHub-hosted project. `windows/Local_Capture_Bridge.bat` inspects the current capture locally and emits only validator-approved metadata: mapping/tile/palette/condition counts, PLAYER/BOSS/ENEMY/WORLD/UI/EFFECTS group counts, image dimensions/sizes/SHA-256 hashes, Capture Mission Control status and capture-regression metadata. It never uploads ROM bytes, save states, capture pixels, emulator binaries or absolute local paths. When authenticated GitHub CLI is available, the launcher can send only the validated `SAFE_CAPTURE_HANDOFF.json` to a dedicated evidence PR; `.github/workflows/project-002-capture-evidence.yml` re-validates and triages it. Evidence arrival never auto-completes Gate A–D.
 
 The **Authoritative Remaster Studio** exposes the current production path in one UI instead of sending the user through older Top-N / Release Candidate flows. F4 launches Local Capture Bridge, F5 runs safe capture promotion, and the remaining controls run Visual Completion Matrix, the exact matrix-selected High-Impact Art Sprint, conflict-safe finish + Pixel QA, verified-fullscreen playtest, Final Regression Cockpit and the seven-gate Final Release Readiness audit. Its Visual Completion percentage remains capture-bounded art information only and never changes this Gate A–D release percentage.
 
@@ -42,7 +44,7 @@ The **Fullscreen-by-Contract Playtest** closes a user-facing readiness gap: the 
 
 The **Final Release Readiness Director** makes that fullscreen evidence packaging-authoritative. A public ZIP can now pass only when HD Pack structure, Capture Mission Control, final art, Visual Context, Pixel QA, verified fullscreen and all ten Final Regression Cockpit cases are simultaneously green. Pixel QA, fullscreen and regression must all match the exact current `hires.txt + runtime PNG` fingerprint. Any late runtime-art change invalidates old evidence and blocks packaging until the changed build is re-tested.
 
-The main production stack now covers privacy-safe evidence transfer, capture planning, regression-safe capture promotion, quantified visual completion, exact high-impact art execution, exact-build fullscreen launch, exact-build regression and a single final release decision. **PRODUCTION SPRINT** still combines Capture Mission Control, capture regressions, Visual Context Review, Animation Family Review, MasterWorkspace progress and Final Art Priority into one metadata-only **DO THIS NEXT** dashboard.
+The main production stack now covers privacy-safe evidence transfer and GitHub-side history triage, capture planning, regression-safe capture promotion, quantified visual completion, exact high-impact art execution, exact-build fullscreen launch, exact-build regression and a single final release decision. **PRODUCTION SPRINT** still combines Capture Mission Control, capture regressions, Visual Context Review, Animation Family Review, MasterWorkspace progress and Final Art Priority into one metadata-only **DO THIS NEXT** dashboard.
 
 Final Art Priority remains useful for broader review, while High-Impact Art Sprint is now the fastest default production path after the Visual Completion Matrix. Sprint kits are edited locally and imported through stale-conflict checks, exact dimensions, `hires.txt` preservation, validation and Pixel QA.
 
@@ -67,7 +69,7 @@ Visual Context Review is an authoritative release requirement. Missing, pending 
 - [ ] Ending, credits and post-game states
 - [ ] Compare repeated captures and resolve every `CAPTURE_REGRESSION` before promoting a newer capture to production baseline
 
-After each targeted MesenCE session, run `windows/Local_Capture_Bridge.bat` first to create a privacy-safe evidence handoff and optionally send that metadata to GitHub for review. Then run `windows/Promote_Capture_To_HD.bat` (preferably with the previous accepted capture selected). A candidate with capture regression must remain unpromoted until the lost state is recaptured. Neither the bridge nor Capture Promotion auto-completes gameplay missions; Capture Mission Control remains explicit full-game evidence.
+After each targeted MesenCE session, run `windows/Local_Capture_Bridge.bat` first to create a privacy-safe evidence handoff and optionally send that metadata to GitHub. GitHub Evidence Triage will compare it against older accepted snapshots and expose regressions/growth in CI without checking any ROADMAP box automatically. Then run `windows/Promote_Capture_To_HD.bat` (preferably with the previous accepted capture selected). A candidate with capture regression must remain unpromoted until the lost state is recaptured. Capture Mission Control remains explicit full-game evidence.
 
 ## Gate B — HD art production
 
@@ -122,14 +124,14 @@ Studio's MasterWorkspace remains the authoritative local source of final art. Sp
 
 ## Highest-impact remaining work
 
-The tooling now reaches from a local MesenCE capture through privacy-safe GitHub evidence, quantified captured-art completion, exact batch execution, packaging-authoritative verified fullscreen and exact-build regression. The largest remaining blockers are real content/evidence work:
+The tooling now reaches from a local MesenCE capture through privacy-safe GitHub evidence **and history triage**, quantified captured-art completion, exact batch execution, packaging-authoritative verified fullscreen and exact-build regression. The largest remaining blockers are real content/evidence work:
 
-1. complete local MesenCE capture of every route/state/boss/effect/ending and feed each session through **Local Capture Bridge** so GitHub can receive safe evidence without receiving the ROM/capture pixels,
-2. promote each new capture through **Capture Promotion Director** and eliminate every regression before it can touch production state,
+1. complete local MesenCE capture of every route/state/boss/effect/ending and feed each session through **Local Capture Bridge**, letting GitHub Evidence Triage reject regressions and rank the next capture target without receiving ROM/capture pixels,
+2. promote each accepted non-regressed capture through **Capture Promotion Director** before it can touch production state,
 3. clear Visual Context / high-risk animation reviews produced by the promoted capture,
 4. repeatedly run **High-Impact Art Sprint** so the exact matrix-selected PLAYER/BOSS/ENEMY/invalid/high-reuse backlog becomes editable immediately and reaches zero TODO/invalid,
 5. resolve every art-queue classification and finish WORLD/UI/EFFECTS,
 6. run the QA-gated **verified-fullscreen** playtest and drive **Final Regression Cockpit** from FAIL/STALE/PENDING to 10/10 current-build PASS,
 7. run **Final Release Gate** and create the public HD Pack ZIP only after all seven exact-build gates are green (without ROM/emulator/save-state content).
 
-A toolchain milestone is not the same as a finished remaster. Full HD completion still requires real full-game capture evidence, final artwork and real MesenCE regression testing. Local Capture Bridge minimizes the manual handoff but does not invent or fake those facts.
+A toolchain milestone is not the same as a finished remaster. Full HD completion still requires real full-game capture evidence, final artwork and real MesenCE regression testing. Local Capture Bridge plus GitHub Evidence Triage minimize manual handoff and make regressions visible without inventing or faking completion.

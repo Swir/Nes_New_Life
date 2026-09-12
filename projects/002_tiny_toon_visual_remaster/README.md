@@ -70,11 +70,21 @@ The bridge reads the current MesenCE capture locally, optionally compares it wit
 
 See `LOCAL_CAPTURE_BRIDGE.md`.
 
+### GitHub Capture Evidence Triage
+
+Safe evidence PRs are also analyzed by `capture_evidence_triage.py`. It compares accepted metadata snapshots and reports mapping growth, added/removed tile IDs, palettes and condition names, PLAYER/BOSS/ENEMY/WORLD/UI/EFFECTS deltas, Capture Mission Control progress and one ordered **DO THIS NEXT** action directly in the GitHub Actions summary.
+
+A snapshot is blocked as an evidence baseline when it is invalid/unsafe, not 4x, references missing capture images or explicitly reports `CAPTURE_REGRESSION`. Clean partial evidence may pass as `PASS_INCREMENTAL`; that only means the metadata snapshot is safe and structurally usable, **not** that release capture is complete.
+
+Triage can emit Gate A `CANDIDATE_REVIEW` hints from Mesen condition names, but those hints never automatically change a ROADMAP checkbox. Real gameplay/capture evidence must still be reviewed before `[ ]` becomes `[x]`.
+
+See `CAPTURE_EVIDENCE_TRIAGE.md`.
+
 ## Production workflow
 
 The current high-impact path is:
 
-`MesenCE capture → Local Capture Bridge → Capture Mission Control → Capture Promotion Director → incremental sync → Visual Context Audit → Animation Family Workbench → Visual Completion Matrix → Final Art Priority / high-impact batch → Final Art Sprint Kit → build-bound Pixel QA → one-click verified-fullscreen playtest → Final Regression Cockpit → Final Release Readiness Director → gated ZIP`
+`MesenCE capture → Local Capture Bridge → GitHub Capture Evidence Triage → Capture Mission Control → Capture Promotion Director → incremental sync → Visual Context Audit → Animation Family Workbench → Visual Completion Matrix → Final Art Priority / high-impact batch → Final Art Sprint Kit → build-bound Pixel QA → one-click verified-fullscreen playtest → Final Regression Cockpit → Final Release Readiness Director → gated ZIP`
 
 `tools/AuthoritativeRemasterStudio.py` is the preferred current production interface. F4 launches the Local Capture Bridge, F5 runs regression-safe capture promotion, and the remaining Studio actions follow the current high-impact art / QA / release path. The older `TinyToonRemasterStudio.py` remains available for compatibility.
 
@@ -267,6 +277,7 @@ See `FINAL_RELEASE_READINESS_DIRECTOR.md` and `FINAL_REGRESSION_COCKPIT.md`.
 - `capture_gap_planner.py` — repeated-capture regression detection and ranked `CAPTURE NEXT` planning
 - `local_capture_bridge.py` — privacy-safe local capture → metadata-only GitHub evidence handoff
 - `capture_evidence_validator.py` — schema/privacy guard that rejects paths and forbidden payloads
+- `capture_evidence_triage.py` — GitHub-side evidence history, regression gate, Gate A review hints and `DO THIS NEXT`
 - `capture_promotion_director.py` — regression-safe fresh-capture promotion into production
 - `production_sprint.py` — unified metadata-only `DO THIS NEXT` dashboard across capture/review/art evidence
 - `production_sync.py` — resume-safe repeated-capture synchronization
