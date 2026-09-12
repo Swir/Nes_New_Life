@@ -2,9 +2,9 @@
 
 ## Goal
 
-This project does **not** rebuild the game from scratch. The user supplies their own NES ROM locally. The ROM remains responsible for gameplay, physics, level layouts, enemy behavior, scrolling and timing. Our work is the presentation layer: higher-resolution replacement graphics, optional audio replacement later, and simple PC controls.
+This project does **not** rebuild the game from scratch. The user supplies their own NES ROM locally. The ROM remains responsible for gameplay, physics, level layouts, enemy behavior, scrolling and timing. Our work is the presentation layer: higher-resolution replacement graphics and a production workflow for a safe MesenCE HD Pack.
 
-The target workflow is **MesenCE HD Packs**. Mesen's HD-pack tooling records tile/palette combinations seen during gameplay into PNG sheets plus a `hires.txt` mapping. We redraw/replace the recorded graphics while the original game continues to run underneath.
+The target workflow is **MesenCE HD Packs**. MesenCE's HD-pack tooling records tile/palette combinations seen during gameplay into PNG sheets plus a `hires.txt` mapping. We redraw/replace the recorded graphics while the original game continues to run underneath.
 
 > MesenCE is the actively maintained Community Edition successor. Project #002 targets `nesdev-org/MesenCE` going forward.
 
@@ -37,7 +37,7 @@ Recommended MesenCE mapping:
 | Right Shift | Select |
 | Esc | Emulator/menu |
 
-If Z/X feel backwards for a specific action, simply swap A and B in MesenCE's input settings.
+Gamepads are configured through MesenCE Input settings. The remaster does not alter the ROM's controls, physics or timing.
 
 ## Windows 11 — easiest start
 
@@ -49,35 +49,46 @@ Start_Remaster.bat
 
 It downloads/verifies the current official MesenCE Windows build if needed, installs it under the local gitignored `vendor/MesenCE`, asks for the user-supplied `.nes`, verifies the Project #002 fingerprint and launches the ROM without copying it into the repository.
 
-## Fast HD workflow
+For the fastest capture-to-playtest loop use:
 
-1. Launch the ROM in MesenCE.
-2. Open **Tools → HD Pack Builder**.
-3. Capture at **4x Prescale** and trigger every reachable menu, route, animation, enemy, boss, HUD state and effect.
-4. Save `hires.txt` + PNG sheets into the local `MesenCapture` folder.
-5. Use the capture-diff tooling after later play sessions so new coverage is measurable.
-6. Run **Instant HD Preview** for a fast modernized baseline while preserving all `hires.txt` mappings.
-7. Generate the ranked/grouped art queue and finish the highest-reuse graphics first.
-8. Mark the readiness checklist only after real local verification.
-9. Run the **HD readiness dashboard**.
-10. Build the release ZIP only from a structurally valid pack.
+```text
+Build_HD_Playtest.bat
+```
 
-The automatic preview is a baseline, not a claim of finished modern artwork. The release dashboard deliberately refuses to invent an absolute whole-game percentage from unseen content.
+This creates a QA-gated current HD pack and can deploy it into the user's local MesenCE `HdPacks/<ROM stem>` folder with a backup of the previously installed pack.
+
+## Remaster Studio — production command center
+
+`tools/TinyToonRemasterStudio.py` is now the preferred GUI workflow. It exposes the authoritative production path instead of the older standalone readiness/package flow:
+
+1. Open the user-supplied ROM locally.
+2. Prepare the local workspace. Studio initializes Capture Mission Control and build-bound final-regression evidence.
+3. Capture with MesenCE HD Pack Builder at **4x Prescale**.
+4. Use **Capture Mission Control** and **Record capture session** to verify menus, player states, routes, enemies, bosses, UI, effects and ending coverage.
+5. Generate/sync the grouped art queue and MasterWorkspace.
+6. Edit only `Artwork/MasterWorkspace/editable/*.png` while keeping dimensions unchanged.
+7. Use **Apply + build-bound QA**. Studio composes the batch and fingerprints the exact runtime pack.
+8. Use **One-click HD Playtest** to build/deploy the current result into MesenCE.
+9. Complete final regression against that exact build fingerprint.
+10. Run **Release Candidate Audit**.
+11. **GATED release ZIP** is enabled in practice only when the unified release gate returns PASS.
+
+Changing `hires.txt` or any referenced runtime PNG after QA/regression makes previous evidence stale automatically.
 
 ## Capture progress and art queue
 
-`hdpack_pipeline.py` measures capture growth and can rank tile/palette pairs by reuse:
+`capture_mission_control.py` tracks explicit gameplay coverage while `hdpack_pipeline.py` measures structural capture growth. Tile-count growth alone never auto-completes a gameplay mission.
 
 ```bash
+python tools/capture_mission_control.py init "C:\\TinyToonWork\\CAPTURE_MISSIONS.json"
+python tools/capture_mission_control.py record "C:\\TinyToonWork\\CAPTURE_MISSIONS.json" "C:\\TinyToonWork\\MesenCapture" --complete player_idle_walk_run
+python tools/capture_mission_control.py dashboard "C:\\TinyToonWork\\CAPTURE_MISSIONS.json" "C:\\TinyToonWork\\Reports\\CAPTURE_MISSION_CONTROL.html"
+
 python tools/hdpack_pipeline.py compare "C:\\TinyToonWork\\Capture_A" "C:\\TinyToonWork\\Capture_B"
 python tools/hdpack_pipeline.py art-queue "C:\\TinyToonWork\\MesenCapture" --output "C:\\TinyToonWork\\Artwork\\ART_QUEUE.csv"
 ```
 
-`hd_readiness.py` can add evidence-based grouping to the queue. It classifies only when Mesen condition names provide meaningful keywords; otherwise the row stays `UNASSIGNED` for local inspection.
-
-```bash
-python tools/hd_readiness.py classify "C:\\TinyToonWork\\ModernizedPack\\vibrant" --output "C:\\TinyToonWork\\Artwork\\ART_QUEUE.csv"
-```
+Unknown artwork stays `UNASSIGNED`; the unified release gate blocks shipping until every art-queue row is both classified and finished.
 
 ## Instant HD Preview
 
@@ -87,50 +98,53 @@ python tools/hdpack_pipeline.py preview "C:\\TinyToonWork\\MesenCapture" "C:\\Ti
 python tools/hdpack_pipeline.py report "C:\\TinyToonWork\\ModernizedPack\\vibrant"
 ```
 
-The preview pipeline verifies referenced PNG files, processes graphics into a separate folder, preserves alpha, dimensions and mapping coordinates, and writes a SHA-256 manifest.
+The preview is a fast baseline, not final artwork. It preserves alpha, dimensions and `hires.txt` mapping coordinates.
 
-## HD readiness gate
+## Final release gate
 
-A prepared Studio workspace contains `HD_READINESS_CHECKLIST.json`. Its evidence items cover:
+The authoritative final gate is `release_candidate.py`, not the legacy readiness dashboard by itself. PASS requires all of the following on the **same current runtime build**:
 
-- boot/title/menu states,
-- every player movement/action/hit/death animation,
-- every playable route and scrolling section,
-- all common enemies,
-- all boss phases,
-- HUD/text/dialog states,
-- projectiles/effects/transitions,
-- ending/credits,
-- final 4x art completion,
-- full-game visual regression verification.
+- structurally valid 4x HD Pack,
+- complete Capture Mission Control evidence,
+- zero TODO art-queue rows,
+- zero UNASSIGNED art-queue rows,
+- build-bound Pixel Art QA PASS,
+- every final full-game regression case completed against the current runtime fingerprint,
+- no ROM/save-state/patch payloads.
 
-Generate the dashboard with:
+Audit example:
 
 ```bash
-python tools/hd_readiness.py dashboard "C:\\TinyToonWork\\ModernizedPack\\vibrant" --checklist "C:\\TinyToonWork\\HD_READINESS_CHECKLIST.json" --queue "C:\\TinyToonWork\\Artwork\\ART_QUEUE.csv" --output "C:\\TinyToonWork\\Release\\HD_READINESS.html"
+python tools/release_candidate.py audit "C:\\TinyToonWork\\ModernizedPack\\final_art" \
+  --capture "C:\\TinyToonWork\\CAPTURE_MISSIONS.json" \
+  --queue "C:\\TinyToonWork\\Artwork\\ART_QUEUE.csv" \
+  --art-qa "C:\\TinyToonWork\\Reports\\ArtQA\\ART_QA_RESULT.json" \
+  --regression "C:\\TinyToonWork\\FINAL_REGRESSION.json" \
+  --output "C:\\TinyToonWork\\Reports\\ReleaseCandidate"
 ```
 
-The release gate is **BLOCKED** when structural validation fails, referenced PNGs are missing, the pack is below the 4x target, manual full-game evidence is incomplete, or the supplied art queue still contains TODO/unassigned rows.
-
-## Safe release ZIP
-
-```bash
-python tools/hd_readiness.py package "C:\\TinyToonWork\\ModernizedPack\\vibrant" "C:\\TinyToonWork\\Release\\TinyToon_Visual_Remaster_HD_Pack.zip"
-```
-
-The packager validates the HD Pack and refuses ROM/save/patch files. Generated local reports are excluded from the release archive. A successfully created ZIP means the **pack structure is valid**; call it a complete HD release only after the readiness gate also passes through real local full-game verification.
+The Studio's **GATED release ZIP** action uses this same gate and refuses to package a BLOCKED build. This closes the old GUI bypass where a structurally valid pack could be zipped before complete capture/current-build QA/regression evidence existed.
 
 ## Tools
 
-- `rom_probe.py` — CLI ROM inspector and CHR exporter.
-- `prepare_workspace.py` — creates a local remaster workspace without copying the ROM itself.
-- `validate_hdpack.py` — checks `hires.txt`, referenced PNG files and tile coordinates.
-- `hdpack_pipeline.py` — capture analysis, capture diffing, ranked art queue, Instant HD Preview and capture report.
-- `hd_readiness.py` — art grouping, evidence checklist, readiness dashboard and safe release ZIP packaging.
-- `TinyToonRemasterStudio.py` — GUI for the complete capture → preview → art → readiness → package workflow.
+- `rom_probe.py` — CLI ROM inspector and local CHR reference exporter.
+- `prepare_workspace.py` — creates a local remaster workspace without copying the ROM.
+- `validate_hdpack.py` — validates `hires.txt`, referenced PNG files and tile coordinates.
+- `hdpack_pipeline.py` — capture analysis/diffing, ranked queue, preview and reports.
+- `capture_mission_control.py` — explicit full-game capture mission tracking.
+- `production_sync.py` — resume-safe repeated-capture synchronization.
+- `art_production.py` — workboards, exact dedupe, near-duplicate hints and master propagation.
+- `art_workspace.py` — persistent batch master-art workspace.
+- `auto_art_pass.py` — automatic baseline modernization for untouched masters.
+- `art_qa.py` / `bound_art_qa.py` — pixel-safe QA and exact-build fingerprint binding.
+- `rapid_hd_playtest.py` — capture → sync → baseline → apply → QA → optional MesenCE deployment.
+- `release_candidate.py` — single authoritative final release gate.
+- `studio_command_center.py` — safe GUI-facing orchestration layer for evidence, playtest, audit and gated packaging.
+- `TinyToonRemasterStudio.py` — GUI production command center.
 - `windows/setup_mesence.ps1` — downloads/verifies the official MesenCE Windows build.
 - `windows/launch_remaster.ps1` — verifies the ROM fingerprint and launches it locally.
-- `windows/Start_Remaster.bat` — one-click Windows wrapper.
+- `windows/Start_Remaster.bat` — one-click Windows launcher.
+- `windows/Build_HD_Playtest.bat` — one-click QA-gated HD playtest build/deploy.
 
 ## Python install
 
@@ -140,8 +154,8 @@ Python 3.11+ is recommended.
 python -m pip install -r requirements.txt
 ```
 
-Pillow is used for PNG export, validation and preview processing.
+Pillow is used for PNG export, validation, preview processing and QA.
 
 ## Copyright / repository rule
 
-Do not commit ROMs, emulator save states, Mesen captures made from commercial graphics, ripped game artwork, locally generated derivative preview packs, or downloaded emulator binaries. `reference_chr`, `captures`, `MesenPack`, `ModernizedPack`, `work`, `Release`, and `vendor` remain local/gitignored by design. The public repository contains tooling and original project metadata only.
+Do not commit ROMs, emulator save states, Mesen captures made from commercial graphics, ripped game artwork/audio, locally generated derivative preview/final packs, or downloaded emulator binaries. `reference_chr`, `captures`, `MesenPack`, `ModernizedPack`, `work`, `Release`, `Reports`, and `vendor` remain local/gitignored by design. The public repository contains tooling, tests using synthetic graphics, documentation and original project metadata only.
