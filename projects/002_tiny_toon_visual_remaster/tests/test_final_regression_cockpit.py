@@ -19,6 +19,7 @@ from final_regression_cockpit import (  # noqa: E402
     write_dashboard,
 )
 from release_candidate import REGRESSION_CASES, regression_status  # noqa: E402
+from studio_command_center import record_regression_result, regression_cockpit_dashboard  # noqa: E402
 
 
 class FinalRegressionCockpitTests(unittest.TestCase):
@@ -94,6 +95,18 @@ class FinalRegressionCockpitTests(unittest.TestCase):
             self.assertTrue(Path(outputs["dashboard"]).is_file())
             self.assertTrue(Path(outputs["json"]).is_file())
             self.assertEqual(list(report.rglob("*.png")), [])
+
+    def test_studio_orchestration_records_and_refreshes_dashboard(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td); workspace = root / "workspace"; pack = root / "pack"
+            workspace.mkdir(); self._write_pack(pack)
+            initial = regression_cockpit_dashboard(workspace, pack)
+            self.assertEqual(initial["counts"]["PASS"], 0)
+            case = initial["next_case"]["key"]
+            result = record_regression_result(workspace, pack, case, "PASS", notes="verified in MesenCE")
+            self.assertEqual(result["recorded"]["result"], "PASS")
+            self.assertEqual(result["status"]["counts"]["PASS"], 1)
+            self.assertTrue(Path(result["status"]["outputs"]["dashboard"]).is_file())
 
 
 if __name__ == "__main__":
