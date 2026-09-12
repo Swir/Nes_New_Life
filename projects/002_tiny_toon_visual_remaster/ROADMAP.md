@@ -2,14 +2,26 @@
 
 ## Current milestone: quantified captured-art completion + exact high-impact sprint execution + final release gate
 
+<!-- SWIR-ROADMAP-STANDARD:v1 -->
 <!-- ROADMAP-PROGRESS:START -->
-## Final release checklist progress
+<p align="center">
+  <a href="https://github.com/Swir/Nes_New_Life/actions/workflows/project-002-tools.yml"><img alt="CI" src="https://github.com/Swir/Nes_New_Life/actions/workflows/project-002-tools.yml/badge.svg"></a>
+  <img alt="Roadmap progress" src="https://img.shields.io/badge/ROADMAP-0.0%25-6b7280?style=for-the-badge">
+  <img alt="Completed" src="https://img.shields.io/badge/DONE-0%2F52-1f6feb?style=for-the-badge">
+  <img alt="Status" src="https://img.shields.io/badge/STATUS-RELEASE%20GATES%20OPEN-f59e0b?style=for-the-badge">
+</p>
 
-**0 / 52 release-gate items complete — 0.0%**
+## 📊 Final release readiness
 
-`░░░░░░░░░░░░░░░░░░░░ 0.0%`
+```text
+░░░░░░░░░░░░░░░░░░░░ 0.0%
+```
 
-This bar intentionally measures only the authoritative Gate A–D checkboxes below. The production toolchain is already implemented, but those final gates require the user's local capture, artwork and real MesenCE QA evidence, so tooling work is not falsely counted as release completion. Whenever a Gate A–D checkbox changes state, recalculate this block.
+| ✅ Completed | ⏳ Remaining | 📦 Total | 🎯 Progress |
+|---:|---:|---:|---:|
+| **0** | **52** | **52** | **0.0%** |
+
+> **Progress rule:** this dashboard measures only authoritative Gate A–D release checkboxes. Tooling work is not counted as finished release work. Update `[x]/[ ]` first, then update badges, numbers, percentage and the 20-segment bar. Never mark a gate complete without real local capture/art/QA evidence.
 <!-- ROADMAP-PROGRESS:END -->
 
 The production path is now:
