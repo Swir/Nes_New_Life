@@ -1,5 +1,55 @@
 # Changelog — Project #002 Tiny Toon Visual Remaster
 
+## 1.0.0-rc13 — Final Release Readiness Director
+
+- added `final_release_director.py` as the final packaging-authoritative Project #002 decision layer
+- final authorization now requires seven green gates: HD Pack structure, capture coverage, final art, Visual Context, current Pixel QA, verified fullscreen and 10/10 Final Regression Cockpit
+- missing, failed or stale fullscreen evidence blocks packaging even when the earlier release candidate audit is otherwise green
+- Pixel QA, fullscreen and regression evidence must all refer to the exact current runtime fingerprint
+- added metadata-only `FINAL_RELEASE_READINESS.json` and HTML dashboard with one ordered `DO THIS NEXT` stage
+- added `windows/Final_Release_Gate.bat` + PowerShell picker flow and gated ZIP creation after PASS
+- added synthetic tests for fullscreen bypass prevention, stale evidence, all-green authorization, blocker ordering and dashboard privacy
+- added `FINAL_RELEASE_READINESS_DIRECTOR.md` and advanced ROADMAP to the final exact-build release decision
+- no ROM, save state, ROM-derived capture, ripped commercial art/audio, emulator binary or derivative pack is committed
+
+## 1.0.0-rc12 — Verified fullscreen one-click HD playtest
+
+- upgraded the QA-gated playtest to launch the user's local ROM in MesenCE automatically with fullscreen requested
+- added Win32 active-monitor bounds verification and F11 retry; a windowed-only launch is rejected instead of silently accepted
+- added exact-build `FULLSCREEN_PLAYTEST.json` evidence tied to the current `hires.txt + runtime PNG` fingerprint
+- runtime-art changes make older fullscreen evidence stale automatically
+- added synthetic fullscreen argument/evidence/staleness tests and Windows PowerShell validation
+- added `FULLSCREEN_PLAYTEST.md` and advanced ROADMAP to fullscreen-by-contract finalization
+- no ROM, save state, emulator binary or local gameplay capture is committed
+
+## 1.0.0-rc11 — Regression-safe Capture Promotion Director
+
+- added `capture_promotion_director.py` to turn a fresh local MesenCE capture into a safe high-speed production handoff
+- candidate capture is validated and compared with the previous accepted capture before production state is touched
+- any `CAPTURE_REGRESSION` blocks promotion and preserves the existing art queue/workspace
+- a clean promotion can run resume-safe sync, Visual Context, Animation Family, Final Art Priority and Production Sprint refresh in one pass
+- optional sprint creation prepares the next Top-N art batch immediately
+- added metadata-only Capture Promotion reports, Windows launcher, synthetic regression-protection tests and `CAPTURE_PROMOTION_DIRECTOR.md`
+- no capture art, ROM, save state, ripped commercial asset or emulator binary is committed
+
+## 1.0.0-rc10 — Authoritative Final Regression release gate
+
+- unified the final release gate with Final Regression Cockpit PASS / FAIL / STALE / PENDING semantics
+- current-build FAIL evidence now blocks release directly and retains failure category/notes
+- runtime PNG/`hires.txt` changes invalidate earlier regression PASS evidence at the release layer
+- upgraded legacy regression completion to schema-2 history instead of bypassing cockpit semantics
+- release dashboard now exposes exact regression counts and the next blocking case
+- added synthetic propagation/staleness/migration tests and `AUTHORITATIVE_FINAL_RELEASE_GATE.md`
+
+## 1.0.0-rc9 — Exact-build Final Regression Cockpit
+
+- added `final_regression_cockpit.py` with ten authoritative whole-game visual regression cases
+- each case records PASS / FAIL / STALE / PENDING evidence tied to the exact runtime fingerprint
+- added failed-case-first `DO THIS NEXT` ordering and defect categories for capture, mapping, palette, animation, transparency and coverage problems
+- added standalone Tk GUI, Windows launcher and metadata-only HTML/JSON cockpit reports
+- runtime-art changes automatically stale older passes
+- added synthetic fail/retest/staleness/dashboard tests and `FINAL_REGRESSION_COCKPIT.md`
+
 ## 1.0.0-rc8 — Production Sprint Control Center
 
 - added `production_sprint.py` to combine Capture Mission Control, Capture Gap, Visual Context, Animation Family, MasterWorkspace and Final Art Priority evidence into one metadata-only `DO THIS NEXT` dashboard
