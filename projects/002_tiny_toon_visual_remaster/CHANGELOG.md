@@ -1,5 +1,17 @@
 # Changelog — Project #002 Tiny Toon Visual Remaster
 
+## 1.0.0-rc15 — Exact High-Impact Art Sprint execution
+
+- added `high_impact_art_sprint.py` to turn the exact Visual Completion Matrix `NEXT_HIGH_IMPACT_ART_BATCH` into an immediately editable local production sprint
+- removes the ranking-to-execution mismatch: the graphics measured as the highest-impact unfinished work are now the exact graphics exported for the next art session
+- sprint manifest records impact score/reasons, dimensions and SHA-256 MasterWorkspace state while local editable/reference PNGs and contact board remain uncommitted
+- finish path reuses stale-conflict protection, exact-dimension checks, byte-preserved `hires.txt`, candidate-pack composition and Pixel QA
+- added `windows/High_Impact_Art_Sprint.bat` and `windows/Finish_High_Impact_Art_Sprint.bat` plus PowerShell orchestration for Windows one-click prepare/finish
+- added synthetic tests for exact matrix-to-kit selection, safe Pixel-QA finish and protection against implicit overwrite of an existing artist sprint
+- added `HIGH_IMPACT_ART_SPRINT.md` and advanced ROADMAP so the default art-production loop executes the matrix-selected batch directly
+- PR #41 CI passes Python compile, full unit tests and Windows PowerShell parse before merge
+- no ROM, save state, ROM-derived capture, ripped commercial art/audio, emulator binary or local derivative PNG is committed
+
 ## 1.0.0-rc14 — Visual Completion Matrix + high-impact art batch
 
 - added `visual_completion_matrix.py` to quantify captured-art completion by PLAYER / BOSS / ENEMY / WORLD / UI / EFFECTS / UNASSIGNED
