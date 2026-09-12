@@ -1,5 +1,21 @@
 # Changelog — Project #002 Tiny Toon Visual Remaster
 
+## 1.0.0-rc19 — Guided Fullscreen Capture Marathon
+
+- added `guided_capture_marathon.py` as an explicit evidence-first controller for the eleven authoritative Capture Mission Control areas
+- each pending mission now has concrete in-game cues aimed at short-lived frames, alternate routes, boss phases, HUD states and effects that are easy to miss
+- mission completion requires the exact `VERIFIED_IN_GAME` attestation; tile/palette/image growth and heuristics can never auto-complete another mission
+- repeated mission sessions remain backed by real MesenCE capture snapshots and the existing Capture Mission Control manifest
+- added metadata-only `CAPTURE_MARATHON.html` / JSON dashboard showing completed and pending capture work
+- added `windows/Guided_Capture_Marathon.bat` + PowerShell one-click flow: verified-fullscreen ROM launch → mission-by-mission gameplay verification → safe evidence handoff
+- upgraded `Local_Capture_Bridge.ps1` with scripted current/previous capture parameters so the marathon can hand off the exact same capture without forcing duplicate folder selection
+- the marathon automatically runs Local Capture Bridge when the session ends and may optionally create the existing metadata-only GitHub evidence PR
+- explicit capture regression still blocks promotion even when safe evidence is successfully generated
+- added synthetic tests for mission ordering, attestation enforcement, real capture-session recording, no-growth behavior and report privacy
+- added `GUIDED_CAPTURE_MARATHON.md`; ROADMAP/README advanced to make the marathon the fastest Gate A path
+- ROADMAP Gate A–D remains unchanged until real local in-game evidence is actually recorded and reviewed; tooling itself earns no checkbox
+- no ROM, save state, capture image payload, ripped commercial art/audio or emulator binary is committed
+
 ## 1.0.0-rc18 — GitHub Capture Evidence Triage
 
 - added `capture_evidence_triage.py` as the GitHub/CI-side consumer for privacy-safe Local Capture Bridge snapshots
