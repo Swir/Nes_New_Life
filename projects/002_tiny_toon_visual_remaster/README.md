@@ -60,9 +60,9 @@ See `FULLSCREEN_PLAYTEST.md`.
 
 The current high-impact path is:
 
-`MesenCE capture → Capture Mission Control → Capture Promotion Director → incremental sync → Visual Context Audit → Animation Family Workbench → Final Art Priority Board → Final Art Sprint Kit → build-bound Pixel QA → one-click verified-fullscreen playtest → exact-build regression → Unified Release Candidate Gate → gated ZIP`
+`MesenCE capture → Capture Mission Control → Capture Promotion Director → incremental sync → Visual Context Audit → Animation Family Workbench → Visual Completion Matrix → Final Art Priority / high-impact batch → Final Art Sprint Kit → build-bound Pixel QA → one-click verified-fullscreen playtest → Final Regression Cockpit → Final Release Readiness Director → gated ZIP`
 
-`tools/TinyToonRemasterStudio.py` is now the preferred end-to-end interface. The main window exposes the recent capture-gap, visual-context, animation-family, priority-board and Final Art Sprint tools directly instead of requiring separate CLI commands.
+`tools/TinyToonRemasterStudio.py` remains the preferred end-to-end interface, while the one-click Windows tools cover the newest production gates directly.
 
 ### Production Sprint Control Center
 
@@ -136,6 +136,31 @@ Optional local contact sheets can be generated with `animation_workbench.py cont
 
 Important boundary: HD texture-sheet coordinates are **not** treated as on-screen sprite coordinates. Assembly candidates are review hints only and require in-game verification.
 
+## Visual Completion Matrix
+
+After a capture is promoted and MasterWorkspace is synchronized, run:
+
+```text
+windows/Visual_Completion_Matrix.bat
+```
+
+or from Python:
+
+```bash
+python tools/visual_completion_matrix.py \
+  "C:\\TinyToonWork\\ModernizedPack\\final_art" \
+  "C:\\TinyToonWork\\Reports\\VisualCompletion" \
+  --queue "C:\\TinyToonWork\\Artwork\\ART_QUEUE.csv" \
+  --workspace "C:\\TinyToonWork\\Artwork\\MasterWorkspace" \
+  --batch-size 40
+```
+
+The matrix reports captured-art completion separately for PLAYER, BOSS, ENEMY, WORLD, UI, EFFECTS and UNASSIGNED, plus usage-weighted and production-weighted progress. It generates `NEXT_HIGH_IMPACT_ART_BATCH.csv`, promoting invalid masters, PLAYER/BOSS work, classification blockers and high-reuse graphics so art sessions target visible game impact first.
+
+The percentage is intentionally **capture-bounded**. It never means the whole game is complete unless Capture Mission Control is complete too. Reports are metadata-only and do not copy captured PNG artwork.
+
+See `VISUAL_COMPLETION_MATRIX.md`.
+
 ## Final Art Priority Board
 
 After capture sync and review passes, generate a ranked list of the captured graphics whose completion should produce the largest visible HD improvement:
@@ -183,7 +208,7 @@ python tools/art_sprint_kit.py finish \
 
 The finish path is conflict-safe and performs `safe import → composition → hires.txt preservation → validation → pixel QA`. If the same workspace master changed after sprint export, import blocks instead of overwriting newer work. In Studio these are the **Create Top-N Art Sprint** and **Finish Sprint + Pixel QA** buttons.
 
-See also `FINAL_ART_SPRINT_KIT.md`, `FINAL_ART_PRIORITY_BOARD.md`, `ANIMATION_WORKBENCH.md` and `VISUAL_CONTEXT_AUDIT.md`.
+See also `FINAL_ART_SPRINT_KIT.md`, `FINAL_ART_PRIORITY_BOARD.md`, `VISUAL_COMPLETION_MATRIX.md`, `ANIMATION_WORKBENCH.md` and `VISUAL_CONTEXT_AUDIT.md`.
 
 ## Art production
 
@@ -198,28 +223,25 @@ Generate the ranked/grouped art queue and persistent `MasterWorkspace`. For broa
 
 ## Final release gate
 
-`release_candidate.py` is the authoritative final release decision. PASS requires the same current runtime build to have:
+`final_release_director.py` is the packaging-authoritative final release decision. PASS requires the same current runtime build to have all seven gates green:
 
 - structurally valid 4x HD Pack,
 - complete Capture Mission Control evidence,
-- zero TODO art-queue rows,
-- zero UNASSIGNED art-queue rows,
+- zero TODO and zero UNASSIGNED final-art work,
 - current Visual Context Review with no pending/stale high-risk families,
 - current build-bound Pixel Art QA PASS,
-- completed full-game visual regression for the current runtime fingerprint,
-- no ROM/save-state/patch payloads.
+- verified fullscreen playtest PASS for the exact current runtime fingerprint,
+- Final Regression Cockpit 10/10 PASS for the exact current runtime fingerprint.
 
-Project acceptance additionally requires the final user-facing playtest to be run in verified fullscreen. `tools/fullscreen_launch.py status` detects stale fullscreen evidence after a runtime art/mapping change.
+Any late `hires.txt` or runtime-PNG change invalidates old exact-build QA/fullscreen/regression evidence. Packaging remains blocked until the changed build is re-tested.
 
-```bash
-python tools/release_candidate.py audit "C:\\TinyToonWork\\ModernizedPack\\final_art" \
-  --capture "C:\\TinyToonWork\\CAPTURE_MISSIONS.json" \
-  --queue "C:\\TinyToonWork\\Artwork\\ART_QUEUE.csv" \
-  --visual-review "C:\\TinyToonWork\\Artwork\\VISUAL_CONTEXT_REVIEW.csv" \
-  --art-qa "C:\\TinyToonWork\\Reports\\ArtQA\\ART_QA_RESULT.json" \
-  --regression "C:\\TinyToonWork\\FINAL_REGRESSION.json" \
-  --output "C:\\TinyToonWork\\Reports\\ReleaseCandidate"
+Windows one-click final gate:
+
+```text
+windows/Final_Release_Gate.bat
 ```
+
+See `FINAL_RELEASE_READINESS_DIRECTOR.md` and `FINAL_REGRESSION_COCKPIT.md`.
 
 ## Main tools
 
@@ -229,11 +251,13 @@ python tools/release_candidate.py audit "C:\\TinyToonWork\\ModernizedPack\\final
 - `hdpack_pipeline.py` — structural capture analysis/diffing, queue, preview and reports
 - `capture_mission_control.py` — explicit full-game capture mission tracking
 - `capture_gap_planner.py` — repeated-capture regression detection and ranked `CAPTURE NEXT` planning
+- `capture_promotion_director.py` — regression-safe fresh-capture promotion into production
 - `production_sprint.py` — unified metadata-only `DO THIS NEXT` dashboard across capture/review/art evidence
 - `production_sync.py` — resume-safe repeated-capture synchronization
 - `art_production.py` — workboards, exact dedupe, near-duplicate hints and master propagation
 - `visual_context_audit.py` — palette/condition/visual-variant family risk audit
 - `animation_workbench.py` — semantic animation-family grouping, condition-cooccurrence candidates and local contact sheets
+- `visual_completion_matrix.py` — per-group captured-art completion plus next high-impact art batch
 - `final_art_priority.py` — evidence-driven `FINAL ART NEXT` ranking for highest-impact unfinished captured graphics
 - `art_sprint_kit.py` — Top-N local editing kit, stale-safe import and one-step compose/Pixel-QA finish
 - `art_workspace.py` — persistent batch master-art workspace
@@ -241,11 +265,14 @@ python tools/release_candidate.py audit "C:\\TinyToonWork\\ModernizedPack\\final
 - `art_qa.py` / `bound_art_qa.py` — pixel-safe QA and exact-build binding
 - `rapid_hd_playtest.py` — capture → sync → baseline → apply → QA → optional MesenCE deploy
 - `fullscreen_launch.py` — verified-fullscreen exact-build evidence and stale-evidence checks
-- `release_candidate.py` — authoritative final release gate
+- `final_regression_cockpit.py` — exact-build 10-case full-game visual regression evidence
+- `final_release_director.py` — authoritative seven-gate release/package decision
 - `studio_command_center.py` — GUI-facing orchestration layer
 - `TinyToonRemasterStudio.py` — main Production Sprint / art / QA / release GUI
 - `windows/Start_Remaster.bat` — one-click Windows launcher
 - `windows/Build_HD_Playtest.bat` — one-click QA-gated build/deploy + verified-fullscreen MesenCE launch
+- `windows/Visual_Completion_Matrix.bat` — one-click captured-art completion dashboard and high-impact batch
+- `windows/Final_Release_Gate.bat` — one-click seven-gate final audit/package flow
 
 ## Python
 
