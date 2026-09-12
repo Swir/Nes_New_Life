@@ -1,12 +1,14 @@
 # Project #002 — HD Completion Roadmap
 
-## Current milestone: exact-build Final Regression Cockpit + direct final-art execution
+## Current milestone: regression-safe Capture Promotion Director + exact-build finalization
 
 The production path is now:
 
-`MesenCE capture → Capture Mission Control → PRODUCTION SPRINT → Capture Gap Planner → incremental production sync → Visual Context Audit → Animation Family Workbench → Final Art Priority Board → Final Art Sprint Kit → build-bound Pixel QA → one-click MesenCE playtest → Final Regression Cockpit → Unified Release Candidate Gate → gated ZIP`
+`MesenCE capture → Capture Mission Control → Capture Promotion Director → resume-safe sync → Visual Context Audit → Animation Family Workbench → Final Art Priority Board → Final Art Sprint Kit → build-bound Pixel QA → one-click MesenCE playtest → Final Regression Cockpit → Unified Release Candidate Gate → gated ZIP`
 
-The main production stack now covers capture planning, prioritized art execution and exact-build verification. **PRODUCTION SPRINT** combines Capture Mission Control, capture regressions, Visual Context Review, Animation Family Review, MasterWorkspace progress and Final Art Priority into one metadata-only **DO THIS NEXT** dashboard.
+The new **Capture Promotion Director** is the preferred bridge from a fresh local MesenCE capture into production. It validates the candidate, compares it with the previous accepted capture, and refuses to synchronize `ART_QUEUE.csv` or `MasterWorkspace` when `CAPTURE_REGRESSION` is present. A clean candidate can then run resume-safe sync, Visual Context, Animation Family, Final Art Priority and Production Sprint refresh in one pass and optionally prepare the next Top-N Art Sprint immediately.
+
+The main production stack now covers capture planning, regression-safe capture promotion, prioritized art execution and exact-build verification. **PRODUCTION SPRINT** still combines Capture Mission Control, capture regressions, Visual Context Review, Animation Family Review, MasterWorkspace progress and Final Art Priority into one metadata-only **DO THIS NEXT** dashboard.
 
 Final Art Priority and Final Art Sprint remain focused on real captured graphics: Top-N unfinished masters are exported into `Artwork/CurrentArtSprint`, edited locally, then imported through stale-conflict checks, exact dimensions, `hires.txt` preservation, validation and Pixel QA.
 
@@ -29,17 +31,18 @@ Visual Context Review is an authoritative release requirement. Missing, pending 
 - [ ] HUD, text, pause/status/result screens
 - [ ] Effects, projectiles and transitions
 - [ ] Ending, credits and post-game states
-- [ ] Compare repeated captures and resolve any `CAPTURE_REGRESSION` rows before promoting a newer capture to production baseline
+- [ ] Compare repeated captures and resolve every `CAPTURE_REGRESSION` before promoting a newer capture to production baseline
 
-Use Studio **Capture Mission Control** / **Record capture session**. After each session, click **PRODUCTION SPRINT** and work from its highest-priority action. Use **Capture Gap Planner** when comparing a previous and current capture. Tile-count growth never auto-completes a mission.
+After each targeted MesenCE session, run `windows/Promote_Capture_To_HD.bat` (preferably with the previous accepted capture selected). A candidate with capture regression must remain unpromoted until the lost state is recaptured. Capture Promotion never auto-completes gameplay missions; continue using Capture Mission Control for explicit full-game evidence.
 
 ## Gate B — HD art production
 
-- [ ] Run resume-safe sync against the latest complete, non-regressed capture
-- [ ] Generate `VISUAL_CONTEXT_REVIEW.csv` and clear every high-risk palette/condition/variant family
-- [ ] Generate `ANIMATION_FAMILY_REVIEW.csv` and inspect high-risk player/enemy/boss animation families
+- [ ] Promote only the latest valid, non-regressed capture through Capture Promotion Director
+- [ ] Confirm resume-safe sync preserved existing edited masters and artist decisions
+- [ ] Generate/refresh `VISUAL_CONTEXT_REVIEW.csv` and clear every high-risk palette/condition/variant family
+- [ ] Generate/refresh `ANIMATION_FAMILY_REVIEW.csv` and inspect high-risk player/enemy/boss animation families
 - [ ] Generate `FINAL_ART_NEXT.csv` and work the highest-scoring unfinished masters first
-- [ ] Export Top-N work through Studio **Create Top-N Art Sprint** into `Artwork/CurrentArtSprint`
+- [ ] Export Top-N work into `Artwork/CurrentArtSprint` (the director can do this during promotion)
 - [ ] Redraw sprint `editable/*.png` while keeping dimensions unchanged
 - [ ] Finish each sprint through Studio **Finish Sprint + Pixel QA**
 - [ ] Refresh **PRODUCTION SPRINT** after every successful sprint
@@ -60,7 +63,7 @@ Studio's MasterWorkspace remains the authoritative local source of final art. Sp
 - [ ] No missing referenced PNGs
 - [ ] 4x target preserved
 - [ ] Build/deploy the current pack through **One-click HD Playtest**
-- [ ] Open `windows/Final_Regression_Cockpit.bat` (or the CLI cockpit) against the exact deployed/final pack
+- [ ] Open `windows/Final_Regression_Cockpit.bat` against the exact deployed/final pack
 - [ ] Work the cockpit's `DO THIS NEXT` case in real MesenCE gameplay
 - [ ] Record visible problems as FAIL with defect category; fix them and re-test the same case
 - [ ] Complete all ten cases with current-build PASS evidence
@@ -84,8 +87,8 @@ Studio's MasterWorkspace remains the authoritative local source of final art. Sp
 The tooling now reaches from capture through exact-build regression. The largest remaining blockers are local content/evidence work:
 
 1. complete local MesenCE capture of every route/state/boss/effect/ending,
-2. use **PRODUCTION SPRINT** after each session and eliminate capture regressions / high-priority PLAYER-BOSS-ENEMY gaps,
-3. sync the accepted capture and clear Visual Context / high-risk animation reviews,
+2. promote each new capture through **Capture Promotion Director** and eliminate every regression before it can touch production state,
+3. clear Visual Context / high-risk animation reviews produced by the promoted capture,
 4. repeatedly create and finish Top-N Final Art Sprints until captured TODO/INVALID work is exhausted,
 5. resolve every art-queue classification,
 6. run the QA-gated playtest and drive **Final Regression Cockpit** from FAIL/STALE/PENDING to 10/10 current-build PASS,
