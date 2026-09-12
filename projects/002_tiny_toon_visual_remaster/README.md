@@ -56,13 +56,27 @@ The playtest builder creates a QA-gated HD Pack, deploys it into the user's loca
 
 See `FULLSCREEN_PLAYTEST.md`.
 
+### Local Capture Bridge — safe local → GitHub handoff
+
+To move capture **evidence** into the GitHub workflow without moving the ROM or capture images, run:
+
+```text
+windows/Local_Capture_Bridge.bat
+```
+
+The bridge reads the current MesenCE capture locally, optionally compares it with the previous accepted capture, and writes only metadata under `Reports/LocalCaptureBridge/`: mapping/tile/palette/condition counts, PLAYER/BOSS/ENEMY/WORLD/UI/EFFECTS group counts, image dimensions/sizes/SHA-256 hashes, Capture Mission Control state and capture-regression metadata. It does **not** copy image pixels, ROM bytes, save states, emulator binaries or absolute local paths into the handoff.
+
+`capture_evidence_validator.py` validates the privacy contract. If GitHub CLI (`gh`) is installed and authenticated, the Windows bridge can optionally send only `SAFE_CAPTURE_HANDOFF.json` to a new GitHub evidence PR through the API. `.github/workflows/project-002-capture-evidence.yml` validates the evidence again before it can be trusted. Evidence arrival never auto-completes ROADMAP Gate A–D.
+
+See `LOCAL_CAPTURE_BRIDGE.md`.
+
 ## Production workflow
 
 The current high-impact path is:
 
-`MesenCE capture → Capture Mission Control → Capture Promotion Director → incremental sync → Visual Context Audit → Animation Family Workbench → Visual Completion Matrix → Final Art Priority / high-impact batch → Final Art Sprint Kit → build-bound Pixel QA → one-click verified-fullscreen playtest → Final Regression Cockpit → Final Release Readiness Director → gated ZIP`
+`MesenCE capture → Local Capture Bridge → Capture Mission Control → Capture Promotion Director → incremental sync → Visual Context Audit → Animation Family Workbench → Visual Completion Matrix → Final Art Priority / high-impact batch → Final Art Sprint Kit → build-bound Pixel QA → one-click verified-fullscreen playtest → Final Regression Cockpit → Final Release Readiness Director → gated ZIP`
 
-`tools/TinyToonRemasterStudio.py` remains the preferred end-to-end interface, while the one-click Windows tools cover the newest production gates directly.
+`tools/AuthoritativeRemasterStudio.py` is the preferred current production interface. F4 launches the Local Capture Bridge, F5 runs regression-safe capture promotion, and the remaining Studio actions follow the current high-impact art / QA / release path. The older `TinyToonRemasterStudio.py` remains available for compatibility.
 
 ### Production Sprint Control Center
 
@@ -251,6 +265,8 @@ See `FINAL_RELEASE_READINESS_DIRECTOR.md` and `FINAL_REGRESSION_COCKPIT.md`.
 - `hdpack_pipeline.py` — structural capture analysis/diffing, queue, preview and reports
 - `capture_mission_control.py` — explicit full-game capture mission tracking
 - `capture_gap_planner.py` — repeated-capture regression detection and ranked `CAPTURE NEXT` planning
+- `local_capture_bridge.py` — privacy-safe local capture → metadata-only GitHub evidence handoff
+- `capture_evidence_validator.py` — schema/privacy guard that rejects paths and forbidden payloads
 - `capture_promotion_director.py` — regression-safe fresh-capture promotion into production
 - `production_sprint.py` — unified metadata-only `DO THIS NEXT` dashboard across capture/review/art evidence
 - `production_sync.py` — resume-safe repeated-capture synchronization
@@ -268,8 +284,10 @@ See `FINAL_RELEASE_READINESS_DIRECTOR.md` and `FINAL_REGRESSION_COCKPIT.md`.
 - `final_regression_cockpit.py` — exact-build 10-case full-game visual regression evidence
 - `final_release_director.py` — authoritative seven-gate release/package decision
 - `studio_command_center.py` — GUI-facing orchestration layer
-- `TinyToonRemasterStudio.py` — main Production Sprint / art / QA / release GUI
+- `AuthoritativeRemasterStudio.py` — current F4–F11 privacy/capture/art/QA/release production GUI
+- `TinyToonRemasterStudio.py` — legacy-compatible broader production GUI
 - `windows/Start_Remaster.bat` — one-click Windows launcher
+- `windows/Local_Capture_Bridge.bat` — one-click privacy-safe local evidence + optional GitHub PR
 - `windows/Build_HD_Playtest.bat` — one-click QA-gated build/deploy + verified-fullscreen MesenCE launch
 - `windows/Visual_Completion_Matrix.bat` — one-click captured-art completion dashboard and high-impact batch
 - `windows/Final_Release_Gate.bat` — one-click seven-gate final audit/package flow
@@ -286,4 +304,4 @@ Pillow is used for PNG processing, workboards, validation and QA.
 
 ## Copyright / repository rule
 
-Do not commit ROMs, emulator save states, Mesen captures made from commercial graphics, ripped game artwork/audio, locally generated derivative preview/final packs, local animation contact sheets, Final Art Sprint Kit graphics or downloaded emulator binaries. `Artwork/` and `Reports/` are explicitly gitignored because they may contain ROM-derived local production assets. Public commits contain tooling, synthetic tests, documentation and original project metadata only.
+Do not commit ROMs, emulator save states, Mesen captures made from commercial graphics, ripped game artwork/audio, locally generated derivative preview/final packs, local animation contact sheets, Final Art Sprint Kit graphics or downloaded emulator binaries. `Artwork/` and `Reports/` are explicitly gitignored because they may contain ROM-derived local production assets. Public commits contain tooling, synthetic tests, documentation, original project metadata and validator-approved metadata-only capture evidence — never the capture image payload itself.
