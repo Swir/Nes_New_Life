@@ -73,6 +73,11 @@ class GuidedCaptureMarathonTests(unittest.TestCase):
             self.assertEqual(result["capture_integrity"]["admission_gate"], "PASS")
             self.assertEqual(len(result["capture_integrity"]["fingerprint_sha256"]), 64)
             self.assertIn("integrity admission PASS", result["session"]["notes"])
+            self.assertEqual(result["session"]["attestation"], ATTESTATION)
+            self.assertEqual(
+                result["session"]["capture_fingerprint_sha256"],
+                result["capture_integrity"]["fingerprint_sha256"],
+            )
 
     def test_regressed_capture_cannot_record_new_verified_mission(self) -> None:
         with tempfile.TemporaryDirectory() as td:
