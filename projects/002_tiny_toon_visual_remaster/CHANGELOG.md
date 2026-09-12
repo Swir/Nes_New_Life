@@ -1,5 +1,18 @@
 # Changelog — Project #002 Tiny Toon Visual Remaster
 
+## 0.6.0 — Pixel-safe batch art QA gate
+
+- added `art_qa.py` to compare the original MesenCE capture against the composed `final_art` pack at pixel level
+- derives authorized edit rectangles from the exact changed master PNG dimensions and every target in `MASTER_TILES.json`
+- detects RGB **and alpha/transparency** changes outside authorized master targets
+- blocks batch apply when even a single unauthorized output pixel is detected
+- verifies `hires.txt` is preserved byte-for-byte and sheet names/dimensions remain unchanged
+- detects edited masters that unexpectedly produce no output difference
+- emits `ART_QA_RESULT.json`, a local HTML QA report and marker-only diff overlays
+- diff overlays do not reproduce source artwork: green marks authorized changes and magenta marks unauthorized changes
+- integrated QA directly into `apply_workspace`, so Remaster Studio's existing Apply all master edits action automatically runs the safety gate
+- added synthetic tests for a clean authorized batch edit and deliberate one-pixel corruption outside the authorized region
+
 ## 0.5.0 — Batch master-art workspace
 
 - added persistent `MasterWorkspace/original` and `MasterWorkspace/editable` folders for real multi-asset production sessions
