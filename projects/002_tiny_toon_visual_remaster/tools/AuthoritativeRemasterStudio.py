@@ -31,8 +31,8 @@ class AuthoritativeRemasterStudio(tk.Tk):
     def __init__(self) -> None:
         super().__init__()
         self.title("Tiny Toon Visual Remaster — Authoritative HD Studio")
-        self.geometry("1180x820")
-        self.minsize(980, 680)
+        self.geometry("1180x850")
+        self.minsize(980, 700)
         self.workspace: Path | None = None
         self.capture: Path | None = None
         self.pack: Path | None = None
@@ -48,7 +48,7 @@ class AuthoritativeRemasterStudio(tk.Tk):
         ttk.Label(root, text="PROJECT #002 — TINY TOON VISUAL REMASTER", font=("Segoe UI", 17, "bold")).pack(anchor="w")
         ttk.Label(
             root,
-            text="Authoritative path: capture → safe evidence bridge → promotion → highest-impact HD art → Pixel QA → verified fullscreen → 10/10 regression → gated ZIP",
+            text="Authoritative path: guided fullscreen capture → safe evidence → promotion → highest-impact HD art → Pixel QA → 10/10 regression → gated ZIP",
         ).pack(anchor="w", pady=(2, 12))
 
         paths = ttk.LabelFrame(root, text="Local production inputs", padding=10)
@@ -68,9 +68,9 @@ class AuthoritativeRemasterStudio(tk.Tk):
         capture = ttk.LabelFrame(root, text="1 — Capture / safe handoff / promotion", padding=10)
         capture.pack(fill="x", pady=(10, 0))
         self._buttons(capture, [
+            ("GUIDED CAPTURE MARATHON", lambda: self.run_windows("Guided_Capture_Marathon.bat")),
             ("F4  Local Capture Bridge", lambda: self.run_windows("Local_Capture_Bridge.bat")),
             ("F5  Promote capture safely", lambda: self.run_windows("Promote_Capture_To_HD.bat")),
-            ("Capture Mission Control", lambda: self.run_windows("Capture_Mission_Control.bat")),
             ("Capture Gap Planner", lambda: self.run_windows("Capture_Gap_Planner.bat")),
         ])
 
@@ -95,7 +95,8 @@ class AuthoritativeRemasterStudio(tk.Tk):
 
         info = ttk.LabelFrame(root, text="Safety / controls", padding=10)
         info.pack(fill="x", pady=(10, 0))
-        ttk.Label(info, text="Gameplay: original local ROM in MesenCE. Fullscreen is mandatory for the final playtest.").pack(anchor="w")
+        ttk.Label(info, text="Gameplay: original local ROM in MesenCE. Guided capture and final playtest use verified fullscreen.").pack(anchor="w")
+        ttk.Label(info, text="Guided Capture Marathon records a mission only after explicit in-game verification; no tile-count heuristic can complete it.").pack(anchor="w")
         ttk.Label(info, text="F4 may send only validator-approved metadata JSON to GitHub; capture pixels and local paths stay on this PC.").pack(anchor="w")
         ttk.Label(info, text="Recommended keyboard: arrows = D-pad · Z = A · X = B · Enter = Start · Right Shift = Select. Gamepad is configured in MesenCE.").pack(anchor="w")
         ttk.Label(info, text="Never commit ROMs, save states, emulator binaries, capture PNGs, ripped art/audio or local sprint boards.").pack(anchor="w")
@@ -105,9 +106,9 @@ class AuthoritativeRemasterStudio(tk.Tk):
         self.output.pack(fill="both", expand=True)
         self._write(
             "AUTHORITATIVE REMASTER STUDIO READY\n\n"
-            "This UI intentionally follows the newest Project #002 production path only.\n"
+            "Start with GUIDED CAPTURE MARATHON when Gate A gameplay coverage is still incomplete.\n"
             "F4 bridges local MesenCE evidence to GitHub as validated metadata only; it never uploads the ROM or capture images.\n"
-            "It does not count tooling milestones as release completion. ROADMAP progress remains evidence-based Gate A–D progress.\n"
+            "Tooling milestones do not count as release completion. ROADMAP progress remains evidence-based Gate A–D progress.\n"
         )
 
     def _buttons(self, parent: ttk.Widget, specs: list[tuple[str, object]]) -> None:
@@ -118,6 +119,7 @@ class AuthoritativeRemasterStudio(tk.Tk):
 
     def _bind_shortcuts(self) -> None:
         binds = {
+            "<Control-F4>": lambda: self.run_windows("Guided_Capture_Marathon.bat"),
             "<F1>": self.select_workspace,
             "<F2>": self.select_capture,
             "<F3>": self.select_pack,
