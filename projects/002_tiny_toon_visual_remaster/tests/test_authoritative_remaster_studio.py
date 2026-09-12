@@ -29,6 +29,7 @@ class AuthoritativeRemasterStudioTests(unittest.TestCase):
             "Guided_Capture_Marathon.bat",
             "Local_Capture_Bridge.bat",
             "Promote_Capture_To_HD.bat",
+            "Studio_Grade_Art_Pass.bat",
             "Finish_High_Impact_Art_Sprint.bat",
             "Build_HD_Playtest.bat",
             "Final_Regression_Cockpit.bat",
@@ -37,6 +38,12 @@ class AuthoritativeRemasterStudioTests(unittest.TestCase):
         }
         missing = sorted(name for name in required if not (WINDOWS / name).is_file())
         self.assertEqual([], missing)
+
+    def test_high_impact_launcher_offers_quality_polish_before_finish(self) -> None:
+        source = (WINDOWS / "High_Impact_Art_Sprint.bat").read_text(encoding="utf-8")
+        self.assertIn("Studio-Grade Art Pass", source)
+        self.assertIn("Studio_Grade_Art_Pass.bat", source)
+        self.assertIn("Finish + Pixel QA", source)
 
     def test_studio_source_names_current_authoritative_gates(self) -> None:
         source = (TOOLS / "AuthoritativeRemasterStudio.py").read_text(encoding="utf-8")
