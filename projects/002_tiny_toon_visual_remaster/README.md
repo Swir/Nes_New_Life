@@ -57,9 +57,9 @@ The playtest builder creates a QA-gated HD Pack and can deploy it into the user'
 
 The current high-impact path is:
 
-`MesenCE capture → Capture Mission Control → incremental sync → Visual Context Audit → baseline / master art → build-bound Pixel QA → one-click playtest → exact-build regression → Unified Release Candidate Gate → gated ZIP`
+`MesenCE capture → Capture Mission Control → incremental sync → Visual Context Audit → Animation Family Workbench → baseline / master art → build-bound Pixel QA → one-click playtest → exact-build regression → Unified Release Candidate Gate → gated ZIP`
 
-`tools/TinyToonRemasterStudio.py` remains the preferred GUI command center for capture, art, QA, playtest and release evidence. CLI tools remain available for automation and detailed inspection.
+`tools/TinyToonRemasterStudio.py` remains the preferred GUI command center for capture, art, QA, playtest and release evidence. `studio_command_center.py` also exposes visual-context and animation-family review orchestration for GUI integration and automation.
 
 ## Capture coverage
 
@@ -73,26 +73,36 @@ python tools/capture_mission_control.py record "C:\\TinyToonWork\\CAPTURE_MISSIO
 python tools/hdpack_pipeline.py compare "C:\\TinyToonWork\\Capture_A" "C:\\TinyToonWork\\Capture_B"
 ```
 
-## Visual Context & Animation Risk Audit
+## Visual Context Audit
 
-Before final polish, run the new `visual_context_audit.py`. It groups captured uses by tile ID and ranks families that are most likely to cause visible HD mistakes because they appear across multiple palettes, Mesen conditions or visually distinct captured variants.
+`visual_context_audit.py` groups captured uses by tile ID and ranks families that are likely to cause visible HD mistakes across multiple palettes, Mesen conditions or distinct captured variants. Reviews are fingerprinted, so later capture/art changes can invalidate old evidence.
 
 ```bash
 python tools/visual_context_audit.py sync \
   "C:\\TinyToonWork\\ModernizedPack\\final_art" \
   "C:\\TinyToonWork\\Artwork\\VISUAL_CONTEXT_REVIEW.csv" \
   --queue "C:\\TinyToonWork\\Artwork\\ART_QUEUE.csv"
-
-python tools/visual_context_audit.py audit \
-  "C:\\TinyToonWork\\ModernizedPack\\final_art" \
-  "C:\\TinyToonWork\\Artwork\\VISUAL_CONTEXT_REVIEW.csv" \
-  "C:\\TinyToonWork\\Reports\\VisualContext" \
-  --queue "C:\\TinyToonWork\\Artwork\\ART_QUEUE.csv"
 ```
 
-The report is metadata-only: no captured artwork is embedded. High-risk families require explicit local review. Review evidence is fingerprinted; if the family's palette/condition/visual composition changes later, the old review becomes stale automatically.
+The authoritative release gate now **requires** this review file to exist and have no pending/stale high-risk families.
 
-See `VISUAL_CONTEXT_AUDIT.md` for the review flow.
+## Animation Family Workbench
+
+`animation_workbench.py` groups condition-driven states into semantic families such as player/enemy/boss animation sets. It also emits condition-cooccurrence candidates for tiles that should be inspected together in MesenCE.
+
+```bash
+python tools/animation_workbench.py dashboard \
+  "C:\\TinyToonWork\\ModernizedPack\\final_art" \
+  --queue "C:\\TinyToonWork\\Artwork\\ART_QUEUE.csv" \
+  --review "C:\\TinyToonWork\\Artwork\\ANIMATION_FAMILY_REVIEW.csv" \
+  --output "C:\\TinyToonWork\\Reports\\AnimationWorkbench"
+```
+
+Optional local contact sheets can be generated with `animation_workbench.py contact-sheets`. They may contain ROM-derived captured graphics and therefore must stay local/gitignored. The normal dashboard is metadata-only.
+
+Important boundary: HD texture-sheet coordinates are **not** treated as on-screen sprite coordinates. Assembly candidates are review hints only and require in-game verification.
+
+See `ANIMATION_WORKBENCH.md` and `VISUAL_CONTEXT_AUDIT.md`.
 
 ## Art production
 
@@ -112,16 +122,16 @@ Generate the ranked/grouped art queue, build the persistent `MasterWorkspace`, t
 - complete Capture Mission Control evidence,
 - zero TODO art-queue rows,
 - zero UNASSIGNED art-queue rows,
+- current Visual Context Review with no pending/stale high-risk families,
 - current build-bound Pixel Art QA PASS,
 - completed full-game visual regression for the current runtime fingerprint,
 - no ROM/save-state/patch payloads.
-
-The Visual Context Audit is an additional production-review gate in the roadmap: every high-risk family should be current and reviewed before declaring the visual pass final.
 
 ```bash
 python tools/release_candidate.py audit "C:\\TinyToonWork\\ModernizedPack\\final_art" \
   --capture "C:\\TinyToonWork\\CAPTURE_MISSIONS.json" \
   --queue "C:\\TinyToonWork\\Artwork\\ART_QUEUE.csv" \
+  --visual-review "C:\\TinyToonWork\\Artwork\\VISUAL_CONTEXT_REVIEW.csv" \
   --art-qa "C:\\TinyToonWork\\Reports\\ArtQA\\ART_QA_RESULT.json" \
   --regression "C:\\TinyToonWork\\FINAL_REGRESSION.json" \
   --output "C:\\TinyToonWork\\Reports\\ReleaseCandidate"
@@ -137,6 +147,7 @@ python tools/release_candidate.py audit "C:\\TinyToonWork\\ModernizedPack\\final
 - `production_sync.py` — resume-safe repeated-capture synchronization
 - `art_production.py` — workboards, exact dedupe, near-duplicate hints and master propagation
 - `visual_context_audit.py` — palette/condition/visual-variant family risk audit
+- `animation_workbench.py` — semantic animation-family grouping, condition-cooccurrence candidates and local contact sheets
 - `art_workspace.py` — persistent batch master-art workspace
 - `auto_art_pass.py` — automatic baseline modernization for untouched masters
 - `art_qa.py` / `bound_art_qa.py` — pixel-safe QA and exact-build binding
@@ -159,4 +170,4 @@ Pillow is used for PNG processing, workboards, validation and QA.
 
 ## Copyright / repository rule
 
-Do not commit ROMs, emulator save states, Mesen captures made from commercial graphics, ripped game artwork/audio, locally generated derivative preview/final packs or downloaded emulator binaries. Local capture/art/release/report folders remain gitignored by design. Public commits contain tooling, synthetic tests, documentation and original project metadata only.
+Do not commit ROMs, emulator save states, Mesen captures made from commercial graphics, ripped game artwork/audio, locally generated derivative preview/final packs, local animation contact sheets or downloaded emulator binaries. Local capture/art/release/report folders remain gitignored by design. Public commits contain tooling, synthetic tests, documentation and original project metadata only.
