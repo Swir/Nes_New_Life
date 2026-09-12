@@ -1,16 +1,18 @@
 # Project #002 — HD Completion Roadmap
 
-## Current milestone: verified fullscreen playtest + regression-safe exact-build finalization
+## Current milestone: exact-build Final Release Readiness Director
 
 The production path is now:
 
-`MesenCE capture → Capture Mission Control → Capture Promotion Director → resume-safe sync → Visual Context Audit → Animation Family Workbench → Final Art Priority Board → Final Art Sprint Kit → build-bound Pixel QA → one-click verified-fullscreen MesenCE playtest → Final Regression Cockpit → Unified Release Candidate Gate → gated ZIP`
+`MesenCE capture → Capture Mission Control → Capture Promotion Director → resume-safe sync → Visual Context Audit → Animation Family Workbench → Final Art Priority Board → Final Art Sprint Kit → build-bound Pixel QA → one-click verified-fullscreen MesenCE playtest → Final Regression Cockpit → Final Release Readiness Director → gated ZIP`
 
 The **Capture Promotion Director** remains the preferred bridge from a fresh local MesenCE capture into production. It validates the candidate, compares it with the previous accepted capture, and refuses to synchronize `ART_QUEUE.csv` or `MasterWorkspace` when `CAPTURE_REGRESSION` is present. A clean candidate can then run resume-safe sync, Visual Context, Animation Family, Final Art Priority and Production Sprint refresh in one pass and optionally prepare the next Top-N Art Sprint immediately.
 
-The new **Fullscreen-by-Contract Playtest** closes a user-facing readiness gap: the one-click Windows playtest no longer stops after installing the pack. It launches the user's local ROM in MesenCE with native fullscreen requested, checks the actual emulator window against the active monitor, retries with F11 when needed and rejects a windowed launch. When a runtime pack is supplied, the launcher writes exact-build metadata-only fullscreen evidence tied to the current HD-pack fingerprint.
+The **Fullscreen-by-Contract Playtest** closes a user-facing readiness gap: the one-click Windows playtest no longer stops after installing the pack. It launches the user's local ROM in MesenCE with native fullscreen requested, checks the actual emulator window against the active monitor, retries with F11 when needed and rejects a windowed launch. When a runtime pack is supplied, the launcher writes exact-build metadata-only fullscreen evidence tied to the current HD-pack fingerprint.
 
-The main production stack now covers capture planning, regression-safe capture promotion, prioritized art execution, exact-build fullscreen launch and final regression verification. **PRODUCTION SPRINT** still combines Capture Mission Control, capture regressions, Visual Context Review, Animation Family Review, MasterWorkspace progress and Final Art Priority into one metadata-only **DO THIS NEXT** dashboard.
+The **Final Release Readiness Director** makes that fullscreen evidence packaging-authoritative. A public ZIP can now pass only when HD Pack structure, Capture Mission Control, final art, Visual Context, Pixel QA, verified fullscreen and all ten Final Regression Cockpit cases are simultaneously green. Pixel QA, fullscreen and regression must all match the exact current `hires.txt + runtime PNG` fingerprint. Any late runtime-art change invalidates old evidence and blocks packaging until the changed build is re-tested.
+
+The main production stack now covers capture planning, regression-safe capture promotion, prioritized art execution, exact-build fullscreen launch, exact-build regression and a single final release decision. **PRODUCTION SPRINT** still combines Capture Mission Control, capture regressions, Visual Context Review, Animation Family Review, MasterWorkspace progress and Final Art Priority into one metadata-only **DO THIS NEXT** dashboard.
 
 Final Art Priority and Final Art Sprint remain focused on real captured graphics: Top-N unfinished masters are exported into `Artwork/CurrentArtSprint`, edited locally, then imported through stale-conflict checks, exact dimensions, `hires.txt` preservation, validation and Pixel QA.
 
@@ -77,20 +79,21 @@ Studio's MasterWorkspace remains the authoritative local source of final art. Sp
 
 ## Gate D — Release
 
-- [ ] Studio **Release Candidate Audit** / `release_candidate.py audit` reports `RELEASE GATE: PASS`
+- [ ] Run `windows/Final_Release_Gate.bat` or `final_release_director.py audit`
+- [ ] Final Release Readiness Director reports `FINAL RELEASE GATE: PASS`
 - [ ] Capture missions are complete
 - [ ] Art queue has 0 TODO and 0 UNASSIGNED rows
 - [ ] Visual Context Review exists and has no pending/stale high-risk families
-- [ ] Current-build pixel QA is PASS
+- [ ] Current-build Pixel QA is PASS
 - [ ] Final Regression Cockpit has 10/10 PASS for the exact current fingerprint
-- [ ] Final user-facing playtest has been verified in fullscreen on the exact current build
+- [ ] Final user-facing playtest has verified fullscreen evidence for the exact current fingerprint
 - [ ] Runtime pack contains no ROM/save-state/patch payloads
-- [ ] Final release ZIP built only through Studio **GATED release ZIP** or the gated `release_candidate.py package` command
+- [ ] Final release ZIP is built only through `final_release_director.py package` / the PASS path in `windows/Final_Release_Gate.bat`
 - [ ] README screenshots/video captured from the user's local legally supplied game environment
 
 ## Highest-impact remaining work
 
-The tooling now reaches from capture through verified fullscreen playtest and exact-build regression. The largest remaining blockers are local content/evidence work:
+The tooling now reaches from capture through packaging-authoritative verified fullscreen and exact-build regression. The largest remaining blockers are local content/evidence work:
 
 1. complete local MesenCE capture of every route/state/boss/effect/ending,
 2. promote each new capture through **Capture Promotion Director** and eliminate every regression before it can touch production state,
@@ -98,6 +101,6 @@ The tooling now reaches from capture through verified fullscreen playtest and ex
 4. repeatedly create and finish Top-N Final Art Sprints until captured TODO/INVALID work is exhausted,
 5. resolve every art-queue classification,
 6. run the QA-gated **verified-fullscreen** playtest and drive **Final Regression Cockpit** from FAIL/STALE/PENDING to 10/10 current-build PASS,
-7. only then create the gated public HD Pack ZIP (without ROM/emulator/save-state content).
+7. run **Final Release Gate** and create the public HD Pack ZIP only after all seven exact-build gates are green (without ROM/emulator/save-state content).
 
 A toolchain milestone is not the same as a finished remaster. Full HD completion still requires the user's local full-game capture, final artwork and real MesenCE regression testing.
