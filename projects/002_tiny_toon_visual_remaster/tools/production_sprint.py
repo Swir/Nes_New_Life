@@ -130,8 +130,13 @@ def write_dashboard(result: dict, output_dir: Path) -> dict:
         f"<tr><td>{item['priority']}</td><td>{html.escape(item['stage'])}</td><td>{html.escape(item['action'])}</td></tr>"
         for item in result["actions"]
     )
+
+    def capture_target(row: dict) -> str:
+        value = row.get("label") or row.get("family") or row.get("state") or row.get("mission") or ""
+        return html.escape(str(value))
+
     capture_rows = "".join(
-        f"<tr><td>{row.get('priority', '')}</td><td>{html.escape(str(row.get('kind', '')))}</td><td>{html.escape(str(row.get('label') or row.get('family') or row.get('state') or row.get('mission') or ''))}</td></tr>"
+        f"<tr><td>{row.get('priority', '')}</td><td>{html.escape(str(row.get('kind', '')))}</td><td>{capture_target(row)}</td></tr>"
         for row in result["capture_gap"]["next"]
     ) or "<tr><td colspan='3'>No capture-gap rows.</td></tr>"
     art_rows = "".join(
