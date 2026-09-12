@@ -1,16 +1,16 @@
 # Project #002 — HD Completion Roadmap
 
-## Current milestone: final-art priority board + targeted capture planning
+## Current milestone: final-art sprint execution + targeted capture planning
 
 The production path is now:
 
-`MesenCE capture → Capture Mission Control → Capture Gap Planner → incremental production sync → Visual Context Audit → Animation Family Workbench → Final Art Priority Board → master-art batch → build-bound pixel QA → one-click MesenCE playtest → build-bound full-game regression → Unified Release Candidate Gate → gated ZIP`
+`MesenCE capture → Capture Mission Control → Capture Gap Planner → incremental production sync → Visual Context Audit → Animation Family Workbench → Final Art Priority Board → Final Art Sprint Kit → master-art batch → build-bound pixel QA → one-click MesenCE playtest → build-bound full-game regression → Unified Release Candidate Gate → gated ZIP`
 
 The Capture Gap Planner compares repeated local captures and produces a ranked **CAPTURE NEXT** queue. Coverage that existed in an older capture but disappears from the current one is treated as a high-priority regression. PLAYER/BOSS/ENEMY families also receive advisory missing-state suggestions so local play sessions can target the most likely visual gaps first.
 
-The new Final Art Priority Board converts the latest accepted capture plus art/review evidence into a ranked **FINAL ART NEXT** queue. It combines reuse, PLAYER/BOSS/ENEMY importance, Visual Context risk, Animation Family risk, MasterWorkspace state and classification blockers. Already edited masters disappear from the queue, so every art session attacks the highest-impact unfinished captured graphics first.
+The Final Art Priority Board converts the latest accepted capture plus art/review evidence into a ranked **FINAL ART NEXT** queue. The new Final Art Sprint Kit turns the Top-N entries into an actual local batch-edit folder with reference copies, exact dimensions, export hashes and a priority contact board. Sprint import is stale-workspace aware and refuses silent overwrite conflicts. Sprint finish imports edits, composes the pack, preserves `hires.txt`, validates the pack and runs pixel QA in one operation.
 
-These rankings are production accelerators, not proof of whole-game completeness. Capture Mission Control remains the explicit source of truth for full-game coverage and exact-build regression remains authoritative for final animation correctness.
+These rankings and sprint tools are production accelerators, not proof of whole-game completeness. Capture Mission Control remains the explicit source of truth for full-game coverage and exact-build regression remains authoritative for final animation correctness.
 
 Visual Context Review is an authoritative release requirement. Missing, pending or stale high-risk visual-context review blocks the final release gate.
 
@@ -37,19 +37,22 @@ Use Studio **Capture Mission Control** / **Record capture session** or `capture_
 - [ ] Generate `VISUAL_CONTEXT_REVIEW.csv` and clear every high-risk palette/condition/variant family
 - [ ] Generate `ANIMATION_FAMILY_REVIEW.csv` and inspect high-risk player/enemy/boss animation families
 - [ ] Generate `FINAL_ART_NEXT.csv` and work the highest-scoring unfinished masters first
+- [ ] Export Top-N work through `art_sprint_kit.py` / Studio into `Artwork/CurrentArtSprint`
+- [ ] Redraw sprint `editable/*.png` while keeping dimensions unchanged
+- [ ] Finish each sprint through the safe import + compose + Pixel QA path
 - [ ] Use local animation contact sheets for transition/seam review where useful
 - [ ] Replace PLAYER/BOSS masters with final-quality art first
 - [ ] Finish ENEMY/WORLD/UI/EFFECTS masters
 - [ ] Resolve every UNASSIGNED art-queue row
-- [ ] Re-run Final Art Priority Board after each substantial art batch so completed masters fall out of the queue
+- [ ] Re-run Final Art Priority Board after each successful sprint so completed masters fall out of the queue
 - [ ] Re-run visual-context and animation-family audits after major capture/art changes
 - [ ] Zero TODO/INVALID masters
 
-Studio's MasterWorkspace remains the primary local batch-edit surface. Exact duplicates can be propagated safely; near-duplicates remain review hints only. Condition co-occurrence candidates are inspection hints, not reconstructed screen layouts.
+Studio's MasterWorkspace remains the authoritative local source of final art. Sprint kits are temporary focused editing surfaces. Exact duplicates can be propagated safely; near-duplicates remain review hints only. Condition co-occurrence candidates are inspection hints, not reconstructed screen layouts.
 
 ## Gate C — QA and exact-build regression
 
-- [ ] Use Studio **Apply + build-bound QA** or run `bound_art_qa.py` against the exact final runtime pack
+- [ ] Use Studio **Apply + build-bound QA** or the Sprint Kit `finish` path against the exact final runtime pack
 - [ ] Pixel QA PASS and fingerprint matches the current build
 - [ ] `hires.txt` mapping preserved
 - [ ] No missing referenced PNGs
@@ -77,9 +80,9 @@ The largest remaining blockers are now primarily local content/evidence work:
 
 1. complete local MesenCE capture of every route/state/boss/effect/ending,
 2. use Capture Gap Planner between sessions and eliminate capture regressions / high-priority PLAYER-BOSS-ENEMY gaps,
-3. sync the accepted capture and generate the Final Art Priority Board,
-4. clear the enforced Visual Context Review and inspect high-risk animation families,
-5. finish the real 4x art pass by repeatedly working `FINAL_ART_NEXT.csv` until zero TODO/INVALID masters remain,
+3. sync the accepted capture and refresh Final Art Priority Board,
+4. repeatedly export/finalize Top-N Final Art Sprint Kits until captured TODO/INVALID work is exhausted,
+5. clear the enforced Visual Context Review and inspect high-risk animation families,
 6. resolve every art-queue classification,
 7. run full-game visual regression on the exact final fingerprint,
 8. only then create the gated public HD Pack ZIP (without ROM/emulator/save-state content).

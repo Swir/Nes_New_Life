@@ -57,9 +57,9 @@ The playtest builder creates a QA-gated HD Pack and can deploy it into the user'
 
 The current high-impact path is:
 
-`MesenCE capture → Capture Mission Control → Capture Gap Planner → incremental sync → Visual Context Audit → Animation Family Workbench → Final Art Priority Board → master art → build-bound Pixel QA → one-click playtest → exact-build regression → Unified Release Candidate Gate → gated ZIP`
+`MesenCE capture → Capture Mission Control → Capture Gap Planner → incremental sync → Visual Context Audit → Animation Family Workbench → Final Art Priority Board → Final Art Sprint Kit → master art → build-bound Pixel QA → one-click playtest → exact-build regression → Unified Release Candidate Gate → gated ZIP`
 
-`tools/TinyToonRemasterStudio.py` remains the preferred GUI command center for capture, art, QA, playtest and release evidence. `studio_command_center.py` exposes capture-gap, visual-context, animation-family and final-art-priority orchestration for GUI integration and automation.
+`tools/TinyToonRemasterStudio.py` remains the preferred GUI command center for capture, art, QA, playtest and release evidence. `studio_command_center.py` exposes capture-gap, visual-context, animation-family, final-art-priority and sprint orchestration for GUI integration and automation.
 
 ## Capture coverage
 
@@ -135,17 +135,48 @@ python tools/final_art_priority.py \
 
 `FINAL_ART_NEXT.csv` combines reuse, PLAYER/BOSS/ENEMY importance, context/animation risk, MasterWorkspace state and classification blockers. Already edited masters disappear automatically. The HTML/JSON reports are metadata-only and contain no captured artwork.
 
-See `FINAL_ART_PRIORITY_BOARD.md`, `ANIMATION_WORKBENCH.md` and `VISUAL_CONTEXT_AUDIT.md`.
+## Final Art Sprint Kit
+
+Turn the priority ranking directly into a focused batch-edit folder:
+
+```bash
+python tools/art_sprint_kit.py export \
+  "C:\\TinyToonWork\\ModernizedPack\\final_art" \
+  "C:\\TinyToonWork\\Artwork\\MasterWorkspace" \
+  "C:\\TinyToonWork\\Artwork\\CurrentArtSprint" \
+  --queue "C:\\TinyToonWork\\Artwork\\ART_QUEUE.csv" \
+  --visual-review "C:\\TinyToonWork\\Artwork\\VISUAL_CONTEXT_REVIEW.csv" \
+  --animation-review "C:\\TinyToonWork\\Artwork\\ANIMATION_FAMILY_REVIEW.csv" \
+  --top 20 --overwrite
+```
+
+The sprint contains `editable/`, untouched `reference/`, a manifest with exact hashes/dimensions and a local priority contact board. Edit only the sprint `editable/*.png`, keep dimensions unchanged and do not rename files.
+
+Finish the batch in one command:
+
+```bash
+python tools/art_sprint_kit.py finish \
+  "C:\\TinyToonWork\\ModernizedPack\\final_art" \
+  "C:\\TinyToonWork\\Artwork\\MasterWorkspace" \
+  "C:\\TinyToonWork\\Artwork\\CurrentArtSprint" \
+  "C:\\TinyToonWork\\ModernizedPack\\sprint_output" \
+  --overwrite
+```
+
+The finish path is conflict-safe and performs `safe import → composition → hires.txt preservation → validation → pixel QA`. If the same workspace master changed after sprint export, import blocks instead of overwriting newer work. See `FINAL_ART_SPRINT_KIT.md`.
+
+See also `FINAL_ART_PRIORITY_BOARD.md`, `ANIMATION_WORKBENCH.md` and `VISUAL_CONTEXT_AUDIT.md`.
 
 ## Art production
 
-Generate the ranked/grouped art queue, build the persistent `MasterWorkspace`, then edit only `Artwork/MasterWorkspace/editable/*.png` while keeping dimensions unchanged.
+Generate the ranked/grouped art queue and persistent `MasterWorkspace`. For broad manual work, edit `Artwork/MasterWorkspace/editable/*.png`; for focused sessions, use `Artwork/CurrentArtSprint/editable/*.png` and finish through the sprint safety path.
 
 - exact duplicates may be propagated safely,
 - near duplicates remain review hints only,
 - `UNASSIGNED` stays explicit until classified,
 - automatic baseline art is only a fast playable starting point, not a claim of final artwork,
-- Pixel QA blocks unauthorized changes outside approved master regions.
+- Pixel QA blocks unauthorized changes outside approved master regions,
+- sprint import blocks stale-workspace conflicts and resized assets.
 
 ## Final release gate
 
@@ -182,7 +213,8 @@ python tools/release_candidate.py audit "C:\\TinyToonWork\\ModernizedPack\\final
 - `art_production.py` — workboards, exact dedupe, near-duplicate hints and master propagation
 - `visual_context_audit.py` — palette/condition/visual-variant family risk audit
 - `animation_workbench.py` — semantic animation-family grouping, condition-cooccurrence candidates and local contact sheets
-- `final_art_priority.py` — evidence-driven `FINAL ART NEXT` ranking for the highest-impact unfinished captured graphics
+- `final_art_priority.py` — evidence-driven `FINAL ART NEXT` ranking for highest-impact unfinished captured graphics
+- `art_sprint_kit.py` — Top-N local editing kit, stale-safe import and one-step compose/Pixel-QA finish
 - `art_workspace.py` — persistent batch master-art workspace
 - `auto_art_pass.py` — automatic baseline modernization for untouched masters
 - `art_qa.py` / `bound_art_qa.py` — pixel-safe QA and exact-build binding
@@ -205,4 +237,4 @@ Pillow is used for PNG processing, workboards, validation and QA.
 
 ## Copyright / repository rule
 
-Do not commit ROMs, emulator save states, Mesen captures made from commercial graphics, ripped game artwork/audio, locally generated derivative preview/final packs, local animation contact sheets or downloaded emulator binaries. Local capture/art/release/report folders remain gitignored by design. Public commits contain tooling, synthetic tests, documentation and original project metadata only.
+Do not commit ROMs, emulator save states, Mesen captures made from commercial graphics, ripped game artwork/audio, locally generated derivative preview/final packs, local animation contact sheets, Final Art Sprint Kit graphics or downloaded emulator binaries. `Artwork/` and `Reports/` are explicitly gitignored because they may contain ROM-derived local production assets. Public commits contain tooling, synthetic tests, documentation and original project metadata only.

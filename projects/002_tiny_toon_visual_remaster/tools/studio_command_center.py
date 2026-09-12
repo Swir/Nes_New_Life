@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from animation_workbench import write_contact_sheets, write_dashboard as write_animation_dashboard
+from art_sprint_kit import export_sprint_kit, finish_sprint
 from bound_art_qa import audit_bound_art_apply
 from capture_gap_planner import build_capture_queue, write_outputs as write_capture_gap_outputs
 from capture_mission_control import ensure_manifest, mission_status, record_session, write_dashboard as write_capture_dashboard
@@ -119,6 +120,36 @@ def final_art_priority_dashboard(project_root: Path, pack_dir: Path, *, top: int
         animation_review=paths.animation_review if paths.animation_review.is_file() else None,
         top=top,
     )
+
+
+def create_final_art_sprint(project_root: Path, pack_dir: Path, *, top: int = 20, overwrite: bool = True) -> dict:
+    paths = initialize_project_evidence(project_root)
+    workspace = paths.root / "Artwork" / "MasterWorkspace"
+    if not (workspace / "MASTER_TILES.json").is_file():
+        raise ValueError("MasterWorkspace is missing; create/sync it before starting an art sprint")
+    if not paths.art_queue.is_file():
+        raise ValueError("ART_QUEUE.csv is missing; group/sync the art queue first")
+    kit = paths.root / "Artwork" / "CurrentArtSprint"
+    return export_sprint_kit(
+        Path(pack_dir), workspace, kit,
+        queue=paths.art_queue,
+        visual_review=paths.visual_review if paths.visual_review.is_file() else None,
+        animation_review=paths.animation_review if paths.animation_review.is_file() else None,
+        top=top,
+        overwrite=overwrite,
+    )
+
+
+def finish_final_art_sprint(project_root: Path, pack_dir: Path, output_pack: Path, *, overwrite: bool = True) -> dict:
+    paths = initialize_project_evidence(project_root)
+    workspace = paths.root / "Artwork" / "MasterWorkspace"
+    kit = paths.root / "Artwork" / "CurrentArtSprint"
+    if not (kit / "ART_SPRINT_KIT.json").is_file():
+        raise ValueError("CurrentArtSprint is missing; create an art sprint first")
+    result = finish_sprint(Path(pack_dir), workspace, kit, Path(output_pack), overwrite=overwrite)
+    if result["qa_gate"] != "PASS" or not result["mapping_preserved"]:
+        raise ValueError("Final art sprint did not pass exact pixel/mapping safety checks")
+    return result
 
 
 def run_playtest_build(project_root: Path, capture_dir: Path, *, rom_name: str | None = None, hdpacks_root: Path | None = None, deploy: bool = False) -> dict:
