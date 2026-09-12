@@ -1,6 +1,6 @@
 # Project #002 — HD Completion Roadmap
 
-## Current milestone: authoritative Remaster Studio + quantified high-impact art execution + final release gate
+## Current milestone: privacy-safe Local Capture Bridge + authoritative Remaster Studio + final release gate
 
 <!-- SWIR-ROADMAP-STANDARD:v1 -->
 <!-- ROADMAP-PROGRESS:START -->
@@ -26,21 +26,23 @@
 
 The production path is now:
 
-`MesenCE capture → Capture Mission Control → Capture Promotion Director → resume-safe sync → Visual Context Audit → Animation Family Workbench → Visual Completion Matrix → High-Impact Art Sprint → build-bound Pixel QA → one-click verified-fullscreen MesenCE playtest → Final Regression Cockpit → Final Release Readiness Director → gated ZIP`
+`MesenCE capture → Local Capture Bridge (safe metadata evidence) → Capture Mission Control → Capture Promotion Director → resume-safe sync → Visual Context Audit → Animation Family Workbench → Visual Completion Matrix → High-Impact Art Sprint → build-bound Pixel QA → one-click verified-fullscreen MesenCE playtest → Final Regression Cockpit → Final Release Readiness Director → gated ZIP`
 
-The **Authoritative Remaster Studio** now exposes that exact current production path in one UI instead of sending the user through older Top-N / Release Candidate flows. It can launch safe capture promotion, run Visual Completion Matrix, prepare the exact matrix-selected High-Impact Art Sprint, open the local editable sprint, launch conflict-safe finish + Pixel QA, launch verified-fullscreen playtest and Final Regression Cockpit, and run the seven-gate Final Release Readiness audit. Its Visual Completion percentage remains capture-bounded art information only and never changes this Gate A–D release percentage.
+The **Local Capture Bridge** closes the operational gap between a legally supplied local MesenCE session and the GitHub-hosted project. `windows/Local_Capture_Bridge.bat` inspects the current capture locally and emits only validator-approved metadata: mapping/tile/palette/condition counts, PLAYER/BOSS/ENEMY/WORLD/UI/EFFECTS group counts, image dimensions/sizes/SHA-256 hashes, Capture Mission Control status and capture-regression metadata. It never uploads ROM bytes, save states, capture pixels, emulator binaries or absolute local paths. When authenticated GitHub CLI is available, the launcher can send only the validated `SAFE_CAPTURE_HANDOFF.json` to a dedicated evidence PR; `.github/workflows/project-002-capture-evidence.yml` then re-validates the privacy contract. Evidence arrival never auto-completes Gate A–D.
 
-The **Capture Promotion Director** remains the preferred bridge from a fresh local MesenCE capture into production. It validates the candidate, compares it with the previous accepted capture, and refuses to synchronize `ART_QUEUE.csv` or `MasterWorkspace` when `CAPTURE_REGRESSION` is present. A clean candidate can then run resume-safe sync, Visual Context, Animation Family, Final Art Priority and Production Sprint refresh in one pass.
+The **Authoritative Remaster Studio** exposes the current production path in one UI instead of sending the user through older Top-N / Release Candidate flows. F4 launches Local Capture Bridge, F5 runs safe capture promotion, and the remaining controls run Visual Completion Matrix, the exact matrix-selected High-Impact Art Sprint, conflict-safe finish + Pixel QA, verified-fullscreen playtest, Final Regression Cockpit and the seven-gate Final Release Readiness audit. Its Visual Completion percentage remains capture-bounded art information only and never changes this Gate A–D release percentage.
+
+The **Capture Promotion Director** remains the preferred bridge from an accepted fresh local MesenCE capture into production. It validates the candidate, compares it with the previous accepted capture, and refuses to synchronize `ART_QUEUE.csv` or `MasterWorkspace` when `CAPTURE_REGRESSION` is present. A clean candidate can then run resume-safe sync, Visual Context, Animation Family, Final Art Priority and Production Sprint refresh in one pass.
 
 The **Visual Completion Matrix** turns the captured-art backlog into measurable production progress instead of one flat TODO count. It reports completion for PLAYER, BOSS, ENEMY, WORLD, UI, EFFECTS and UNASSIGNED, includes usage-weighted completion, highlights invalid/classification blockers and writes `NEXT_HIGH_IMPACT_ART_BATCH.csv`. PLAYER/BOSS/ENEMY, invalid masters and high-reuse graphics receive more production weight so each local art session is aimed at visible game impact. The matrix is deliberately capture-bounded: it never claims that uncaptured states are complete.
 
-The new **High-Impact Art Sprint Director** removes the remaining ranking-to-execution gap. `windows/High_Impact_Art_Sprint.bat` runs the matrix and exports the exact `NEXT_HIGH_IMPACT_ART_BATCH` selection into a local editable/reference sprint kit with impact scores, reasons, dimensions and SHA-256 workspace state. `windows/Finish_High_Impact_Art_Sprint.bat` reuses the stale-conflict-aware Art Sprint importer, preserves `hires.txt`, composes a candidate HD pack and runs Pixel QA. The local sprint board and PNGs remain ROM-derived local production material and are never committed.
+The **High-Impact Art Sprint Director** removes the ranking-to-execution gap. `windows/High_Impact_Art_Sprint.bat` runs the matrix and exports the exact `NEXT_HIGH_IMPACT_ART_BATCH` selection into a local editable/reference sprint kit with impact scores, reasons, dimensions and SHA-256 workspace state. `windows/Finish_High_Impact_Art_Sprint.bat` reuses the stale-conflict-aware Art Sprint importer, preserves `hires.txt`, composes a candidate HD pack and runs Pixel QA. The local sprint board and PNGs remain ROM-derived local production material and are never committed.
 
 The **Fullscreen-by-Contract Playtest** closes a user-facing readiness gap: the one-click Windows playtest no longer stops after installing the pack. It launches the user's local ROM in MesenCE with native fullscreen requested, checks the actual emulator window against the active monitor, retries with F11 when needed and rejects a windowed launch. When a runtime pack is supplied, the launcher writes exact-build metadata-only fullscreen evidence tied to the current HD-pack fingerprint.
 
 The **Final Release Readiness Director** makes that fullscreen evidence packaging-authoritative. A public ZIP can now pass only when HD Pack structure, Capture Mission Control, final art, Visual Context, Pixel QA, verified fullscreen and all ten Final Regression Cockpit cases are simultaneously green. Pixel QA, fullscreen and regression must all match the exact current `hires.txt + runtime PNG` fingerprint. Any late runtime-art change invalidates old evidence and blocks packaging until the changed build is re-tested.
 
-The main production stack now covers capture planning, regression-safe capture promotion, quantified visual completion, exact high-impact art execution, exact-build fullscreen launch, exact-build regression and a single final release decision. **PRODUCTION SPRINT** still combines Capture Mission Control, capture regressions, Visual Context Review, Animation Family Review, MasterWorkspace progress and Final Art Priority into one metadata-only **DO THIS NEXT** dashboard.
+The main production stack now covers privacy-safe evidence transfer, capture planning, regression-safe capture promotion, quantified visual completion, exact high-impact art execution, exact-build fullscreen launch, exact-build regression and a single final release decision. **PRODUCTION SPRINT** still combines Capture Mission Control, capture regressions, Visual Context Review, Animation Family Review, MasterWorkspace progress and Final Art Priority into one metadata-only **DO THIS NEXT** dashboard.
 
 Final Art Priority remains useful for broader review, while High-Impact Art Sprint is now the fastest default production path after the Visual Completion Matrix. Sprint kits are edited locally and imported through stale-conflict checks, exact dimensions, `hires.txt` preservation, validation and Pixel QA.
 
@@ -65,7 +67,7 @@ Visual Context Review is an authoritative release requirement. Missing, pending 
 - [ ] Ending, credits and post-game states
 - [ ] Compare repeated captures and resolve every `CAPTURE_REGRESSION` before promoting a newer capture to production baseline
 
-After each targeted MesenCE session, run `windows/Promote_Capture_To_HD.bat` (preferably with the previous accepted capture selected). A candidate with capture regression must remain unpromoted until the lost state is recaptured. Capture Promotion never auto-completes gameplay missions; continue using Capture Mission Control for explicit full-game evidence.
+After each targeted MesenCE session, run `windows/Local_Capture_Bridge.bat` first to create a privacy-safe evidence handoff and optionally send that metadata to GitHub for review. Then run `windows/Promote_Capture_To_HD.bat` (preferably with the previous accepted capture selected). A candidate with capture regression must remain unpromoted until the lost state is recaptured. Neither the bridge nor Capture Promotion auto-completes gameplay missions; Capture Mission Control remains explicit full-game evidence.
 
 ## Gate B — HD art production
 
@@ -120,9 +122,9 @@ Studio's MasterWorkspace remains the authoritative local source of final art. Sp
 
 ## Highest-impact remaining work
 
-The tooling now reaches from capture through quantified captured-art completion, exact batch execution, packaging-authoritative verified fullscreen and exact-build regression. The largest remaining blockers are local content/evidence work:
+The tooling now reaches from a local MesenCE capture through privacy-safe GitHub evidence, quantified captured-art completion, exact batch execution, packaging-authoritative verified fullscreen and exact-build regression. The largest remaining blockers are real content/evidence work:
 
-1. complete local MesenCE capture of every route/state/boss/effect/ending,
+1. complete local MesenCE capture of every route/state/boss/effect/ending and feed each session through **Local Capture Bridge** so GitHub can receive safe evidence without receiving the ROM/capture pixels,
 2. promote each new capture through **Capture Promotion Director** and eliminate every regression before it can touch production state,
 3. clear Visual Context / high-risk animation reviews produced by the promoted capture,
 4. repeatedly run **High-Impact Art Sprint** so the exact matrix-selected PLAYER/BOSS/ENEMY/invalid/high-reuse backlog becomes editable immediately and reaches zero TODO/invalid,
@@ -130,4 +132,4 @@ The tooling now reaches from capture through quantified captured-art completion,
 6. run the QA-gated **verified-fullscreen** playtest and drive **Final Regression Cockpit** from FAIL/STALE/PENDING to 10/10 current-build PASS,
 7. run **Final Release Gate** and create the public HD Pack ZIP only after all seven exact-build gates are green (without ROM/emulator/save-state content).
 
-A toolchain milestone is not the same as a finished remaster. Full HD completion still requires the user's local full-game capture, final artwork and real MesenCE regression testing.
+A toolchain milestone is not the same as a finished remaster. Full HD completion still requires real full-game capture evidence, final artwork and real MesenCE regression testing. Local Capture Bridge minimizes the manual handoff but does not invent or fake those facts.
