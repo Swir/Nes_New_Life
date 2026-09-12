@@ -17,6 +17,16 @@ from local_capture_bridge import SCHEMA  # noqa: E402
 def _evidence(*, fingerprint: str, regressions: int = 0, scale: int = 4, missing_image: bool = False, done: int = 2, conditions=None, tiles=None):
     conditions = conditions or ["hero_player_idle", "boss_final_attack_1", "hud_status"]
     tiles = tiles or ["2E", "2F", "30"]
+    bindings = [
+        {
+            "mission": f"mission_{index}",
+            "session": index + 1,
+            "verified_in_game": True,
+            "capture_fingerprint_sha256": fingerprint,
+            "same_as_current_capture": True,
+        }
+        for index in range(done)
+    ]
     return {
         "schema": SCHEMA,
         "generated_utc": "2026-09-12T20:00:00+00:00",
@@ -43,6 +53,22 @@ def _evidence(*, fingerprint: str, regressions: int = 0, scale: int = 4, missing
             "condition_names": conditions,
             "images": [{"name": "tiles.png", "present": not missing_image, "bytes": 1234, "sha256": "b" * 64, "width": 64, "height": 64, "mode": "RGBA"}],
         },
+        "capture_integrity": {
+            "schema": "swir.project002.capture-integrity-ledger.v2",
+            "capture_fingerprint_sha256": fingerprint,
+            "admission_gate": "PASS",
+            "integrity_gate": "BLOCKED" if done < 12 else "PASS",
+            "structural_blockers": [],
+            "regression_count": 0,
+            "at_risk_missions": [],
+            "mission_evidence": {
+                "done": done,
+                "verified_done": done,
+                "unverified_done": [],
+                "bindings": bindings,
+                "policy": "synthetic test evidence",
+            },
+        },
         "capture_missions": {"gate": "BLOCKED", "done": done, "total": 12, "percent": round(done / 12 * 100, 1)},
         "capture_gap": {
             "regressions": regressions,
@@ -62,8 +88,35 @@ class CaptureEvidenceTriageTests(unittest.TestCase):
             self.assertEqual(result["evidence_gate"], "PASS_INCREMENTAL")
             self.assertEqual(result["release_capture_gate"], "BLOCKED")
             self.assertEqual(result["next_action"]["kind"], "CAPTURE_MISSION")
+            self.assertEqual(result["latest"]["capture_integrity"]["mission_verified_done"], 2)
             self.assertTrue(any(row["gate_a_item"] == "boss_phases_attacks_death_effects" and row["status"] == "CANDIDATE_REVIEW" for row in result["gate_a_candidates"]))
             self.assertIn("auto-completes", result["roadmap_policy"].lower())
+
+    def test_integrity_fingerprint_mismatch_blocks_evidence(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            evidence = _evidence(fingerprint="6" * 64)
+            evidence["capture_integrity"]["capture_fingerprint_sha256"] = "7" * 64
+            (root / "one.json").write_text(json.dumps(evidence), encoding="utf-8")
+            result = build_triage(root)
+            self.assertEqual(result["evidence_gate"], "BLOCKED")
+            self.assertEqual(result["next_action"]["kind"], "FIX_EVIDENCE_BINDING")
+            self.assertTrue(any("does not match" in item for item in result["latest"]["integrity_binding_errors"]))
+
+    def test_unverified_completed_mission_blocks_evidence(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            evidence = _evidence(fingerprint="8" * 64, done=2)
+            mission = evidence["capture_integrity"]["mission_evidence"]
+            mission["verified_done"] = 1
+            mission["unverified_done"] = ["mission_1"]
+            mission["bindings"][1]["verified_in_game"] = False
+            mission["bindings"][1]["capture_fingerprint_sha256"] = ""
+            (root / "one.json").write_text(json.dumps(evidence), encoding="utf-8")
+            result = build_triage(root)
+            self.assertEqual(result["evidence_gate"], "BLOCKED")
+            self.assertEqual(result["next_action"]["kind"], "FIX_EVIDENCE_BINDING")
+            self.assertTrue(any("VERIFIED_IN_GAME" in item for item in result["latest"]["integrity_binding_errors"]))
 
     def test_explicit_regression_blocks_evidence_baseline(self):
         with tempfile.TemporaryDirectory() as td:
@@ -91,6 +144,7 @@ class CaptureEvidenceTriageTests(unittest.TestCase):
             (root / "b.json").write_text(json.dumps(second), encoding="utf-8")
             result = build_triage(root)
             self.assertEqual(result["deltas"][0]["mission_done_delta"], 2)
+            self.assertEqual(result["deltas"][0]["mission_verified_delta"], 2)
             self.assertEqual(result["deltas"][0]["added_tile_ids"], ["2F", "30"])
             markdown = render_markdown(result)
             self.assertIn("signals only", markdown.lower())

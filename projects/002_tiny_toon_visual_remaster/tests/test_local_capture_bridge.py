@@ -13,6 +13,8 @@ TOOLS = ROOT / "tools"
 sys.path.insert(0, str(TOOLS))
 
 from capture_evidence_validator import validate_evidence, validate_evidence_tree  # noqa: E402
+from capture_mission_control import record_session  # noqa: E402
+from guided_capture_marathon import ATTESTATION, confirm_mission  # noqa: E402
 from local_capture_bridge import build_safe_evidence, write_safe_handoff  # noqa: E402
 
 
@@ -65,10 +67,57 @@ class LocalCaptureBridgeTests(unittest.TestCase):
             self.assertFalse(evidence["privacy_contract"]["contains_capture_pixels"])
             self.assertGreaterEqual(evidence["hd_pack"]["groups"]["PLAYER"], 2)
             self.assertGreaterEqual(evidence["hd_pack"]["groups"]["BOSS"], 2)
+            self.assertEqual(evidence["capture_integrity"]["admission_gate"], "PASS")
+            self.assertEqual(
+                evidence["hd_pack"]["capture_fingerprint"],
+                evidence["capture_integrity"]["capture_fingerprint_sha256"],
+            )
+            self.assertEqual(evidence["capture_integrity"]["mission_evidence"]["verified_done"], 0)
             self.assertEqual(list(out.glob("*.png")), [])
             raw = Path(outputs["json"]).read_text(encoding="utf-8")
             self.assertNotIn(str(capture), raw)
             self.assertNotIn(str(project), raw)
+
+    def test_guided_verified_mission_is_bound_into_safe_handoff(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            project = root / "project"
+            capture = root / "capture"
+            project.mkdir()
+            self._write_pack(capture)
+            manifest = project / "CAPTURE_MISSIONS.json"
+
+            confirmed = confirm_mission(manifest, capture, "boot_title_menu", attestation=ATTESTATION)
+            evidence = build_safe_evidence(project, capture)
+            mission = evidence["capture_integrity"]["mission_evidence"]
+
+            self.assertEqual(evidence["capture_missions"]["done"], 1)
+            self.assertEqual(mission["done"], 1)
+            self.assertEqual(mission["verified_done"], 1)
+            self.assertEqual(mission["unverified_done"], [])
+            self.assertEqual(len(mission["bindings"]), 1)
+            self.assertTrue(mission["bindings"][0]["verified_in_game"])
+            self.assertTrue(mission["bindings"][0]["same_as_current_capture"])
+            self.assertEqual(
+                mission["bindings"][0]["capture_fingerprint_sha256"],
+                confirmed["capture_integrity"]["fingerprint_sha256"],
+            )
+
+    def test_manual_completed_mission_without_attestation_is_not_transport_trusted(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            project = root / "project"
+            capture = root / "capture"
+            project.mkdir()
+            self._write_pack(capture)
+            manifest = project / "CAPTURE_MISSIONS.json"
+            record_session(manifest, capture, ["boot_title_menu"], "manual legacy record")
+
+            evidence = build_safe_evidence(project, capture)
+            mission = evidence["capture_integrity"]["mission_evidence"]
+            self.assertEqual(mission["verified_done"], 0)
+            self.assertEqual(mission["unverified_done"], ["boot_title_menu"])
+            self.assertFalse(mission["bindings"][0]["verified_in_game"])
 
     def test_regressed_capture_reports_regression_without_copying_pixels(self) -> None:
         with tempfile.TemporaryDirectory() as td:

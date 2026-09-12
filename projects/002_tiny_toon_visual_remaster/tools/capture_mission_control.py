@@ -75,7 +75,15 @@ def snapshot_capture(capture_dir: Path) -> dict:
     }
 
 
-def record_session(manifest_path: Path, capture_dir: Path, completed: list[str] | None = None, notes: str = "") -> dict:
+def record_session(
+    manifest_path: Path,
+    capture_dir: Path,
+    completed: list[str] | None = None,
+    notes: str = "",
+    *,
+    capture_fingerprint_sha256: str | None = None,
+    attestation: str | None = None,
+) -> dict:
     data = load_manifest(manifest_path)
     completed = completed or []
     unknown = [key for key in completed if key not in data["missions"]]
@@ -104,6 +112,10 @@ def record_session(manifest_path: Path, capture_dir: Path, completed: list[str] 
         "completed_missions": completed,
         "notes": notes,
     }
+    if capture_fingerprint_sha256:
+        session["capture_fingerprint_sha256"] = str(capture_fingerprint_sha256)
+    if attestation:
+        session["attestation"] = str(attestation)
     data["sessions"].append(session)
     manifest_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
     return session

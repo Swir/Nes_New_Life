@@ -12,7 +12,8 @@ from pathlib import Path
 from PIL import Image
 
 from capture_gap_planner import build_capture_queue
-from capture_mission_control import ensure_manifest, mission_status
+from capture_integrity_ledger import build_ledger
+from capture_mission_control import ensure_manifest, load_manifest, mission_status
 from validate_hdpack import validate
 
 SCHEMA = "swir.project002.capture-evidence.v1"
@@ -25,6 +26,7 @@ GROUP_TOKENS = {
     "EFFECTS": ("effect", "fx", "projectile", "shot", "spark", "smoke", "explosion", "transition"),
     "WORLD": ("world", "stage", "level", "bg", "background", "ground", "platform", "tilemap"),
 }
+FINGERPRINT_RE = re.compile(r"fingerprint=([0-9a-f]{64})")
 
 
 def _sha256(path: Path) -> str:
@@ -91,15 +93,8 @@ def _parse_hires(pack: Path) -> dict:
                 row["mode"] = "UNREADABLE"
         image_rows.append(row)
 
-    fingerprint = hashlib.sha256()
-    fingerprint.update(_sha256(hires).encode("ascii"))
-    for row in sorted(image_rows, key=lambda item: item["name"].lower()):
-        fingerprint.update(row["name"].encode("utf-8"))
-        fingerprint.update(str(row.get("sha256", "MISSING")).encode("ascii", errors="ignore"))
-
     return {
         "hires_sha256": _sha256(hires),
-        "capture_fingerprint": fingerprint.hexdigest(),
         "mapping_count": mappings,
         "unique_tile_ids": len(tile_ids),
         "unique_palettes": len(palettes),
@@ -109,6 +104,51 @@ def _parse_hires(pack: Path) -> dict:
         "palettes": sorted(palettes),
         "condition_names": sorted(set(conditions)),
         "images": image_rows,
+    }
+
+
+def _session_fingerprint(session: dict) -> str:
+    direct = str(session.get("capture_fingerprint_sha256", ""))
+    if re.fullmatch(r"[0-9a-f]{64}", direct):
+        return direct
+    match = FINGERPRINT_RE.search(str(session.get("notes", "")))
+    return match.group(1) if match else ""
+
+
+def _mission_evidence(manifest_path: Path, current_fingerprint: str) -> dict:
+    data = load_manifest(manifest_path)
+    sessions = {
+        int(row.get("id", 0)): row
+        for row in data.get("sessions", [])
+        if isinstance(row, dict) and row.get("id") is not None
+    }
+    bindings: list[dict] = []
+    unverified: list[str] = []
+    for key, mission in data.get("missions", {}).items():
+        if not mission.get("done"):
+            continue
+        sid = mission.get("last_session")
+        session = sessions.get(int(sid)) if sid is not None else None
+        fingerprint = _session_fingerprint(session or {})
+        attestation = str((session or {}).get("attestation", ""))
+        notes = str((session or {}).get("notes", ""))
+        legacy_verified = "Guided Capture Marathon: VERIFIED_IN_GAME; integrity admission PASS" in notes
+        verified = bool(session) and bool(fingerprint) and (attestation == "VERIFIED_IN_GAME" or legacy_verified)
+        if not verified:
+            unverified.append(str(key))
+        bindings.append({
+            "mission": str(key),
+            "session": sid,
+            "verified_in_game": verified,
+            "capture_fingerprint_sha256": fingerprint,
+            "same_as_current_capture": bool(fingerprint and fingerprint == current_fingerprint),
+        })
+    return {
+        "done": len(bindings),
+        "verified_done": sum(1 for row in bindings if row["verified_in_game"]),
+        "unverified_done": unverified,
+        "bindings": bindings,
+        "policy": "A completed mission is transport-trusted only when its source session carries VERIFIED_IN_GAME plus an integrity-admitted capture fingerprint. Fingerprint equality with the current capture is informational because later clean capture growth is allowed.",
     }
 
 
@@ -129,6 +169,8 @@ def build_safe_evidence(project_root: Path, capture: Path, *, previous_capture: 
     manifest = root / "CAPTURE_MISSIONS.json"
     ensure_manifest(manifest)
     mission = mission_status(manifest)
+    integrity = build_ledger(manifest, pack)
+    current_fingerprint = integrity["capture_fingerprint_sha256"]
     queue = root / "Artwork" / "ART_QUEUE.csv"
     gap = build_capture_queue(
         pack,
@@ -148,6 +190,7 @@ def build_safe_evidence(project_root: Path, capture: Path, *, previous_capture: 
         })
 
     parsed = _parse_hires(pack)
+    mission_evidence = _mission_evidence(manifest, current_fingerprint)
     return {
         "schema": SCHEMA,
         "generated_utc": datetime.now(timezone.utc).isoformat(),
@@ -162,7 +205,18 @@ def build_safe_evidence(project_root: Path, capture: Path, *, previous_capture: 
         "hd_pack": {
             "scale": scale,
             "warnings": warnings,
+            "capture_fingerprint": current_fingerprint,
             **parsed,
+        },
+        "capture_integrity": {
+            "schema": integrity["schema"],
+            "capture_fingerprint_sha256": current_fingerprint,
+            "admission_gate": integrity["admission_gate"],
+            "integrity_gate": integrity["integrity_gate"],
+            "structural_blockers": list(integrity["structural_blockers"]),
+            "regression_count": len(integrity["regressions"]),
+            "at_risk_missions": list(integrity["at_risk_missions"]),
+            "mission_evidence": mission_evidence,
         },
         "capture_missions": {
             "gate": mission.get("release_capture_gate", "BLOCKED"),
@@ -189,6 +243,8 @@ def _flatten_csv(evidence: dict) -> list[dict]:
         {"section": "summary", "key": "unique_tile_ids", "value": hd["unique_tile_ids"], "detail": ""},
         {"section": "summary", "key": "unique_palettes", "value": hd["unique_palettes"], "detail": ""},
         {"section": "summary", "key": "condition_count", "value": hd["condition_count"], "detail": ""},
+        {"section": "integrity", "key": "admission_gate", "value": evidence["capture_integrity"]["admission_gate"], "detail": ""},
+        {"section": "integrity", "key": "verified_missions", "value": evidence["capture_integrity"]["mission_evidence"]["verified_done"], "detail": f"of {evidence['capture_missions']['done']} completed"},
         {"section": "capture", "key": "mission_gate", "value": evidence["capture_missions"]["gate"], "detail": f"{evidence['capture_missions']['done']}/{evidence['capture_missions']['total']}"},
         {"section": "capture", "key": "regressions", "value": evidence["capture_gap"]["regressions"], "detail": ""},
     ])
@@ -222,9 +278,11 @@ def write_safe_handoff(evidence: dict, output_dir: Path) -> dict:
         f"<tr><td>{row['priority']}</td><td>{html.escape(row['kind'])}</td><td>{html.escape(row['group'])}</td><td>{html.escape(row['target'])}</td></tr>"
         for row in evidence["capture_gap"]["next"]
     ) or "<tr><td colspan='4'>No queued capture action.</td></tr>"
+    verified = evidence["capture_integrity"]["mission_evidence"]["verified_done"]
+    done = evidence["capture_missions"]["done"]
     doc = f"""<!doctype html><html><head><meta charset='utf-8'><title>Local Capture Bridge</title>
 <style>body{{font:15px system-ui;max-width:1150px;margin:30px auto;padding:0 20px;background:#0d1117;color:#e6edf3}}.card{{background:#161b22;border:1px solid #30363d;border-radius:14px;padding:16px;margin:12px 0}}table{{width:100%;border-collapse:collapse}}td,th{{padding:8px;border-bottom:1px solid #30363d;text-align:left}}code{{color:#79c0ff}}</style></head><body>
-<h1>Project #002 — Local Capture Bridge</h1><div class='card'><b>Privacy-safe metadata handoff</b><p>No ROM, save state, capture pixels, emulator binary or absolute local paths are stored in this handoff.</p><p>Fingerprint: <code>{evidence['hd_pack']['capture_fingerprint']}</code></p><p>Mission gate: {html.escape(str(evidence['capture_missions']['gate']))} · {evidence['capture_missions']['done']}/{evidence['capture_missions']['total']} · regressions {evidence['capture_gap']['regressions']}</p></div>
+<h1>Project #002 — Local Capture Bridge</h1><div class='card'><b>Privacy-safe metadata handoff</b><p>No ROM, save state, capture pixels, emulator binary or absolute local paths are stored in this handoff.</p><p>Fingerprint: <code>{evidence['hd_pack']['capture_fingerprint']}</code></p><p>Integrity admission: <b>{html.escape(evidence['capture_integrity']['admission_gate'])}</b> · verified mission evidence {verified}/{done}</p><p>Mission gate: {html.escape(str(evidence['capture_missions']['gate']))} · {done}/{evidence['capture_missions']['total']} · regressions {evidence['capture_gap']['regressions']}</p></div>
 <div class='card'><h2>Captured mapping groups</h2><table><tr><th>Group</th><th>Mappings</th></tr>{groups}</table></div>
 <div class='card'><h2>Capture work next</h2><table><tr><th>Priority</th><th>Type</th><th>Group</th><th>Target</th></tr>{next_rows}</table></div>
 </body></html>"""
@@ -243,7 +301,9 @@ def main() -> int:
     evidence = build_safe_evidence(args.project_root, args.capture, previous_capture=args.previous_capture)
     outputs = write_safe_handoff(evidence, output)
     print(json.dumps({"evidence": evidence, "outputs": outputs}, indent=2))
-    return 2 if evidence["capture_gap"]["regressions"] else 0
+    integrity_blocked = evidence["capture_integrity"]["admission_gate"] != "PASS"
+    unverified = bool(evidence["capture_integrity"]["mission_evidence"]["unverified_done"])
+    return 2 if evidence["capture_gap"]["regressions"] or integrity_blocked or unverified else 0
 
 
 if __name__ == "__main__":

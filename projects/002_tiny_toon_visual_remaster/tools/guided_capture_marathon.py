@@ -136,7 +136,14 @@ def confirm_mission(
     audit_note = "Guided Capture Marathon: VERIFIED_IN_GAME; integrity admission PASS; fingerprint=" + preflight["capture_fingerprint_sha256"]
     if notes.strip():
         audit_note += " — " + notes.strip()
-    session = record_session(manifest_path, capture, [mission_key], audit_note)
+    session = record_session(
+        manifest_path,
+        capture,
+        [mission_key],
+        audit_note,
+        capture_fingerprint_sha256=preflight["capture_fingerprint_sha256"],
+        attestation=ATTESTATION,
+    )
     postflight = build_ledger(manifest_path, capture)
     if postflight["admission_gate"] != "PASS":
         raise RuntimeError("Capture became structurally inadmissible immediately after mission recording")
