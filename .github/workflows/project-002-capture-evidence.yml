@@ -5,6 +5,8 @@ on:
     paths:
       - 'projects/002_tiny_toon_visual_remaster/evidence/capture/**'
       - 'projects/002_tiny_toon_visual_remaster/tools/capture_evidence_validator.py'
+      - 'projects/002_tiny_toon_visual_remaster/tools/capture_evidence_triage.py'
+      - 'projects/002_tiny_toon_visual_remaster/tests/test_capture_evidence_triage.py'
       - '.github/workflows/project-002-capture-evidence.yml'
 
 permissions:
@@ -18,14 +20,22 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Compile evidence validator
-        run: python -m py_compile projects/002_tiny_toon_visual_remaster/tools/capture_evidence_validator.py
-      - name: Validate metadata-only evidence tree
+      - name: Compile evidence tools
+        run: |
+          python -m py_compile projects/002_tiny_toon_visual_remaster/tools/capture_evidence_validator.py
+          python -m py_compile projects/002_tiny_toon_visual_remaster/tools/capture_evidence_triage.py
+      - name: Validate and triage metadata-only evidence tree
         shell: bash
         run: |
           EVIDENCE='projects/002_tiny_toon_visual_remaster/evidence/capture'
+          VALIDATOR='projects/002_tiny_toon_visual_remaster/tools/capture_evidence_validator.py'
+          TRIAGE='projects/002_tiny_toon_visual_remaster/tools/capture_evidence_triage.py'
           if find "$EVIDENCE" -type f -name '*.json' -print -quit 2>/dev/null | grep -q .; then
-            python projects/002_tiny_toon_visual_remaster/tools/capture_evidence_validator.py "$EVIDENCE"
+            python "$VALIDATOR" "$EVIDENCE"
+            python "$TRIAGE" "$EVIDENCE" --github-summary "$GITHUB_STEP_SUMMARY"
           else
-            echo 'No capture evidence JSON in this PR; validator/workflow syntax check only.'
+            echo 'No capture evidence JSON in this PR; evidence tooling syntax check only.'
+            echo '# Project #002 — Capture Evidence Triage' >> "$GITHUB_STEP_SUMMARY"
+            echo '' >> "$GITHUB_STEP_SUMMARY"
+            echo 'No safe capture evidence snapshot is present in this PR.' >> "$GITHUB_STEP_SUMMARY"
           fi
