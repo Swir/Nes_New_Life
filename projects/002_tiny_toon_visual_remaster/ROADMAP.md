@@ -2,6 +2,16 @@
 
 ## Current milestone: quantified captured-art completion + exact high-impact sprint execution + final release gate
 
+<!-- ROADMAP-PROGRESS:START -->
+## Final release checklist progress
+
+**0 / 52 release-gate items complete — 0.0%**
+
+`░░░░░░░░░░░░░░░░░░░░ 0.0%`
+
+This bar intentionally measures only the authoritative Gate A–D checkboxes below. The production toolchain is already implemented, but those final gates require the user's local capture, artwork and real MesenCE QA evidence, so tooling work is not falsely counted as release completion. Whenever a Gate A–D checkbox changes state, recalculate this block.
+<!-- ROADMAP-PROGRESS:END -->
+
 The production path is now:
 
 `MesenCE capture → Capture Mission Control → Capture Promotion Director → resume-safe sync → Visual Context Audit → Animation Family Workbench → Visual Completion Matrix → High-Impact Art Sprint → build-bound Pixel QA → one-click verified-fullscreen MesenCE playtest → Final Regression Cockpit → Final Release Readiness Director → gated ZIP`
