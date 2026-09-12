@@ -4,7 +4,7 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
-from bound_art_qa import bind_art_qa
+from bound_art_qa import audit_bound_art_apply
 from capture_mission_control import ensure_manifest, mission_status, record_session, write_dashboard
 from hd_readiness import package_hd_pack
 from rapid_hd_playtest import build_playtest, default_mesence_hdpacks
@@ -28,13 +28,14 @@ class EvidencePaths:
 
 def evidence_paths(project_root: Path) -> EvidencePaths:
     root = Path(project_root)
+    reports = root / "Reports"
     return EvidencePaths(
         root=root,
         capture_manifest=root / "CAPTURE_MISSIONS.json",
         regression_manifest=root / "FINAL_REGRESSION.json",
         art_queue=root / "Artwork" / "ART_QUEUE.csv",
-        art_qa=root / "ModernizedPack" / "final_art" / "ART_QA_RESULT.json",
-        reports=root / "Reports",
+        art_qa=reports / "ArtQA" / "ART_QA_RESULT.json",
+        reports=reports,
         release_dir=root / "Release",
     )
 
@@ -92,27 +93,20 @@ def run_playtest_build(
     )
 
 
-def bind_current_art_qa(project_root: Path, pack_dir: Path) -> dict:
+def run_bound_art_qa(project_root: Path, source_capture: Path, output_pack: Path) -> dict:
     paths = initialize_project_evidence(project_root)
-    source = Path(pack_dir) / "ART_QA_RESULT.json"
-    if not source.is_file():
-        raise ValueError(f"Pixel Art QA report is missing: {source}")
-    result = bind_art_qa(source, Path(pack_dir), paths.art_qa)
-    return result
+    workspace = paths.root / "Artwork" / "MasterWorkspace"
+    if not (workspace / "MASTER_TILES.json").is_file():
+        raise ValueError("MasterWorkspace is missing; cannot prove authorized pixel regions")
+    report_dir = paths.art_qa.parent
+    report_dir.mkdir(parents=True, exist_ok=True)
+    return audit_bound_art_apply(Path(source_capture), Path(output_pack), workspace, report_dir)
 
 
 def release_audit(project_root: Path, pack_dir: Path) -> dict:
     paths = initialize_project_evidence(project_root)
-    pack = Path(pack_dir)
-
-    # Pixel QA is commonly emitted inside the final pack. Bind it to the exact
-    # runtime fingerprint before the unified gate consumes the evidence.
-    local_qa = pack / "ART_QA_RESULT.json"
-    if local_qa.is_file():
-        bind_art_qa(local_qa, pack, paths.art_qa)
-
     result = audit_release_candidate(
-        pack,
+        Path(pack_dir),
         paths.capture_manifest,
         paths.art_queue,
         paths.art_qa,
