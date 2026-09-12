@@ -9,6 +9,7 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
 TOOLS = ROOT / "tools"
+WINDOWS = ROOT / "windows"
 sys.path.insert(0, str(TOOLS))
 
 from guided_capture_marathon import ATTESTATION, build_plan, confirm_mission, write_dashboard  # noqa: E402
@@ -80,6 +81,14 @@ class GuidedCaptureMarathonTests(unittest.TestCase):
             self.assertTrue(dashboard.with_suffix(".json").is_file())
             self.assertEqual(list(dashboard.parent.glob("*.png")), [])
             self.assertIn("Tile-count growth never auto-completes", dashboard.read_text(encoding="utf-8"))
+
+    def test_windows_marathon_uses_verified_fullscreen_and_explicit_attestation(self) -> None:
+        source = (WINDOWS / "Guided_Capture_Marathon.ps1").read_text(encoding="utf-8")
+        self.assertIn("launch_remaster.ps1", source)
+        self.assertIn("$LaunchSucceeded = $?", source)
+        self.assertIn("VERIFIED_IN_GAME", source)
+        self.assertIn("Local_Capture_Bridge.ps1", source)
+        self.assertNotIn("if ($LASTEXITCODE -ne 0) { throw 'Could not start a verified-fullscreen MesenCE session.' }", source)
 
 
 if __name__ == "__main__":
