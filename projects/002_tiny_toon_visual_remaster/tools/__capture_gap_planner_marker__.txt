@@ -1,1 +1,0 @@
-Project #002 rc5 capture-gap planner branch marker. Safe tooling-only file.
