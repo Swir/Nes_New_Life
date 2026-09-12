@@ -12,10 +12,12 @@ $ProjectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $Tools = Join-Path $ProjectRoot 'tools'
 $Manifest = Join-Path $ProjectRoot 'CAPTURE_MISSIONS.json'
 $MarathonTool = Join-Path $Tools 'guided_capture_marathon.py'
+$LedgerTool = Join-Path $Tools 'capture_integrity_ledger.py'
 $Launcher = Join-Path $PSScriptRoot 'launch_remaster.ps1'
 $Bridge = Join-Path $PSScriptRoot 'Local_Capture_Bridge.ps1'
 $Reports = Join-Path $ProjectRoot 'Reports\CaptureMarathon'
 $Dashboard = Join-Path $Reports 'CAPTURE_MARATHON.html'
+$IntegrityDashboard = Join-Path $Reports 'CAPTURE_INTEGRITY.html'
 
 function Get-PythonCommand {
     if (Get-Command py -ErrorAction SilentlyContinue) { return @('py', '-3') }
@@ -87,15 +89,27 @@ Write-Host ''
 Write-Host '=== PROJECT #002 — GUIDED CAPTURE MARATHON ===' -ForegroundColor Cyan
 Write-Host 'This session can create real Capture Mission Control evidence.' -ForegroundColor Yellow
 Write-Host 'A mission is recorded ONLY after you explicitly press V after actually verifying it in-game.'
+Write-Host 'The current capture must also pass the integrity admission gate before gameplay begins and before every mission write.'
 Write-Host 'Tile growth, heuristics or the script itself never auto-complete a mission.'
 Write-Host ''
+
+# Admission preflight happens BEFORE launching the ROM. Incomplete missions are allowed; structural regressions are not.
+$Preflight = Invoke-PythonJson $Python @($MarathonTool, 'plan', $Manifest, '--capture', $CurrentCapture)
+if ($Preflight.capture_admission_gate -ne 'PASS') {
+    & $Python[0] $(if ($Python.Count -gt 1) { $Python[1] }) $LedgerTool $Manifest $CurrentCapture '--output' $IntegrityDashboard '--admission-only' | Out-Host
+    Write-Host 'CAPTURE ADMISSION BLOCKED. No new verified mission may be recorded from this capture.' -ForegroundColor Red
+    Write-Host ("Structural blockers: {0}" -f ($Preflight.capture_structural_blockers -join ', ')) -ForegroundColor Red
+    if (Test-Path $IntegrityDashboard) { Start-Process $IntegrityDashboard }
+    exit 3
+}
+Write-Host ("Capture admission PASS. Fingerprint: {0}" -f $Preflight.capture_fingerprint_sha256) -ForegroundColor Green
 
 # Launch the legally supplied local ROM in verified fullscreen. launch_remaster.ps1 returns after fullscreen is confirmed while MesenCE stays running.
 & $Launcher -RomPath $RomPath
 $LaunchSucceeded = $?
 if (-not $LaunchSucceeded) { throw 'Could not start a verified-fullscreen MesenCE session.' }
 
-$Plan = Invoke-PythonJson $Python @($MarathonTool, 'plan', $Manifest)
+$Plan = Invoke-PythonJson $Python @($MarathonTool, 'plan', $Manifest, '--capture', $CurrentCapture)
 if ($Plan.release_capture_gate -eq 'PASS') {
     Write-Host 'All Capture Mission Control missions are already complete.' -ForegroundColor Green
 } else {
@@ -113,7 +127,7 @@ foreach ($Mission in @($Plan.pending)) {
     Write-Host ''
     Write-Host 'Play this mission in the already running fullscreen MesenCE.' -ForegroundColor Yellow
     Write-Host 'When you are done, return here:'
-    Write-Host '  V = I actually verified this mission in-game; record evidence'
+    Write-Host '  V = I actually verified this mission in-game; integrity-check and record evidence'
     Write-Host '  S = skip for now (NO completion recorded)'
     Write-Host '  Q = finish marathon now'
 
@@ -127,22 +141,32 @@ foreach ($Mission in @($Plan.pending)) {
         continue
     }
 
-    $Result = Invoke-PythonJson $Python @(
-        $MarathonTool, 'confirm', $Manifest, $CurrentCapture, $Mission.key,
-        '--attestation', 'VERIFIED_IN_GAME'
-    )
+    try {
+        $Result = Invoke-PythonJson $Python @(
+            $MarathonTool, 'confirm', $Manifest, $CurrentCapture, $Mission.key,
+            '--attestation', 'VERIFIED_IN_GAME'
+        )
+    } catch {
+        Write-Host 'Mission was NOT recorded because capture integrity admission failed.' -ForegroundColor Red
+        Write-Host $_.Exception.Message -ForegroundColor Red
+        & $Python[0] $(if ($Python.Count -gt 1) { $Python[1] }) $LedgerTool $Manifest $CurrentCapture '--output' $IntegrityDashboard '--admission-only' | Out-Host
+        if (Test-Path $IntegrityDashboard) { Start-Process $IntegrityDashboard }
+        break
+    }
     Write-Host ("RECORDED: {0}. Capture missions now {1}/{2} ({3}%)." -f $Mission.key, $Result.plan.done, $Result.plan.total, $Result.plan.percent) -ForegroundColor Green
+    Write-Host ("Integrity admission: {0}; fingerprint: {1}" -f $Result.capture_integrity.admission_gate, $Result.capture_integrity.fingerprint_sha256) -ForegroundColor DarkGreen
     if ($Result.stagnating_warning) {
         Write-Host 'NOTE: this confirmation produced no structural tile/palette/image growth. That can be valid for reused graphics, but review the mission before relying on it.' -ForegroundColor Yellow
     }
 }
 
-Invoke-Python $Python @($MarathonTool, 'dashboard', $Manifest, $Dashboard)
+Invoke-Python $Python @($MarathonTool, 'dashboard', $Manifest, $Dashboard, '--capture', $CurrentCapture)
 if (Test-Path $Dashboard) { Start-Process $Dashboard }
-$FinalPlan = Invoke-PythonJson $Python @($MarathonTool, 'plan', $Manifest)
+$FinalPlan = Invoke-PythonJson $Python @($MarathonTool, 'plan', $Manifest, '--capture', $CurrentCapture)
 
 Write-Host ''
 Write-Host ("CAPTURE MARATHON STATUS: {0}/{1} ({2}%) — gate {3}" -f $FinalPlan.done, $FinalPlan.total, $FinalPlan.percent, $FinalPlan.release_capture_gate) -ForegroundColor Cyan
+Write-Host ("CAPTURE INTEGRITY ADMISSION: {0}" -f $FinalPlan.capture_admission_gate) -ForegroundColor Cyan
 Write-Host 'Generating privacy-safe Local Capture Bridge evidence from this session...' -ForegroundColor Cyan
 
 $BridgeArgs = @('-CurrentCapture', $CurrentCapture)
@@ -157,9 +181,9 @@ if ($BridgeRc -eq 2) {
 }
 
 Write-Host ''
-if ($FinalPlan.release_capture_gate -eq 'PASS' -and $BridgeRc -eq 0) {
+if ($FinalPlan.release_capture_gate -eq 'PASS' -and $FinalPlan.capture_admission_gate -eq 'PASS' -and $BridgeRc -eq 0) {
     Write-Host 'CAPTURE MARATHON COMPLETE: all explicit capture missions are verified and the safe handoff is clean.' -ForegroundColor Green
     Write-Host 'Next: run regression-safe Capture Promotion Director before any art workspace sync.' -ForegroundColor Green
 } else {
-    Write-Host 'Marathon session saved. Continue pending missions next time; nothing unverified was auto-completed.' -ForegroundColor Yellow
+    Write-Host 'Marathon session saved. Continue pending missions next time; nothing unverified or structurally regressed was auto-completed.' -ForegroundColor Yellow
 }
