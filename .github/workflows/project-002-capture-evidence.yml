@@ -1,0 +1,31 @@
+name: Project 002 Capture Evidence Guard
+
+on:
+  pull_request:
+    paths:
+      - 'projects/002_tiny_toon_visual_remaster/evidence/capture/**'
+      - 'projects/002_tiny_toon_visual_remaster/tools/capture_evidence_validator.py'
+      - '.github/workflows/project-002-capture-evidence.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-safe-evidence:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compile evidence validator
+        run: python -m py_compile projects/002_tiny_toon_visual_remaster/tools/capture_evidence_validator.py
+      - name: Validate metadata-only evidence tree
+        shell: bash
+        run: |
+          EVIDENCE='projects/002_tiny_toon_visual_remaster/evidence/capture'
+          if find "$EVIDENCE" -type f -name '*.json' -print -quit 2>/dev/null | grep -q .; then
+            python projects/002_tiny_toon_visual_remaster/tools/capture_evidence_validator.py "$EVIDENCE"
+          else
+            echo 'No capture evidence JSON in this PR; validator/workflow syntax check only.'
+          fi
