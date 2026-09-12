@@ -1,6 +1,6 @@
 # Project #002 — HD Completion Roadmap
 
-## Current milestone: quantified captured-art completion + exact high-impact sprint execution + final release gate
+## Current milestone: authoritative Remaster Studio + quantified high-impact art execution + final release gate
 
 <!-- SWIR-ROADMAP-STANDARD:v1 -->
 <!-- ROADMAP-PROGRESS:START -->
@@ -27,6 +27,8 @@
 The production path is now:
 
 `MesenCE capture → Capture Mission Control → Capture Promotion Director → resume-safe sync → Visual Context Audit → Animation Family Workbench → Visual Completion Matrix → High-Impact Art Sprint → build-bound Pixel QA → one-click verified-fullscreen MesenCE playtest → Final Regression Cockpit → Final Release Readiness Director → gated ZIP`
+
+The **Authoritative Remaster Studio** now exposes that exact current production path in one UI instead of sending the user through older Top-N / Release Candidate flows. It can launch safe capture promotion, run Visual Completion Matrix, prepare the exact matrix-selected High-Impact Art Sprint, open the local editable sprint, launch conflict-safe finish + Pixel QA, launch verified-fullscreen playtest and Final Regression Cockpit, and run the seven-gate Final Release Readiness audit. Its Visual Completion percentage remains capture-bounded art information only and never changes this Gate A–D release percentage.
 
 The **Capture Promotion Director** remains the preferred bridge from a fresh local MesenCE capture into production. It validates the candidate, compares it with the previous accepted capture, and refuses to synchronize `ART_QUEUE.csv` or `MasterWorkspace` when `CAPTURE_REGRESSION` is present. A clean candidate can then run resume-safe sync, Visual Context, Animation Family, Final Art Priority and Production Sprint refresh in one pass.
 
