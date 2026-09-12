@@ -1,5 +1,19 @@
 # Changelog — Project #002 Tiny Toon Visual Remaster
 
+## 1.0.0-rc2 — Remaster Studio production command center
+
+- upgraded `TinyToonRemasterStudio.py` from the legacy readiness/package GUI into the authoritative HD production command center
+- added `studio_command_center.py` as a safe orchestration layer for Capture Mission Control, exact-build Pixel QA, one-click playtest, unified release audit and gated packaging
+- Studio workspace creation now initializes `CAPTURE_MISSIONS.json` and `FINAL_REGRESSION.json` automatically
+- added GUI Capture Mission Control dashboard and capture-session recording with explicit mission completion only
+- changed the batch-art action to run build-bound Pixel QA after composition; QA evidence is stored under `Reports/ArtQA` and tied to the exact runtime fingerprint
+- added one-click QA-gated MesenCE playtest build/deploy directly to Studio while preserving backup behavior
+- replaced the old GUI readiness action with the Unified Release Candidate Audit
+- removed the old GUI packaging bypass: `GATED release ZIP` refuses to create an archive until complete capture, finished/classified art, current-build QA and current-build full-game regression all PASS
+- refreshed README and roadmap so the unified gate is authoritative for GUI and CLI users alike
+- added `STUDIO_COMMAND_CENTER.md` and synthetic command-center tests proving missing evidence blocks Studio packaging and complete current-build evidence permits it
+- no ROM, save state, ROM-derived capture, ripped commercial art/audio, emulator binary or final derivative pack is committed
+
 ## 1.0.0-rc1 — Unified build-bound release candidate gate
 
 - added `release_candidate.py` as the single authoritative final release gate for Project #002
