@@ -1,5 +1,30 @@
 # Changelog — Project #002 Tiny Toon Visual Remaster
 
+## 1.0.0-rc17 — Privacy-safe Local Capture Bridge to GitHub evidence
+
+- added `local_capture_bridge.py` to inspect a local MesenCE capture and emit a strict metadata-only `SAFE_CAPTURE_HANDOFF.json` / CSV / HTML dashboard
+- handoff includes HD scale, capture fingerprint, mapping/tile/palette/condition counts, PLAYER/BOSS/ENEMY/WORLD/UI/EFFECTS grouping, image dimensions/sizes/hashes, Capture Mission Control state and capture-regression metadata without copying image pixels
+- added `capture_evidence_validator.py` to reject unsupported schema, forbidden payload files, ROM/save/emulator/image payloads, absolute local paths and broken privacy declarations
+- added `windows/Local_Capture_Bridge.bat` + PowerShell one-click flow with optional previous-capture comparison
+- optional authenticated GitHub CLI path creates a remote evidence branch and PR containing only the validated JSON; the local ROM/capture directory is never staged into git
+- added `.github/workflows/project-002-capture-evidence.yml` as a second server-side privacy guard for evidence PRs
+- added the safe evidence inbox contract under `evidence/capture/`
+- Authoritative Remaster Studio now exposes the bridge on F4 while F5 remains regression-safe capture promotion
+- added synthetic privacy/regression tests plus Studio/Windows/workflow integration checks
+- added `LOCAL_CAPTURE_BRIDGE.md`; README and ROADMAP now place safe evidence handoff before capture promotion
+- ROADMAP Gate A–D remains 0/52 because tooling/evidence transport alone does not prove any local gameplay/art/QA checkbox complete
+- no ROM, save state, capture image payload, ripped commercial art/audio or emulator binary is committed
+
+## 1.0.0-rc16 — Authoritative Remaster Studio
+
+- added `AuthoritativeRemasterStudio.py` as the production UI for the current Project #002 path instead of older mixed legacy flows
+- directly exposes regression-safe capture promotion, Visual Completion Matrix, exact High-Impact Art Sprint preparation/finish, Pixel QA, verified-fullscreen playtest, Final Regression Cockpit and Final Release Gate
+- added F1–F11 production shortcuts and `windows/Authoritative_Remaster_Studio.bat`
+- added integration checks so authoritative Windows launchers and final gates remain wired into the Studio
+- added `AUTHORITATIVE_REMASTER_STUDIO.md` and advanced the Project #002 milestone without inflating Gate A–D progress
+- PR #42 merged only after Project 002 Tools and Roadmap Standard checks passed
+- no ROM, save state, ROM-derived capture, commercial art/audio or emulator binary is committed
+
 ## 1.0.0-rc15 — Exact High-Impact Art Sprint execution
 
 - added `high_impact_art_sprint.py` to turn the exact Visual Completion Matrix `NEXT_HIGH_IMPACT_ART_BATCH` into an immediately editable local production sprint
