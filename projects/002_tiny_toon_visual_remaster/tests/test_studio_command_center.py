@@ -13,12 +13,15 @@ ROOT = Path(__file__).resolve().parents[1]
 TOOLS = ROOT / "tools"
 sys.path.insert(0, str(TOOLS))
 
+from art_workspace import init_workspace  # noqa: E402
 from capture_mission_control import default_manifest  # noqa: E402
 from release_candidate import REGRESSION_CASES, complete_regression_case, pack_fingerprint  # noqa: E402
 from studio_command_center import (  # noqa: E402
     animation_family_dashboard,
     capture_gap_dashboard,
+    create_final_art_sprint,
     evidence_paths,
+    finish_final_art_sprint,
     gated_release_package,
     initialize_project_evidence,
     release_audit,
@@ -117,6 +120,26 @@ class StudioCommandCenterTests(unittest.TestCase):
             self.assertTrue(result["comparison"]["progressed"])
             self.assertTrue((root / "Reports" / "CaptureGapPlanner" / "CAPTURE_NEXT.csv").is_file())
             self.assertTrue(Path(result["outputs"]["html"]).is_file())
+
+    def test_studio_final_art_sprint_roundtrip_is_qa_gated(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td); pack = root / "pack"; output = root / "sprint_output"
+            self._write_pack(pack)
+            paths = initialize_project_evidence(root)
+            self._write_done_queue(paths.art_queue)
+            workspace = root / "Artwork" / "MasterWorkspace"
+            init_workspace(pack, workspace, paths.art_queue)
+
+            sprint = create_final_art_sprint(root, pack, top=1)
+            self.assertEqual(sprint["exported"], 1)
+            item = sprint["items"][0]
+            target = root / "Artwork" / "CurrentArtSprint" / "editable" / item["kit_file"]
+            Image.new("RGBA", (32, 32), (20, 220, 90, 255)).save(target)
+
+            result = finish_final_art_sprint(root, pack, output)
+            self.assertEqual(result["qa_gate"], "PASS")
+            self.assertTrue(result["mapping_preserved"])
+            self.assertTrue((output / "hires.txt").is_file())
 
     def test_gated_studio_packaging_requires_and_preserves_green_build_evidence(self) -> None:
         with tempfile.TemporaryDirectory() as td:
