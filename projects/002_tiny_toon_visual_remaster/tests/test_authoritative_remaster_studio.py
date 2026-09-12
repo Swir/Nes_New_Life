@@ -2,12 +2,15 @@ from __future__ import annotations
 
 import importlib.util
 from pathlib import Path
+import sys
 import unittest
 
 
 PROJECT = Path(__file__).resolve().parents[1]
 TOOLS = PROJECT / "tools"
 WINDOWS = PROJECT / "windows"
+if str(TOOLS) not in sys.path:
+    sys.path.insert(0, str(TOOLS))
 
 
 class AuthoritativeRemasterStudioTests(unittest.TestCase):
