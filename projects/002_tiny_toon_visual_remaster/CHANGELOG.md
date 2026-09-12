@@ -1,5 +1,17 @@
 # Changelog — Project #002 Tiny Toon Visual Remaster
 
+## 1.0.0-rc3 — Visual context & animation-risk audit
+
+- added `visual_context_audit.py` to group captured tile uses by tile ID and rank families that are visually risky across palettes, conditions and distinct captured RGBA variants
+- high-risk scoring now highlights multi-palette, multi-condition, visual-variant, mixed-group, unassigned and rare families so final art review starts where mistakes are most likely to be visible
+- added persistent `VISUAL_CONTEXT_REVIEW.csv` with explicit `REVIEW` / `REVIEWED` states and artist notes
+- every family carries a stable fingerprint derived from palettes, conditions, exact visual hashes, art groups and usage count; later capture/art changes automatically make an older reviewed family stale
+- added metadata-only HTML/JSON dashboard; reports do not embed captured commercial artwork
+- added synthetic tests for high-risk detection, explicit review, stale-review invalidation after an art change and report privacy
+- refreshed README and ROADMAP to place visual-context review before final polish/regression
+- added `VISUAL_CONTEXT_AUDIT.md`
+- no ROM, save state, ROM-derived capture, ripped commercial art/audio, emulator binary or derivative final pack is committed
+
 ## 1.0.0-rc2 — Remaster Studio production command center
 
 - upgraded `TinyToonRemasterStudio.py` from the legacy readiness/package GUI into the authoritative HD production command center
