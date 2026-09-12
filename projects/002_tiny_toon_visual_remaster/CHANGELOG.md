@@ -1,5 +1,19 @@
 # Changelog — Project #002 Tiny Toon Visual Remaster
 
+## 1.0.0-rc7 — Final Art Sprint Kit
+
+- added `art_sprint_kit.py` to turn the evidence-driven Top-N Final Art Priority list into a focused local batch-edit folder
+- sprint export copies only the highest-priority unfinished masters into `editable/`, preserves untouched `reference/` copies and records exact dimensions plus SHA-256 workspace state
+- added local `LOCAL_ART_SPRINT_BOARD.png` ordered by redraw priority so a real art session can work from one visual board instead of hunting across the full MasterWorkspace
+- sprint import is stale-workspace aware: if the same master changed after export and the sprint also changed it, import blocks instead of silently overwriting newer work
+- resized/missing sprint graphics are rejected before they can reach the authoritative MasterWorkspace
+- added one-command `finish` path: safe import → combined HD composition → `hires.txt` preservation → structural validation → Pixel QA
+- wired sprint creation/finalization into `studio_command_center.py`
+- explicitly gitignored Project `Artwork/` and `Reports/` because sprint/contact-sheet/report folders can contain local ROM-derived graphics
+- added synthetic tests for Top-N export, batch roundtrip, stale conflict blocking, dimension rejection and successful QA-gated finish
+- added `FINAL_ART_SPRINT_KIT.md` and advanced README/ROADMAP from priority planning into repeatable real-art execution
+- no ROM, save state, ROM-derived capture, ripped commercial art/audio, emulator binary, sprint graphic or derivative final pack is committed
+
 ## 1.0.0-rc6 — Final art priority board
 
 - added `final_art_priority.py` to rank unfinished captured graphics by expected visible HD impact
@@ -70,7 +84,7 @@
 - release PASS now requires structural validation, complete Capture Mission Control evidence, a fully finished/classified art queue, current-build pixel QA and current-build full-game visual regression
 - added a stable SHA-256 runtime fingerprint derived from `hires.txt` plus every referenced HD PNG
 - final regression evidence is bound to that exact fingerprint, so any later runtime art/mapping change automatically invalidates the older regression pass
-- added `bound_art_qa.py` so the existing pixel-safe Art QA result can be bound to the exact output HD Pack fingerprint
+- added `bound_art_qa.py` so the existing pixel-safe Art QA result can be bound to the exact output build
 - stale Art QA is explicitly blocked even when the older report itself says PASS
 - added ten final regression cases covering boot/menu, player movement, actions/damage/death, primary and alternate routes, enemies, bosses, HUD/text, effects/transitions and ending/credits
 - gated packaging refuses to create the final ZIP until every authoritative evidence source passes for the current build
