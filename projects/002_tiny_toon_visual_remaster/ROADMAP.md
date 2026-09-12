@@ -1,10 +1,12 @@
 # Project #002 — HD Completion Roadmap
 
-## Current milestone: capture completeness under control
+## Current milestone: unified build-bound release gate
 
-The tooling path is now:
+The production path is now:
 
-`MesenCE capture → Capture Mission Control → incremental production sync → automatic baseline → master-art batch → pixel QA → validation → one-click MesenCE playtest`
+`MesenCE capture → Capture Mission Control → incremental production sync → automatic baseline → master-art batch → pixel QA → validation → one-click MesenCE playtest → build-bound full-game regression → Unified Release Candidate Gate → safe ZIP`
+
+The final gate intentionally refuses stale evidence: changing `hires.txt` or any referenced runtime PNG invalidates previous final Art QA and full-game regression completion for the older build.
 
 ## Gate A — Complete local capture
 
@@ -31,20 +33,26 @@ Use `capture_mission_control.py`; the capture gate stays BLOCKED until these are
 - [ ] Resolve every UNASSIGNED art-queue row
 - [ ] Zero TODO/INVALID masters
 
-## Gate C — QA and regression
+## Gate C — QA and build-bound regression
 
-- [ ] Pixel QA PASS
+- [ ] Run `bound_art_qa.py` against the exact final runtime pack
+- [ ] Pixel QA PASS and fingerprint matches the current build
 - [ ] `hires.txt` mapping preserved
 - [ ] No missing referenced PNGs
 - [ ] 4x target preserved
-- [ ] Full-game visual regression pass in MesenCE
+- [ ] Complete all final regression cases in MesenCE against the exact current fingerprint
 - [ ] No animation seams, wrong palette contexts or transparency regressions
+- [ ] Re-run any stale QA/regression evidence after a late runtime-art change
 
 ## Gate D — Release
 
-- [ ] HD readiness gate PASS
+- [ ] `release_candidate.py audit` reports `RELEASE GATE: PASS`
+- [ ] Capture missions are complete
+- [ ] Art queue has 0 TODO and 0 UNASSIGNED rows
+- [ ] Current-build pixel QA is PASS
+- [ ] Current-build full-game visual regression is complete
 - [ ] Runtime pack contains no ROM/save-state/patch payloads
-- [ ] Final release ZIP built from validated pack only
+- [ ] Final release ZIP built through the gated `release_candidate.py package` command
 - [ ] README screenshots/video captured from the user's local legally supplied game environment
 
-A toolchain milestone is not the same as a finished remaster. Full HD completion requires the user's local full-game capture plus final artwork and real MesenCE regression testing.
+A toolchain milestone is not the same as a finished remaster. Full HD completion still requires the user's local full-game capture, final artwork and real MesenCE regression testing. The new unified gate makes those remaining requirements explicit and prevents an older successful test run from being reused after the playable HD assets change.
