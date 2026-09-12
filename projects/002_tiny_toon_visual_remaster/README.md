@@ -31,6 +31,7 @@ The hashes identify the user's local ROM only. The ROM itself must never be comm
 | X | B |
 | Enter | Start |
 | Right Shift | Select |
+| F11 | Fullscreen toggle |
 | Esc | Emulator/menu |
 
 Gamepads are configured through MesenCE. The remaster does not alter the original control logic.
@@ -51,13 +52,15 @@ For the fastest capture-to-playtest loop:
 Build_HD_Playtest.bat
 ```
 
-The playtest builder creates a QA-gated HD Pack and can deploy it into the user's local MesenCE `HdPacks/<ROM stem>` folder while backing up the previously installed pack.
+The playtest builder creates a QA-gated HD Pack, deploys it into the user's local MesenCE `HdPacks/<ROM stem>` folder while backing up the previously installed pack, then launches the user's local ROM automatically. Fullscreen is a Project #002 playtest requirement: the launcher requests native MesenCE fullscreen, checks the actual emulator window against the active monitor and retries with F11 before accepting the launch. Exact-build fullscreen evidence is written under `Reports/FullscreenPlaytest/`.
+
+See `FULLSCREEN_PLAYTEST.md`.
 
 ## Production workflow
 
 The current high-impact path is:
 
-`MesenCE capture → Capture Mission Control → PRODUCTION SPRINT → Capture Gap Planner → incremental sync → Visual Context Audit → Animation Family Workbench → Final Art Priority Board → Final Art Sprint Kit → build-bound Pixel QA → one-click playtest → exact-build regression → Unified Release Candidate Gate → gated ZIP`
+`MesenCE capture → Capture Mission Control → Capture Promotion Director → incremental sync → Visual Context Audit → Animation Family Workbench → Final Art Priority Board → Final Art Sprint Kit → build-bound Pixel QA → one-click verified-fullscreen playtest → exact-build regression → Unified Release Candidate Gate → gated ZIP`
 
 `tools/TinyToonRemasterStudio.py` is now the preferred end-to-end interface. The main window exposes the recent capture-gap, visual-context, animation-family, priority-board and Final Art Sprint tools directly instead of requiring separate CLI commands.
 
@@ -206,6 +209,8 @@ Generate the ranked/grouped art queue and persistent `MasterWorkspace`. For broa
 - completed full-game visual regression for the current runtime fingerprint,
 - no ROM/save-state/patch payloads.
 
+Project acceptance additionally requires the final user-facing playtest to be run in verified fullscreen. `tools/fullscreen_launch.py status` detects stale fullscreen evidence after a runtime art/mapping change.
+
 ```bash
 python tools/release_candidate.py audit "C:\\TinyToonWork\\ModernizedPack\\final_art" \
   --capture "C:\\TinyToonWork\\CAPTURE_MISSIONS.json" \
@@ -235,11 +240,12 @@ python tools/release_candidate.py audit "C:\\TinyToonWork\\ModernizedPack\\final
 - `auto_art_pass.py` — automatic baseline modernization for untouched masters
 - `art_qa.py` / `bound_art_qa.py` — pixel-safe QA and exact-build binding
 - `rapid_hd_playtest.py` — capture → sync → baseline → apply → QA → optional MesenCE deploy
+- `fullscreen_launch.py` — verified-fullscreen exact-build evidence and stale-evidence checks
 - `release_candidate.py` — authoritative final release gate
 - `studio_command_center.py` — GUI-facing orchestration layer
 - `TinyToonRemasterStudio.py` — main Production Sprint / art / QA / release GUI
 - `windows/Start_Remaster.bat` — one-click Windows launcher
-- `windows/Build_HD_Playtest.bat` — one-click QA-gated HD playtest build/deploy
+- `windows/Build_HD_Playtest.bat` — one-click QA-gated build/deploy + verified-fullscreen MesenCE launch
 
 ## Python
 
