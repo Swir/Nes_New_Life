@@ -38,6 +38,10 @@
 - reject resized/missing master files before they can corrupt neighboring HD tiles
 - batch-compose every changed master into one combined `final_art` HD Pack in a single pass
 - preserve `hires.txt` byte-for-byte during batch composition
+- pixel-safe QA compares source capture vs final art and allows changes only inside targets belonging to edited masters
+- block batch output when RGB or alpha changes occur outside authorized master rectangles
+- generate marker-only diff overlays and HTML/JSON QA evidence for every art batch
+- detect edited masters that unexpectedly produce no visible output change
 - player animation replacements first
 - common enemies and projectiles
 - foreground tilesets and scenery
@@ -56,6 +60,6 @@
 - final local full-game verification against the original ROM behavior
 
 ### Current hard blocker to a truthful "complete HD" release
-The repository can automate capture measurement, prioritization, grouping, workboard generation, duplicate detection, master-tile export, persistent batch art editing, exact replacement propagation, preview processing, validation, readiness reporting and safe packaging. The remaining content-critical work requires a **local complete MesenCE capture plus the actual finished 4x artwork and real full-game visual verification**. Tooling must never infer unseen bosses, routes, animation states or ending screens as complete.
+The repository can automate capture measurement, prioritization, grouping, workboard generation, duplicate detection, master-tile export, persistent batch art editing, exact replacement propagation, pixel-safe batch QA, preview processing, validation, readiness reporting and safe packaging. The remaining content-critical work requires a **local complete MesenCE capture plus the actual finished 4x artwork and real full-game visual verification**. Tooling must never infer unseen bosses, routes, animation states or ending screens as complete.
 
 The ROM remains the gameplay source throughout all phases. We do not rebuild or redesign its levels, physics or enemy logic.
