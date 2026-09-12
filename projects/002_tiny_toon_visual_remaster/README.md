@@ -57,9 +57,9 @@ The playtest builder creates a QA-gated HD Pack and can deploy it into the user'
 
 The current high-impact path is:
 
-`MesenCE capture → Capture Mission Control → Capture Gap Planner → incremental sync → Visual Context Audit → Animation Family Workbench → baseline / master art → build-bound Pixel QA → one-click playtest → exact-build regression → Unified Release Candidate Gate → gated ZIP`
+`MesenCE capture → Capture Mission Control → Capture Gap Planner → incremental sync → Visual Context Audit → Animation Family Workbench → Final Art Priority Board → master art → build-bound Pixel QA → one-click playtest → exact-build regression → Unified Release Candidate Gate → gated ZIP`
 
-`tools/TinyToonRemasterStudio.py` remains the preferred GUI command center for capture, art, QA, playtest and release evidence. `studio_command_center.py` exposes capture-gap, visual-context and animation-family orchestration for GUI integration and automation.
+`tools/TinyToonRemasterStudio.py` remains the preferred GUI command center for capture, art, QA, playtest and release evidence. `studio_command_center.py` exposes capture-gap, visual-context, animation-family and final-art-priority orchestration for GUI integration and automation.
 
 ## Capture coverage
 
@@ -118,7 +118,24 @@ Optional local contact sheets can be generated with `animation_workbench.py cont
 
 Important boundary: HD texture-sheet coordinates are **not** treated as on-screen sprite coordinates. Assembly candidates are review hints only and require in-game verification.
 
-See `ANIMATION_WORKBENCH.md` and `VISUAL_CONTEXT_AUDIT.md`.
+## Final Art Priority Board
+
+After capture sync and review passes, generate a ranked list of the captured graphics whose completion should produce the largest visible HD improvement:
+
+```bash
+python tools/final_art_priority.py \
+  "C:\\TinyToonWork\\ModernizedPack\\final_art" \
+  "C:\\TinyToonWork\\Reports\\FinalArtPriority" \
+  --queue "C:\\TinyToonWork\\Artwork\\ART_QUEUE.csv" \
+  --workspace "C:\\TinyToonWork\\Artwork\\MasterWorkspace" \
+  --visual-review "C:\\TinyToonWork\\Artwork\\VISUAL_CONTEXT_REVIEW.csv" \
+  --animation-review "C:\\TinyToonWork\\Artwork\\ANIMATION_FAMILY_REVIEW.csv" \
+  --top 20
+```
+
+`FINAL_ART_NEXT.csv` combines reuse, PLAYER/BOSS/ENEMY importance, context/animation risk, MasterWorkspace state and classification blockers. Already edited masters disappear automatically. The HTML/JSON reports are metadata-only and contain no captured artwork.
+
+See `FINAL_ART_PRIORITY_BOARD.md`, `ANIMATION_WORKBENCH.md` and `VISUAL_CONTEXT_AUDIT.md`.
 
 ## Art production
 
@@ -165,6 +182,7 @@ python tools/release_candidate.py audit "C:\\TinyToonWork\\ModernizedPack\\final
 - `art_production.py` — workboards, exact dedupe, near-duplicate hints and master propagation
 - `visual_context_audit.py` — palette/condition/visual-variant family risk audit
 - `animation_workbench.py` — semantic animation-family grouping, condition-cooccurrence candidates and local contact sheets
+- `final_art_priority.py` — evidence-driven `FINAL ART NEXT` ranking for the highest-impact unfinished captured graphics
 - `art_workspace.py` — persistent batch master-art workspace
 - `auto_art_pass.py` — automatic baseline modernization for untouched masters
 - `art_qa.py` / `bound_art_qa.py` — pixel-safe QA and exact-build binding

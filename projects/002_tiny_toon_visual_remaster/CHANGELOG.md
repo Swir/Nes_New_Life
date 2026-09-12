@@ -1,5 +1,16 @@
 # Changelog — Project #002 Tiny Toon Visual Remaster
 
+## 1.0.0-rc6 — Final art priority board
+
+- added `final_art_priority.py` to rank unfinished captured graphics by expected visible HD impact
+- combines art-group importance, reuse count, Visual Context risk, Animation Family risk, MasterWorkspace state and classification blockers into one score
+- already edited masters automatically disappear from the work queue; invalid masters and UNASSIGNED blockers are promoted
+- added metadata-only `FINAL_ART_NEXT.csv`, `FINAL_ART_PRIORITY.json` and HTML dashboard
+- added Studio orchestration through `final_art_priority_dashboard(...)`
+- added synthetic tests proving edited masters are skipped, high-impact PLAYER/BOSS work is prioritized and reports contain no PNG payloads
+- added `FINAL_ART_PRIORITY_BOARD.md` and advanced ROADMAP/README toward an evidence-driven redraw loop
+- no ROM, save state, ROM-derived capture, ripped commercial art/audio, emulator binary or derivative pack is committed
+
 ## 1.0.0-rc5 — Capture gap planner + targeted capture queue
 
 - added `capture_gap_planner.py` to compare repeated local MesenCE captures and build a ranked `CAPTURE NEXT` queue

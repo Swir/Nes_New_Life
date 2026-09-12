@@ -8,6 +8,7 @@ from animation_workbench import write_contact_sheets, write_dashboard as write_a
 from bound_art_qa import audit_bound_art_apply
 from capture_gap_planner import build_capture_queue, write_outputs as write_capture_gap_outputs
 from capture_mission_control import ensure_manifest, mission_status, record_session, write_dashboard as write_capture_dashboard
+from final_art_priority import write_priority_board
 from hd_readiness import package_hd_pack
 from rapid_hd_playtest import build_playtest, default_mesence_hdpacks
 from release_candidate import audit_release_candidate, ensure_regression_manifest, write_release_dashboard
@@ -102,6 +103,22 @@ def animation_family_dashboard(project_root: Path, pack_dir: Path, *, create_con
             Path(pack_dir), paths.art_queue, paths.reports / "AnimationWorkbench" / "LocalContactSheets"
         )
     return result
+
+
+def final_art_priority_dashboard(project_root: Path, pack_dir: Path, *, top: int = 20) -> dict:
+    paths = initialize_project_evidence(project_root)
+    if not paths.art_queue.is_file():
+        raise ValueError("ART_QUEUE.csv is missing; group/sync the art queue first")
+    workspace = paths.root / "Artwork" / "MasterWorkspace"
+    return write_priority_board(
+        Path(pack_dir),
+        paths.reports / "FinalArtPriority",
+        queue=paths.art_queue,
+        workspace=workspace if (workspace / "ART_STATE.csv").is_file() else None,
+        visual_review=paths.visual_review if paths.visual_review.is_file() else None,
+        animation_review=paths.animation_review if paths.animation_review.is_file() else None,
+        top=top,
+    )
 
 
 def run_playtest_build(project_root: Path, capture_dir: Path, *, rom_name: str | None = None, hdpacks_root: Path | None = None, deploy: bool = False) -> dict:
