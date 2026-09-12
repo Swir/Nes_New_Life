@@ -92,7 +92,8 @@ Write-Host ''
 
 # Launch the legally supplied local ROM in verified fullscreen. launch_remaster.ps1 returns after fullscreen is confirmed while MesenCE stays running.
 & $Launcher -RomPath $RomPath
-if ($LASTEXITCODE -ne 0) { throw 'Could not start a verified-fullscreen MesenCE session.' }
+$LaunchSucceeded = $?
+if (-not $LaunchSucceeded) { throw 'Could not start a verified-fullscreen MesenCE session.' }
 
 $Plan = Invoke-PythonJson $Python @($MarathonTool, 'plan', $Manifest)
 if ($Plan.release_capture_gate -eq 'PASS') {
