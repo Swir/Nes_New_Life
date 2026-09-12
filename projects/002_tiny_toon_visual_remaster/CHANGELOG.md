@@ -1,5 +1,18 @@
 # Changelog — Project #002 Tiny Toon Visual Remaster
 
+## 1.0.0-rc4 — Animation family workbench + enforced visual-context release gate
+
+- added `animation_workbench.py` to group Mesen condition-driven states into semantic animation families for player/enemy/boss production review
+- added condition-cooccurrence sprite/metatile candidates without treating HD texture-sheet coordinates as on-screen geometry
+- added local-only animation contact sheets for inspecting related captured frames together; these outputs remain gitignored and are never release assets
+- added fingerprinted `ANIMATION_FAMILY_REVIEW.csv`; capture/art changes make prior family reviews stale
+- added metadata-only HTML/JSON Animation Workbench dashboard and synthetic tests
+- fixed the rc3 release-gate mismatch: `release_candidate.py` now actually requires a current `VISUAL_CONTEXT_REVIEW.csv` with no pending/stale high-risk families
+- wired visual-context and animation-family dashboards into `studio_command_center.py`
+- updated release CLI to require `--visual-review`
+- updated README/ROADMAP and added `ANIMATION_WORKBENCH.md`
+- no ROM, save state, ROM-derived capture, ripped commercial art/audio, emulator binary, local contact sheet or derivative final pack is committed
+
 ## 1.0.0-rc3 — Visual context & animation-risk audit
 
 - added `visual_context_audit.py` to group captured tile uses by tile ID and rank families that are visually risky across palettes, conditions and distinct captured RGBA variants
