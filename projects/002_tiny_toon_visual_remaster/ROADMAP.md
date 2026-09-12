@@ -1,20 +1,22 @@
 # Project #002 — HD Completion Roadmap
 
-## Current milestone: exact-build Final Release Readiness Director
+## Current milestone: quantified captured-art completion + exact-build final release gate
 
 The production path is now:
 
-`MesenCE capture → Capture Mission Control → Capture Promotion Director → resume-safe sync → Visual Context Audit → Animation Family Workbench → Final Art Priority Board → Final Art Sprint Kit → build-bound Pixel QA → one-click verified-fullscreen MesenCE playtest → Final Regression Cockpit → Final Release Readiness Director → gated ZIP`
+`MesenCE capture → Capture Mission Control → Capture Promotion Director → resume-safe sync → Visual Context Audit → Animation Family Workbench → Visual Completion Matrix → Final Art Priority / high-impact batch → Final Art Sprint Kit → build-bound Pixel QA → one-click verified-fullscreen MesenCE playtest → Final Regression Cockpit → Final Release Readiness Director → gated ZIP`
 
 The **Capture Promotion Director** remains the preferred bridge from a fresh local MesenCE capture into production. It validates the candidate, compares it with the previous accepted capture, and refuses to synchronize `ART_QUEUE.csv` or `MasterWorkspace` when `CAPTURE_REGRESSION` is present. A clean candidate can then run resume-safe sync, Visual Context, Animation Family, Final Art Priority and Production Sprint refresh in one pass and optionally prepare the next Top-N Art Sprint immediately.
+
+The new **Visual Completion Matrix** turns the captured-art backlog into measurable production progress instead of one flat TODO count. It reports completion for PLAYER, BOSS, ENEMY, WORLD, UI, EFFECTS and UNASSIGNED, includes usage-weighted completion, highlights invalid/classification blockers and writes `NEXT_HIGH_IMPACT_ART_BATCH.csv`. PLAYER/BOSS/ENEMY, invalid masters and high-reuse graphics receive more production weight so each local art session is aimed at visible game impact. The matrix is deliberately capture-bounded: it never claims that uncaptured states are complete.
 
 The **Fullscreen-by-Contract Playtest** closes a user-facing readiness gap: the one-click Windows playtest no longer stops after installing the pack. It launches the user's local ROM in MesenCE with native fullscreen requested, checks the actual emulator window against the active monitor, retries with F11 when needed and rejects a windowed launch. When a runtime pack is supplied, the launcher writes exact-build metadata-only fullscreen evidence tied to the current HD-pack fingerprint.
 
 The **Final Release Readiness Director** makes that fullscreen evidence packaging-authoritative. A public ZIP can now pass only when HD Pack structure, Capture Mission Control, final art, Visual Context, Pixel QA, verified fullscreen and all ten Final Regression Cockpit cases are simultaneously green. Pixel QA, fullscreen and regression must all match the exact current `hires.txt + runtime PNG` fingerprint. Any late runtime-art change invalidates old evidence and blocks packaging until the changed build is re-tested.
 
-The main production stack now covers capture planning, regression-safe capture promotion, prioritized art execution, exact-build fullscreen launch, exact-build regression and a single final release decision. **PRODUCTION SPRINT** still combines Capture Mission Control, capture regressions, Visual Context Review, Animation Family Review, MasterWorkspace progress and Final Art Priority into one metadata-only **DO THIS NEXT** dashboard.
+The main production stack now covers capture planning, regression-safe capture promotion, quantified visual completion, prioritized art execution, exact-build fullscreen launch, exact-build regression and a single final release decision. **PRODUCTION SPRINT** still combines Capture Mission Control, capture regressions, Visual Context Review, Animation Family Review, MasterWorkspace progress and Final Art Priority into one metadata-only **DO THIS NEXT** dashboard.
 
-Final Art Priority and Final Art Sprint remain focused on real captured graphics: Top-N unfinished masters are exported into `Artwork/CurrentArtSprint`, edited locally, then imported through stale-conflict checks, exact dimensions, `hires.txt` preservation, validation and Pixel QA.
+Final Art Priority and Final Art Sprint remain focused on real captured graphics: Top-N unfinished masters are exported into `Artwork/CurrentArtSprint`, edited locally, then imported through stale-conflict checks, exact dimensions, `hires.txt` preservation, validation and Pixel QA. Use the Visual Completion Matrix before and after a sprint to make sure the next batch is improving the highest-impact production group rather than only increasing a raw tile count.
 
 The **Final Regression Cockpit** turns the last manual QA phase into a fingerprint-bound workflow. Each of the ten authoritative full-game cases is marked PASS/FAIL only after real MesenCE verification. FAIL results carry a defect category and stay blocking until re-tested. Any later runtime PNG or `hires.txt` change makes older PASS evidence STALE automatically.
 
@@ -45,17 +47,20 @@ After each targeted MesenCE session, run `windows/Promote_Capture_To_HD.bat` (pr
 - [ ] Confirm resume-safe sync preserved existing edited masters and artist decisions
 - [ ] Generate/refresh `VISUAL_CONTEXT_REVIEW.csv` and clear every high-risk palette/condition/variant family
 - [ ] Generate/refresh `ANIMATION_FAMILY_REVIEW.csv` and inspect high-risk player/enemy/boss animation families
+- [ ] Run `windows/Visual_Completion_Matrix.bat` and inspect completion by PLAYER/BOSS/ENEMY/WORLD/UI/EFFECTS
+- [ ] Resolve every invalid master and every UNASSIGNED classification blocker reported by the matrix
+- [ ] Work `NEXT_HIGH_IMPACT_ART_BATCH.csv` before low-impact captured TODO work
 - [ ] Generate `FINAL_ART_NEXT.csv` and work the highest-scoring unfinished masters first
 - [ ] Export Top-N work into `Artwork/CurrentArtSprint` (the director can do this during promotion)
 - [ ] Redraw sprint `editable/*.png` while keeping dimensions unchanged
 - [ ] Finish each sprint through Studio **Finish Sprint + Pixel QA**
-- [ ] Refresh **PRODUCTION SPRINT** after every successful sprint
+- [ ] Refresh Visual Completion Matrix + **PRODUCTION SPRINT** after every successful sprint
 - [ ] Use local animation contact sheets for transition/seam review where useful
 - [ ] Replace PLAYER/BOSS masters with final-quality art first
 - [ ] Finish ENEMY/WORLD/UI/EFFECTS masters
 - [ ] Resolve every UNASSIGNED art-queue row
 - [ ] Re-run visual-context and animation-family audits after major capture/art changes
-- [ ] Zero TODO/INVALID masters
+- [ ] Zero TODO/INVALID masters in every captured group
 
 Studio's MasterWorkspace remains the authoritative local source of final art. Sprint kits are temporary focused editing surfaces. Exact duplicates can be propagated safely; near-duplicates remain review hints only. Condition co-occurrence candidates are inspection hints, not reconstructed screen layouts.
 
@@ -83,6 +88,7 @@ Studio's MasterWorkspace remains the authoritative local source of final art. Sp
 - [ ] Final Release Readiness Director reports `FINAL RELEASE GATE: PASS`
 - [ ] Capture missions are complete
 - [ ] Art queue has 0 TODO and 0 UNASSIGNED rows
+- [ ] Visual Completion Matrix has zero captured TODO/invalid/classification blockers
 - [ ] Visual Context Review exists and has no pending/stale high-risk families
 - [ ] Current-build Pixel QA is PASS
 - [ ] Final Regression Cockpit has 10/10 PASS for the exact current fingerprint
@@ -93,12 +99,12 @@ Studio's MasterWorkspace remains the authoritative local source of final art. Sp
 
 ## Highest-impact remaining work
 
-The tooling now reaches from capture through packaging-authoritative verified fullscreen and exact-build regression. The largest remaining blockers are local content/evidence work:
+The tooling now reaches from capture through quantified captured-art completion, packaging-authoritative verified fullscreen and exact-build regression. The largest remaining blockers are local content/evidence work:
 
 1. complete local MesenCE capture of every route/state/boss/effect/ending,
 2. promote each new capture through **Capture Promotion Director** and eliminate every regression before it can touch production state,
 3. clear Visual Context / high-risk animation reviews produced by the promoted capture,
-4. repeatedly create and finish Top-N Final Art Sprints until captured TODO/INVALID work is exhausted,
+4. run **Visual Completion Matrix** and repeatedly finish the generated highest-impact art batches until every captured production group reaches zero TODO/invalid,
 5. resolve every art-queue classification,
 6. run the QA-gated **verified-fullscreen** playtest and drive **Final Regression Cockpit** from FAIL/STALE/PENDING to 10/10 current-build PASS,
 7. run **Final Release Gate** and create the public HD Pack ZIP only after all seven exact-build gates are green (without ROM/emulator/save-state content).
