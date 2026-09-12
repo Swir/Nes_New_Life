@@ -1,0 +1,90 @@
+name: Roadmap Standard
+
+on:
+  push:
+    paths:
+      - 'projects/**'
+      - 'docs/ROADMAP.md'
+      - 'docs/GAME_ROADMAP_TEMPLATE.md'
+      - '.github/workflows/roadmap-standard.yml'
+  pull_request:
+    paths:
+      - 'projects/**'
+      - 'docs/ROADMAP.md'
+      - 'docs/GAME_ROADMAP_TEMPLATE.md'
+      - '.github/workflows/roadmap-standard.yml'
+
+jobs:
+  validate-roadmaps:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate master and every NES game roadmap
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+          import sys
+
+          root = Path('.')
+          errors = []
+
+          def require(condition, message):
+              if not condition:
+                  errors.append(message)
+
+          master = root / 'docs' / 'ROADMAP.md'
+          require(master.exists(), 'Missing docs/ROADMAP.md master roadmap')
+          if master.exists():
+              text = master.read_text(encoding='utf-8')
+              require('<!-- SWIR-ROADMAP-STANDARD:v1 -->' in text,
+                      'Master roadmap is missing SWIR-ROADMAP-STANDARD:v1 marker')
+              require('## 🎮 Current game progress' in text,
+                      'Master roadmap is missing current-game progress dashboard')
+
+          template = root / 'docs' / 'GAME_ROADMAP_TEMPLATE.md'
+          require(template.exists(), 'Missing docs/GAME_ROADMAP_TEMPLATE.md')
+
+          projects_dir = root / 'projects'
+          require(projects_dir.exists(), 'Missing projects/ directory')
+
+          project_dirs = sorted(p for p in projects_dir.iterdir() if p.is_dir()) if projects_dir.exists() else []
+          require(bool(project_dirs), 'No project directories found under projects/')
+
+          mandatory = [
+              '<!-- SWIR-ROADMAP-STANDARD:v1 -->',
+              '<!-- ROADMAP-PROGRESS:START -->',
+              '<!-- ROADMAP-PROGRESS:END -->',
+              'ROADMAP-',
+              'DONE-',
+              'STATUS-',
+              '```text',
+              '| ✅ Completed |',
+          ]
+
+          for project in project_dirs:
+              readme = project / 'README.md'
+              roadmap = project / 'ROADMAP.md'
+              require(readme.exists(), f'{project}: missing README.md')
+              require(roadmap.exists(), f'{project}: missing ROADMAP.md')
+              if not roadmap.exists():
+                  continue
+
+              text = roadmap.read_text(encoding='utf-8')
+              for token in mandatory:
+                  require(token in text, f'{roadmap}: missing required roadmap element: {token}')
+
+              checked = len(re.findall(r'^\s*- \[[xX]\]\s+', text, flags=re.MULTILINE))
+              unchecked = len(re.findall(r'^\s*- \[ \]\s+', text, flags=re.MULTILINE))
+              require(checked + unchecked > 0,
+                      f'{roadmap}: roadmap must contain measurable [x]/[ ] deliverables')
+
+          if errors:
+              print('ROADMAP STANDARD VALIDATION FAILED')
+              for error in errors:
+                  print(f'::error::{error}')
+              sys.exit(1)
+
+          print(f'Roadmap Standard PASS: {len(project_dirs)} game project(s) validated.')
