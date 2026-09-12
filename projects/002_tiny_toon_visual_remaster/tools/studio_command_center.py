@@ -10,6 +10,7 @@ from bound_art_qa import audit_bound_art_apply
 from capture_gap_planner import build_capture_queue, write_outputs as write_capture_gap_outputs
 from capture_mission_control import ensure_manifest, mission_status, record_session, write_dashboard as write_capture_dashboard
 from final_art_priority import write_priority_board
+from final_regression_cockpit import build_and_write as build_regression_cockpit, record_case_result
 from hd_readiness import package_hd_pack
 from production_sprint import build_and_write as build_production_sprint
 from rapid_hd_playtest import build_playtest, default_mesence_hdpacks
@@ -192,6 +193,39 @@ def run_bound_art_qa(project_root: Path, source_capture: Path, output_pack: Path
     report_dir = paths.art_qa.parent
     report_dir.mkdir(parents=True, exist_ok=True)
     return audit_bound_art_apply(Path(source_capture), Path(output_pack), workspace, report_dir)
+
+
+def regression_cockpit_dashboard(project_root: Path, pack_dir: Path) -> dict:
+    paths = initialize_project_evidence(project_root)
+    return build_regression_cockpit(
+        paths.regression_manifest,
+        Path(pack_dir),
+        paths.reports / "FinalRegressionCockpit",
+    )
+
+
+def record_regression_result(
+    project_root: Path,
+    pack_dir: Path,
+    case_key: str,
+    result: str,
+    *,
+    notes: str = "",
+    failure_category: str = "OTHER",
+    failure_notes: str = "",
+) -> dict:
+    paths = initialize_project_evidence(project_root)
+    recorded = record_case_result(
+        paths.regression_manifest,
+        case_key,
+        Path(pack_dir),
+        result,
+        notes=notes,
+        failure_category=failure_category,
+        failure_notes=failure_notes,
+    )
+    status = regression_cockpit_dashboard(paths.root, Path(pack_dir))
+    return {"recorded": recorded, "status": status}
 
 
 def release_audit(project_root: Path, pack_dir: Path) -> dict:
