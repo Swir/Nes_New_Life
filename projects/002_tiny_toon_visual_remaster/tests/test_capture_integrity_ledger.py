@@ -11,16 +11,17 @@ ROOT = Path(__file__).resolve().parents[1]
 TOOLS = ROOT / "tools"
 sys.path.insert(0, str(TOOLS))
 
-from capture_integrity_ledger import build_ledger, capture_fingerprint, write_dashboard  # noqa: E402
+from capture_integrity_ledger import assert_capture_admissible, build_ledger, capture_fingerprint, write_dashboard  # noqa: E402
 from capture_mission_control import MISSION_ITEMS, record_session  # noqa: E402
 
 
 class CaptureIntegrityLedgerTests(unittest.TestCase):
     @staticmethod
-    def _capture(folder: Path, *, extra: bool = False) -> None:
+    def _capture(folder: Path, *, extra: bool = False, scale: int = 4, missing_image: bool = False) -> None:
         folder.mkdir(parents=True, exist_ok=True)
-        Image.new("RGBA", (64, 64), (0, 0, 0, 0)).save(folder / "tiles.png")
-        lines = ["<ver>106", "<scale>4", "<img>tiles.png", "[hero_idle]<tile>0,2E,FF16360F,0,0,1,N"]
+        if not missing_image:
+            Image.new("RGBA", (64, 64), (0, 0, 0, 0)).save(folder / "tiles.png")
+        lines = ["<ver>106", f"<scale>{scale}", "<img>tiles.png", "[hero_idle]<tile>0,2E,FF16360F,0,0,1,N"]
         if extra:
             lines.extend([
                 "[boss_phase]<tile>0,30,FF27160F,32,0,1,N",
@@ -37,7 +38,7 @@ class CaptureIntegrityLedgerTests(unittest.TestCase):
             after = capture_fingerprint(capture)
             self.assertNotEqual(before, after)
 
-    def test_regressed_current_capture_blocks_verified_history(self) -> None:
+    def test_regressed_current_capture_blocks_verified_history_and_admission(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
             manifest = root / "CAPTURE_MISSIONS.json"
@@ -48,8 +49,37 @@ class CaptureIntegrityLedgerTests(unittest.TestCase):
             record_session(manifest, rich, ["bosses_all_phases"], "verified")
             ledger = build_ledger(manifest, thin)
             self.assertEqual(ledger["integrity_gate"], "BLOCKED")
+            self.assertEqual(ledger["admission_gate"], "BLOCKED")
+            self.assertIn("capture_regression_against_verified_history", ledger["structural_blockers"])
             self.assertTrue(ledger["regressions"])
             self.assertEqual(ledger["at_risk_missions"][0]["mission"], "bosses_all_phases")
+            with self.assertRaises(ValueError):
+                assert_capture_admissible(manifest, thin)
+
+    def test_incomplete_missions_do_not_block_structurally_clean_admission(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            manifest = root / "CAPTURE_MISSIONS.json"
+            capture = root / "capture"
+            self._capture(capture, extra=True)
+            ledger = assert_capture_admissible(manifest, capture)
+            self.assertEqual(ledger["admission_gate"], "PASS")
+            self.assertEqual(ledger["integrity_gate"], "BLOCKED")
+            self.assertEqual(ledger["structural_blockers"], [])
+            self.assertIn("capture_missions_incomplete", ledger["blockers"])
+
+    def test_wrong_scale_and_missing_image_block_admission(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            manifest = root / "CAPTURE_MISSIONS.json"
+            wrong_scale = root / "wrong_scale"
+            missing = root / "missing"
+            self._capture(wrong_scale, scale=2)
+            self._capture(missing, missing_image=True)
+            self.assertEqual(build_ledger(manifest, wrong_scale)["admission_gate"], "BLOCKED")
+            self.assertIn("capture_scale_is_not_4x", build_ledger(manifest, wrong_scale)["structural_blockers"])
+            self.assertEqual(build_ledger(manifest, missing)["admission_gate"], "BLOCKED")
+            self.assertIn("missing_referenced_images", build_ledger(manifest, missing)["structural_blockers"])
 
     def test_ledger_never_auto_completes_missions(self) -> None:
         with tempfile.TemporaryDirectory() as td:
@@ -70,6 +100,7 @@ class CaptureIntegrityLedgerTests(unittest.TestCase):
             self._capture(capture, extra=True)
             record_session(manifest, capture, [key for key, *_ in MISSION_ITEMS], "verified all")
             ledger = build_ledger(manifest, capture)
+            self.assertEqual(ledger["admission_gate"], "PASS")
             self.assertEqual(ledger["integrity_gate"], "PASS")
             self.assertEqual(ledger["blockers"], [])
 
@@ -84,7 +115,9 @@ class CaptureIntegrityLedgerTests(unittest.TestCase):
             self.assertTrue(output.is_file())
             self.assertTrue(output.with_suffix(".json").is_file())
             self.assertEqual(list(output.parent.glob("*.png")), [])
-            self.assertIn("never auto-completes", output.read_text(encoding="utf-8"))
+            html_text = output.read_text(encoding="utf-8")
+            self.assertIn("Mission admission gate: PASS", html_text)
+            self.assertIn("never auto-completes", html_text)
 
 
 if __name__ == "__main__":
