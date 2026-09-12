@@ -1,77 +1,97 @@
-# NES New Life Roadmap
+# NES New Life — Master Roadmap
 
-## Project #002 — Tiny Toon Visual Remaster
+<!-- SWIR-ROADMAP-STANDARD:v1 -->
+<!-- ROADMAP-PROGRESS:START -->
+<p align="center">
+  <img alt="Roadmap standard" src="https://img.shields.io/badge/ROADMAP%20STANDARD-SWIR%20v1-1f6feb?style=for-the-badge">
+  <img alt="Completed games" src="https://img.shields.io/badge/GAMES%20COMPLETE-0-6b7280?style=for-the-badge">
+  <img alt="Current game" src="https://img.shields.io/badge/CURRENT-%23002%20TINY%20TOON-8b5cf6?style=for-the-badge">
+  <img alt="Status" src="https://img.shields.io/badge/STATUS-IN%20PROGRESS-f59e0b?style=for-the-badge">
+</p>
 
-### Phase 1 — HD-pack foundation — COMPLETE
-- validate user-supplied ROM fingerprint and mapper
-- local CHR reference exporter
-- local workspace generator
-- MesenCE Windows one-click launcher
-- Mesen HD Pack validator
-- Remaster Studio GUI
-- safe repository rules: no ROM/capture distribution
-- CI tests for Python tooling and PowerShell launch scripts
+## 🎮 Current game progress
 
-### Phase 2 — capture acceleration — ACTIVE
-- configure MesenCE HD Pack Builder around a 4x Prescale workflow
-- analyze capture sheets and `hires.txt` automatically
-- report tile rules, conditions, unique tile IDs and palettes
-- Instant HD Preview generator with non-destructive styles
-- compare any two capture sessions and quantify rule/tile/palette growth
-- flag removed mappings so a newer capture cannot silently regress coverage
-- generate a ranked CSV art queue from real tile/palette usage
-- infer PLAYER / ENEMY / BOSS / WORLD / UI / EFFECTS groups only when condition names provide evidence
-- leave unknown tiles explicitly `UNASSIGNED` instead of inventing semantics
-- resume-safe incremental sync preserves artist status, grouping and notes when a newer capture is imported
-- retired mappings are retained for inspection instead of silently disappearing
-- keep generated derivative packs local/gitignored
-- next: record every world, menu, animation, boss and effect
-- next: use capture diffs after each play session until growth approaches zero
-- next: manually resolve remaining UNASSIGNED art-queue entries from local visual inspection
+**Project #002 — Tiny Toon Visual Remaster**
 
-### Phase 3 — modern art pass — ACTIVE
-- work from the ranked/grouped art queue so the highest-reuse graphics are modernized first
-- generate PLAYER / ENEMY / BOSS / WORLD / UI / EFFECTS workboard PNGs automatically
-- detect exact duplicate captured graphics so one master redraw can cover every identical occurrence
-- flag visually near-duplicate tiles using a compact perceptual hash to reduce redundant drawing work
-- export one editable master PNG per unique captured graphic with a JSON target manifest
-- persistent `MasterWorkspace/original` + `MasterWorkspace/editable` layout so the artist can edit many masters in one session
-- SHA-256 art-state scan detects edited/TODO/invalid masters without relying on manual status updates
-- reject resized/missing master files before they can corrupt neighboring HD tiles
-- batch-compose every changed master into one combined `final_art` HD Pack in a single pass
-- preserve `hires.txt` byte-for-byte during batch composition
-- pixel-safe QA compares source capture vs final art and allows changes only inside targets belonging to edited masters
-- block batch output when RGB or alpha changes occur outside authorized master rectangles
-- generate marker-only diff overlays and HTML/JSON QA evidence for every art batch
-- detect edited masters that unexpectedly produce no visible output change
-- master-workspace sync identifies artwork by exact source RGBA hash, so finished edits survive larger later captures
-- newly discovered graphics are added as hash-stable masters instead of rebuilding and renumbering the entire workspace
-- one incremental command refreshes queue, master targets, workboards, capture report and readiness evidence
-- automatic baseline master-art pass can modernize every still-untouched master in one operation while preserving manual edits
-- group-aware baseline styles distinguish PLAYER/ENEMY/BOSS/WORLD/UI/EFFECTS and preserve dimensions plus alpha exactly
-- **one-click Rapid HD Playtest now chains capture sync → baseline → batch apply → pixel QA → validation → local MesenCE deployment**
-- existing installed MesenCE pack is backed up before each successful playtest deployment
-- runtime deployment refuses ROM/save/patch payloads and copies only HD-pack runtime assets
-- use the rapid playtest loop after every meaningful capture/art batch, then replace baseline masters with final hand-finished art
-- player animation replacements first
-- common enemies and projectiles
-- foreground tilesets and scenery
-- backgrounds and parallax where conditions allow it
-- bosses, UI and effects
-- consistent 4x art direction across the complete game
-- mark art-queue entries complete as final replacements are verified locally
+```text
+░░░░░░░░░░░░░░░░░░░░ 0.0%
+```
 
-### Phase 4 — release readiness and polish — TOOLING READY
-- evidence-based `HD_READINESS_CHECKLIST.json`; no fake automatic whole-game percentage
-- release dashboard combines validator results, 4x target, art queue status and manual full-game evidence
-- visual regression checklist covers boot/menu, player actions, all routes, enemies, bosses, HUD/text, effects and ending/credits
-- safe ZIP packager refuses ROM/save/patch files and structurally invalid packs
-- Windows one-click rapid playtest installs the QA-passed current pack under `MesenCE/HdPacks/<ROM stem>` for immediate testing
-- optional audio replacement
-- controller profile documentation
-- final local full-game verification against the original ROM behavior
+| 🎮 Current game | ✅ Completed gates | ⏳ Remaining | 🎯 Progress |
+|---|---:|---:|---:|
+| **#002 Tiny Toon Visual Remaster** | **0** | **52** | **0.0%** |
 
-### Current hard blocker to a truthful "complete HD" release
-The repository can automate capture measurement, prioritization, grouping, resume-safe capture synchronization, workboard generation, duplicate detection, master-tile export, persistent batch art editing, automatic baseline modernization, exact replacement propagation, pixel-safe batch QA, preview processing, validation, readiness reporting, MesenCE playtest deployment and safe packaging. The remaining content-critical work requires a **local complete MesenCE capture plus final manual art review/finishing and real full-game visual verification**. The one-click playtest pipeline removes most tooling friction between a new capture and seeing the current HD result in MesenCE, but tooling must never infer unseen bosses, routes, animation states or ending screens as complete.
+> **Master rule:** the bar above mirrors the currently active NES game's own `ROADMAP.md`. When that game's roadmap reaches a verified **100%**, the game remains recorded below as **COMPLETE 100%**, and this dashboard moves to the next NES game. The next game's progress starts from its own roadmap; completed games never lose their 100% state.
+<!-- ROADMAP-PROGRESS:END -->
 
-The ROM remains the gameplay source throughout all phases. We do not rebuild or redesign its levels, physics or enemy logic.
+## 🕹️ NES game queue
+
+| ID | Game / project | State | Progress | Roadmap |
+|---:|---|---|---:|---|
+| #001 | SMB2 from-scratch experiment | **ARCHIVED / DISCONTINUED** | — | Excluded from completion tracking |
+| #002 | Tiny Toon Visual Remaster | **ACTIVE** | **0.0%** | [`projects/002_tiny_toon_visual_remaster/ROADMAP.md`](../projects/002_tiny_toon_visual_remaster/ROADMAP.md) |
+
+## Repository completion model
+
+NES New Life is a **multi-game repository**. The repository does not use one giant checklist that mixes every game's tasks together.
+
+Each active NES game must have its own folder and its own roadmap:
+
+```text
+projects/
+  002_tiny_toon_visual_remaster/
+    README.md
+    ROADMAP.md
+  003_next_game/
+    README.md
+    ROADMAP.md
+  004_another_game/
+    README.md
+    ROADMAP.md
+```
+
+Every game's `ROADMAP.md` owns that game's real 0–100% completion state. A game may be marked **COMPLETE** only after its own acceptance/release gates are genuinely finished and verified.
+
+The master roadmap does four things only:
+
+1. keeps the ordered list of NES projects,
+2. records completed games permanently at 100%,
+3. identifies the single current active game,
+4. mirrors the current game's progress bar until that game reaches 100%, then advances to the next game.
+
+## Mandatory roadmap rule for every future game
+
+Before implementation of a new NES game begins, its project directory must contain a `ROADMAP.md` created from [`docs/GAME_ROADMAP_TEMPLATE.md`](GAME_ROADMAP_TEMPLATE.md).
+
+A valid game roadmap must include:
+
+- `<!-- SWIR-ROADMAP-STANDARD:v1 -->`,
+- CI / ROADMAP / DONE / STATUS badges,
+- a 20-segment progress bar,
+- the Completed / Remaining / Total / Progress table,
+- explicit measurable `[x]` / `[ ]` deliverables,
+- a clear completion/acceptance rule,
+- project-specific release or verification gates.
+
+Progress must always be calculated from real measurable deliverables. It must never be guessed from version numbers, commit counts, elapsed time or subjective estimates.
+
+## Game lifecycle
+
+### 1. NEW
+Create the project folder, `README.md` and standardized `ROADMAP.md` before major coding/art work begins.
+
+### 2. ACTIVE
+The game's own roadmap is authoritative. The master dashboard mirrors its percentage and current completed/remaining counts.
+
+### 3. RELEASE CANDIDATE
+All implementation items may be done, but the project remains below COMPLETE until its stated QA/playtest/release acceptance gates pass.
+
+### 4. COMPLETE
+The game's own roadmap reaches verified 100%. Its row in this master roadmap becomes permanent **COMPLETE — 100%**.
+
+### 5. NEXT GAME
+The next queued game's roadmap becomes the master dashboard source and its own 0–100% progress is displayed at the top.
+
+## Current focus
+
+The current active game is **Project #002 — Tiny Toon Visual Remaster**. Its detailed tooling, art, capture, QA and final-release requirements remain exclusively in its own roadmap. This master document must not duplicate or absorb Tiny Toon's internal checklist.
