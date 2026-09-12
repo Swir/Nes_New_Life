@@ -1,5 +1,16 @@
 # Changelog — Project #002 Tiny Toon Visual Remaster
 
+## 0.8.0 — Automatic baseline master-art pass
+
+- added `auto_art_pass.py` to seed every still-untouched master graphic with a coherent automatic modernization pass
+- existing manually edited masters are preserved by default and are never overwritten unless `--force` is explicitly used
+- added group-aware styles for PLAYER, ENEMY, BOSS, WORLD, UI, EFFECTS and UNASSIGNED masters
+- all baseline transforms preserve pixel dimensions and alpha/transparency exactly
+- generated `AUTO_BASELINE.json` records every seeded/preserved/missing master and the style used
+- automatic baseline output remains intentionally distinct from final hand-finished art; it is a fast playable starting pass, not a fake completion claim
+- added synthetic regression tests proving TODO masters are modernized, alpha is unchanged and prior manual edits survive
+- roadmap now places automatic baseline generation before final manual polish so the whole captured game can become testable much earlier
+
 ## 0.7.0 — Resume-safe incremental production sync
 
 - added `production_sync.py` to turn repeated MesenCE captures into one resumable production workflow
