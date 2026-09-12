@@ -63,7 +63,7 @@ class CaptureEvidenceTriageTests(unittest.TestCase):
             self.assertEqual(result["release_capture_gate"], "BLOCKED")
             self.assertEqual(result["next_action"]["kind"], "CAPTURE_MISSION")
             self.assertTrue(any(row["gate_a_item"] == "boss_phases_attacks_death_effects" and row["status"] == "CANDIDATE_REVIEW" for row in result["gate_a_candidates"]))
-            self.assertIn("never auto", result["roadmap_policy"].lower())
+            self.assertIn("auto-completes", result["roadmap_policy"].lower())
 
     def test_explicit_regression_blocks_evidence_baseline(self):
         with tempfile.TemporaryDirectory() as td:
