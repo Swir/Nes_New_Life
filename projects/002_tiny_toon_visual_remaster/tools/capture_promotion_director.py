@@ -12,9 +12,9 @@ from art_sprint_kit import export_sprint_kit
 from capture_gap_planner import build_capture_queue, write_outputs as write_capture_gap_outputs
 from capture_mission_control import ensure_manifest, mission_status
 from final_art_priority import write_priority_board
-from final_regression_cockpit import ensure_manifest as ensure_regression_manifest
 from production_sprint import build_and_write as build_production_sprint
 from production_sync import prepare_incremental
+from release_candidate import ensure_regression_manifest
 from validate_hdpack import validate
 from visual_context_audit import write_dashboard as write_visual_dashboard
 
