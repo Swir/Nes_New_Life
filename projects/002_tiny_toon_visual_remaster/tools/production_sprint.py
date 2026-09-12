@@ -131,7 +131,7 @@ def write_dashboard(result: dict, output_dir: Path) -> dict:
         for item in result["actions"]
     )
     capture_rows = "".join(
-        f"<tr><td>{row.get('priority', '')}</td><td>{html.escape(str(row.get('kind', '')))}</td><td>{html.escape(str(row.get('label') or row.get('family') or row.get('state') or row.get('mission') or '')))}</td></tr>"
+        f"<tr><td>{row.get('priority', '')}</td><td>{html.escape(str(row.get('kind', '')))}</td><td>{html.escape(str(row.get('label') or row.get('family') or row.get('state') or row.get('mission') or ''))}</td></tr>"
         for row in result["capture_gap"]["next"]
     ) or "<tr><td colspan='3'>No capture-gap rows.</td></tr>"
     art_rows = "".join(
