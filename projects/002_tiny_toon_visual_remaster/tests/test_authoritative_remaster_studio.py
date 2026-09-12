@@ -26,6 +26,8 @@ class AuthoritativeRemasterStudioTests(unittest.TestCase):
 
     def test_authoritative_windows_launchers_exist(self) -> None:
         required = {
+            "Guided_Capture_Marathon.bat",
+            "Local_Capture_Bridge.bat",
             "Promote_Capture_To_HD.bat",
             "Finish_High_Impact_Art_Sprint.bat",
             "Build_HD_Playtest.bat",
@@ -39,6 +41,7 @@ class AuthoritativeRemasterStudioTests(unittest.TestCase):
     def test_studio_source_names_current_authoritative_gates(self) -> None:
         source = (TOOLS / "AuthoritativeRemasterStudio.py").read_text(encoding="utf-8")
         for token in (
+            "Local Capture Bridge",
             "High-Impact Sprint",
             "Verified fullscreen playtest",
             "Final Regression Cockpit",
