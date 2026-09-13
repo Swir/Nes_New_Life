@@ -38,7 +38,7 @@ class CaptureIntegrityLedgerTests(unittest.TestCase):
             after = capture_fingerprint(capture)
             self.assertNotEqual(before, after)
 
-    def test_regressed_current_capture_blocks_verified_history_and_admission(self) -> None:
+    def test_regressed_current_capture_blocks_recording_but_allows_gameplay_recovery(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
             manifest = root / "CAPTURE_MISSIONS.json"
@@ -53,6 +53,10 @@ class CaptureIntegrityLedgerTests(unittest.TestCase):
             self.assertIn("capture_regression_against_verified_history", ledger["structural_blockers"])
             self.assertTrue(ledger["regressions"])
             self.assertEqual(ledger["at_risk_missions"][0]["mission"], "bosses_all_phases")
+            self.assertEqual(ledger["recovery"]["mode"], "GAMEPLAY_RECOVERY_REQUIRED")
+            self.assertTrue(ledger["recovery"]["gameplay_launch_allowed"])
+            self.assertFalse(ledger["recovery"]["mission_recording_allowed"])
+            self.assertTrue(any(row["kind"] == "RESTORE_CAPTURE_METRIC" for row in ledger["recovery"]["targets"]))
             with self.assertRaises(ValueError):
                 assert_capture_admissible(manifest, thin)
 
@@ -66,9 +70,11 @@ class CaptureIntegrityLedgerTests(unittest.TestCase):
             self.assertEqual(ledger["admission_gate"], "PASS")
             self.assertEqual(ledger["integrity_gate"], "BLOCKED")
             self.assertEqual(ledger["structural_blockers"], [])
+            self.assertEqual(ledger["recovery"]["mode"], "CLEAN")
+            self.assertTrue(ledger["recovery"]["mission_recording_allowed"])
             self.assertIn("capture_missions_incomplete", ledger["blockers"])
 
-    def test_wrong_scale_and_missing_image_block_admission(self) -> None:
+    def test_wrong_scale_and_missing_image_are_hard_preflight_blocks(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
             manifest = root / "CAPTURE_MISSIONS.json"
@@ -76,10 +82,16 @@ class CaptureIntegrityLedgerTests(unittest.TestCase):
             missing = root / "missing"
             self._capture(wrong_scale, scale=2)
             self._capture(missing, missing_image=True)
-            self.assertEqual(build_ledger(manifest, wrong_scale)["admission_gate"], "BLOCKED")
-            self.assertIn("capture_scale_is_not_4x", build_ledger(manifest, wrong_scale)["structural_blockers"])
-            self.assertEqual(build_ledger(manifest, missing)["admission_gate"], "BLOCKED")
-            self.assertIn("missing_referenced_images", build_ledger(manifest, missing)["structural_blockers"])
+            scale_ledger = build_ledger(manifest, wrong_scale)
+            missing_ledger = build_ledger(manifest, missing)
+            self.assertEqual(scale_ledger["admission_gate"], "BLOCKED")
+            self.assertIn("capture_scale_is_not_4x", scale_ledger["structural_blockers"])
+            self.assertEqual(scale_ledger["recovery"]["mode"], "HARD_BLOCKED")
+            self.assertFalse(scale_ledger["recovery"]["gameplay_launch_allowed"])
+            self.assertEqual(missing_ledger["admission_gate"], "BLOCKED")
+            self.assertIn("missing_referenced_images", missing_ledger["structural_blockers"])
+            self.assertEqual(missing_ledger["recovery"]["mode"], "HARD_BLOCKED")
+            self.assertFalse(missing_ledger["recovery"]["gameplay_launch_allowed"])
 
     def test_ledger_never_auto_completes_missions(self) -> None:
         with tempfile.TemporaryDirectory() as td:
@@ -102,6 +114,7 @@ class CaptureIntegrityLedgerTests(unittest.TestCase):
             ledger = build_ledger(manifest, capture)
             self.assertEqual(ledger["admission_gate"], "PASS")
             self.assertEqual(ledger["integrity_gate"], "PASS")
+            self.assertEqual(ledger["recovery"]["mode"], "CLEAN")
             self.assertEqual(ledger["blockers"], [])
 
     def test_dashboard_is_metadata_only(self) -> None:
@@ -117,6 +130,7 @@ class CaptureIntegrityLedgerTests(unittest.TestCase):
             self.assertEqual(list(output.parent.glob("*.png")), [])
             html_text = output.read_text(encoding="utf-8")
             self.assertIn("Mission admission gate: PASS", html_text)
+            self.assertIn("Recovery mode: <b>CLEAN</b>", html_text)
             self.assertIn("never auto-completes", html_text)
 
 

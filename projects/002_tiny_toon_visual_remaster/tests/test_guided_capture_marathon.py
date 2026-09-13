@@ -46,6 +46,9 @@ class GuidedCaptureMarathonTests(unittest.TestCase):
             self._capture(capture)
             plan = build_plan(manifest, capture)
             self.assertEqual(plan["capture_admission_gate"], "PASS")
+            self.assertEqual(plan["recovery_mode"], "CLEAN")
+            self.assertTrue(plan["gameplay_launch_allowed"])
+            self.assertTrue(plan["mission_recording_allowed"])
             self.assertEqual(plan["capture_structural_blockers"], [])
             self.assertEqual(len(plan["capture_fingerprint_sha256"]), 64)
 
@@ -71,6 +74,7 @@ class GuidedCaptureMarathonTests(unittest.TestCase):
             self.assertIn("boot_title_menu", result["session"]["completed_missions"])
             self.assertEqual(result["session"]["capture"]["scale"], 4)
             self.assertEqual(result["capture_integrity"]["admission_gate"], "PASS")
+            self.assertEqual(result["capture_integrity"]["recovery_mode"], "CLEAN")
             self.assertEqual(len(result["capture_integrity"]["fingerprint_sha256"]), 64)
             self.assertIn("integrity admission PASS", result["session"]["notes"])
             self.assertEqual(result["session"]["attestation"], ATTESTATION)
@@ -79,7 +83,7 @@ class GuidedCaptureMarathonTests(unittest.TestCase):
                 result["capture_integrity"]["fingerprint_sha256"],
             )
 
-    def test_regressed_capture_cannot_record_new_verified_mission(self) -> None:
+    def test_regressed_capture_enters_recovery_mode_but_cannot_record_evidence(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
             manifest = root / "CAPTURE_MISSIONS.json"
@@ -88,19 +92,26 @@ class GuidedCaptureMarathonTests(unittest.TestCase):
             self._capture(rich, extra=True)
             self._capture(thin, extra=False)
             record_session(manifest, rich, ["boot_title_menu"], "verified baseline")
+            plan = build_plan(manifest, thin)
+            self.assertEqual(plan["capture_admission_gate"], "BLOCKED")
+            self.assertEqual(plan["recovery_mode"], "GAMEPLAY_RECOVERY_REQUIRED")
+            self.assertTrue(plan["gameplay_launch_allowed"])
+            self.assertFalse(plan["mission_recording_allowed"])
+            self.assertTrue(plan["recovery_targets"])
             with self.assertRaisesRegex(ValueError, "Capture admission blocked"):
                 confirm_mission(manifest, thin, "player_idle_walk_run", attestation=ATTESTATION)
-            plan = build_plan(manifest, thin)
-            self.assertEqual(plan["done"], 1)
-            self.assertEqual(plan["capture_admission_gate"], "BLOCKED")
-            self.assertFalse(next(row for row in plan["pending"] if row["key"] == "player_idle_walk_run")["done"])
+            self.assertEqual(build_plan(manifest, thin)["done"], 1)
 
-    def test_wrong_scale_capture_cannot_record_mission(self) -> None:
+    def test_wrong_scale_is_hard_block_and_cannot_launch_recovery(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
             manifest = root / "CAPTURE_MISSIONS.json"
             capture = root / "capture"
             self._capture(capture, scale=2)
+            plan = build_plan(manifest, capture)
+            self.assertEqual(plan["recovery_mode"], "HARD_BLOCKED")
+            self.assertFalse(plan["gameplay_launch_allowed"])
+            self.assertIn("capture_scale_is_not_4x", plan["hard_preflight_blockers"])
             with self.assertRaisesRegex(ValueError, "capture_scale_is_not_4x"):
                 confirm_mission(manifest, capture, "boot_title_menu", attestation=ATTESTATION)
             self.assertEqual(build_plan(manifest)["done"], 0)
@@ -131,12 +142,16 @@ class GuidedCaptureMarathonTests(unittest.TestCase):
             self.assertEqual(list(dashboard.parent.glob("*.png")), [])
             text = dashboard.read_text(encoding="utf-8")
             self.assertIn("Capture admission: <b>PASS</b>", text)
+            self.assertIn("Recovery mode: <b>CLEAN</b>", text)
             self.assertIn("Tile-count growth never auto-completes", text)
 
-    def test_windows_marathon_uses_verified_fullscreen_and_explicit_attestation(self) -> None:
+    def test_windows_marathon_uses_verified_fullscreen_recovery_gap_focus_and_attestation(self) -> None:
         source = (WINDOWS / "Guided_Capture_Marathon.ps1").read_text(encoding="utf-8")
         self.assertIn("launch_remaster.ps1", source)
         self.assertIn("$LaunchSucceeded = $?", source)
+        self.assertIn("GAMEPLAY_RECOVERY_REQUIRED", source)
+        self.assertIn("Refresh-GapPlan", source)
+        self.assertIn("capture_gap_planner.py", source)
         self.assertIn("VERIFIED_IN_GAME", source)
         self.assertIn("Local_Capture_Bridge.ps1", source)
         self.assertNotIn("if ($LASTEXITCODE -ne 0) { throw 'Could not start a verified-fullscreen MesenCE session.' }", source)
