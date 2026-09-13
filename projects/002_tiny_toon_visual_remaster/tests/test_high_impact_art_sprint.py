@@ -52,13 +52,16 @@ class HighImpactArtSprintTests(unittest.TestCase):
             self.assertTrue((reports / "NEXT_HIGH_IMPACT_ART_BATCH.csv").is_file())
             self.assertTrue((reports / "FAMILY_AWARE_ART_BATCH.json").is_file())
             self.assertTrue((kit / "LOCAL_ART_SPRINT_BOARD.png").is_file())
+            self.assertTrue((kit / "FAMILY_CONTACT_BOARDS.json").is_file())
 
             manifest = json.loads((kit / "ART_SPRINT_KIT.json").read_text(encoding="utf-8"))
             matrix = json.loads((reports / "VISUAL_COMPLETION_MATRIX.json").read_text(encoding="utf-8"))
             family_plan = json.loads((reports / "FAMILY_AWARE_ART_BATCH.json").read_text(encoding="utf-8"))
+            family_boards = json.loads((kit / "FAMILY_CONTACT_BOARDS.json").read_text(encoding="utf-8"))
             self.assertEqual(manifest["selection_mode"], "visual-completion-family-aware-high-impact")
-            self.assertEqual(manifest["schema"], 3)
+            self.assertEqual(manifest["schema"], 4)
             self.assertEqual(manifest["matrix_seed_count"], len(matrix["next_batch"]))
+            self.assertEqual(manifest["family_contact_board_count"], family_boards["family_count"])
             expected = [(row["tile_id"], row["palette"]) for row in family_plan["selection"]]
             actual = [(row["tile_id"], row["palette"]) for row in manifest["items"]]
             self.assertEqual(actual, expected)

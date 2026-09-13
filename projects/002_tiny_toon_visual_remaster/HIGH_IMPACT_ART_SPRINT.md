@@ -1,6 +1,6 @@
 # High-Impact Art Sprint — Project #002
 
-This workflow turns the Visual Completion Matrix from a ranking report into an immediately editable, **family-aware** production batch.
+This workflow turns the Visual Completion Matrix from a ranking report into an immediately editable, **family-aware** production batch with local visual alignment aids.
 
 ## What it does
 
@@ -17,9 +17,21 @@ The planner follows four rules:
 
 WORLD / UI / EFFECTS keep normal item-by-item high-impact selection because those graphics may legitimately have unrelated geometry even when conditions are nearby.
 
+## Family contact boards
+
+Every selected PLAYER / ENEMY / BOSS family now receives a local contact board under `family_boards/`. Each family member is shown as:
+
+- untouched reference,
+- current editable master,
+- 50/50 onion overlay for fast silhouette/alignment inspection.
+
+`FAMILY_CONTACT_BOARDS.json` records metadata-only alignment measurements for each member, including alpha bounding box, centroid and dimensions. The purpose is not to auto-approve artwork; it is to make pose drift, canvas shifts and palette-family inconsistencies visible while the artist is still working the bundle.
+
+The generated boards are local ROM-derived production aids and are never repository assets.
+
 ## Outputs
 
-The report directory now contains both:
+The report directory contains:
 
 - `NEXT_HIGH_IMPACT_ART_BATCH.csv` — the original Visual Completion Matrix seed ranking;
 - `FAMILY_AWARE_ART_BATCH.json` / `.csv` — the exact family-aware execution plan used by the sprint.
@@ -28,15 +40,17 @@ The local kit contains:
 
 - `editable/` — files the artist is allowed to redraw,
 - `reference/` — untouched local baseline copies,
-- `LOCAL_ART_SPRINT_BOARD.png` — local contact board,
-- `ART_SPRINT_KIT.json` schema 3 — dimensions, hashes, seed relation, family bundles, deferred families and impact scores,
+- `LOCAL_ART_SPRINT_BOARD.png` — overall local sprint board,
+- `family_boards/FAMILY_*.png` — per-character-family reference/edit/onion boards,
+- `FAMILY_CONTACT_BOARDS.json` — metadata-only family board manifest and geometry measurements,
+- `ART_SPRINT_KIT.json` schema 4 — dimensions, hashes, seed relation, family bundles, deferred families, impact scores and family-board handoff,
 - `HIGH_IMPACT_SPRINT_READY.json` — metadata-only handoff status.
 
-The board and PNG content are local derivative/capture material and must never be committed.
+The boards and PNG content are local derivative/capture material and must never be committed.
 
 ## Windows one-click
 
-Run `windows/High_Impact_Art_Sprint.bat` to select the current local capture/pack, generate the completion report and family-aware batch, create `Artwork/CurrentImpactSprint`, and open the dashboard, board and editable folder.
+Run `windows/High_Impact_Art_Sprint.bat` to select the current local capture/pack, generate the completion report and family-aware batch, create `Artwork/CurrentImpactSprint`, and open the dashboard, board and editable folder. The family boards are generated automatically in the same sprint kit and need no separate command.
 
 After editing the PNGs without resizing or renaming them, run `windows/Finish_High_Impact_Art_Sprint.bat`.
 
@@ -54,4 +68,4 @@ This workflow never supplies or commits a ROM, emulator binary, save state, capt
 
 ## ROADMAP policy
 
-Family-aware batching materially improves the quality and efficiency of the real 4x art pass, but tooling alone does not complete Gate A–D. ROADMAP progress changes only after real local capture/art/QA evidence is verified.
+Family-aware batching and contact boards materially improve the quality and efficiency of the real 4x art pass, but tooling alone does not complete Gate A–D. ROADMAP progress changes only after real local capture/art/QA evidence is verified.

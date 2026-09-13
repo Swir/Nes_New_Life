@@ -10,6 +10,7 @@ from PIL import Image
 
 from art_sprint_kit import MANIFEST_NAME, _make_board, _read_state, _sha256
 from family_aware_art_batch import build_family_aware_batch, write_family_aware_batch
+from family_contact_board import generate_family_contact_boards
 from transactional_art_commit import transactional_finish_sprint
 from visual_completion_matrix import build_and_write
 
@@ -39,13 +40,7 @@ def prepare_high_impact_sprint(
             raise FileExistsError(f"Sprint kit is not empty: {kit_dir}")
         shutil.rmtree(kit_dir)
 
-    matrix = build_and_write(
-        pack_dir,
-        report_dir,
-        queue=Path(queue) if queue else None,
-        workspace=workspace,
-        batch_size=batch_size,
-    )
+    matrix = build_and_write(pack_dir, report_dir, queue=Path(queue) if queue else None, workspace=workspace, batch_size=batch_size)
     seed_batch = matrix["next_batch"]
     family_plan = build_family_aware_batch(seed_batch, workspace, batch_size)
     family_outputs = write_family_aware_batch(family_plan, report_dir)
@@ -78,83 +73,55 @@ def prepare_high_impact_sprint(
         shutil.copy2(source_editable, editable_out / kit_file)
         shutil.copy2(source_original, reference_out / kit_file)
         items.append({
-            "priority": order,
-            "priority_score": row["impact_score"],
-            "impact_score": row["impact_score"],
-            "group": row["group"],
-            "tile_id": row["tile_id"],
-            "palette": row["palette"],
-            "status_at_export": row["status"],
-            "uses": row["uses"],
-            "condition_count": row["condition_count"],
-            "visual_variants": row["visual_variants"],
-            "reasons": row["reasons"],
+            "priority": order, "priority_score": row["impact_score"], "impact_score": row["impact_score"],
+            "group": row["group"], "tile_id": row["tile_id"], "palette": row["palette"],
+            "status_at_export": row["status"], "uses": row["uses"], "condition_count": row["condition_count"],
+            "visual_variants": row["visual_variants"], "reasons": row["reasons"],
             "family_bundle_member": bool(row.get("family_bundle_member")),
-            "seed_tile_id": row.get("seed_tile_id", row["tile_id"]),
-            "seed_palette": row.get("seed_palette", row["palette"]),
-            "master_file": master_file,
-            "kit_file": kit_file,
-            "dimensions": dimensions,
-            "workspace_editable_sha256_at_export": _sha256(source_editable),
-            "workspace_original_sha256": _sha256(source_original),
+            "seed_tile_id": row.get("seed_tile_id", row["tile_id"]), "seed_palette": row.get("seed_palette", row["palette"]),
+            "master_file": master_file, "kit_file": kit_file, "dimensions": dimensions,
+            "workspace_editable_sha256_at_export": _sha256(source_editable), "workspace_original_sha256": _sha256(source_original),
         })
 
+    board = _make_board(items, kit_dir)
+    family_boards = generate_family_contact_boards(items, kit_dir)
     manifest = {
-        "schema": 3,
+        "schema": 4,
         "generated_utc": datetime.now(timezone.utc).isoformat(),
         "selection_mode": "visual-completion-family-aware-high-impact",
-        "source_pack": str(pack_dir.resolve()),
-        "workspace": str(workspace.resolve()),
+        "source_pack": str(pack_dir.resolve()), "workspace": str(workspace.resolve()),
         "visual_completion_report": str((report_dir / "VISUAL_COMPLETION_MATRIX.json").resolve()),
         "family_aware_batch_report": str(Path(family_outputs["json"]).resolve()),
-        "requested_batch_size": batch_size,
-        "matrix_seed_count": len(seed_batch),
-        "family_bundle_count": family_plan["family_bundle_count"],
-        "deferred_family_count": family_plan["deferred_family_count"],
-        "matrix_overall_weighted_percent": matrix["overall_weighted_percent"],
-        "matrix_captured_unfinished": matrix["captured_unfinished"],
-        "matrix_blocking_items": matrix["blocking_items"],
-        "exported": len(items),
-        "missing_workspace_matches": missing,
+        "requested_batch_size": batch_size, "matrix_seed_count": len(seed_batch),
+        "family_bundle_count": family_plan["family_bundle_count"], "deferred_family_count": family_plan["deferred_family_count"],
+        "matrix_overall_weighted_percent": matrix["overall_weighted_percent"], "matrix_captured_unfinished": matrix["captured_unfinished"],
+        "matrix_blocking_items": matrix["blocking_items"], "exported": len(items), "missing_workspace_matches": missing,
+        "local_board": board, "family_contact_boards": "FAMILY_CONTACT_BOARDS.json", "family_contact_board_count": family_boards["family_count"],
         "instructions": [
             "This kit starts from NEXT_HIGH_IMPACT_ART_BATCH, then atomically expands PLAYER/ENEMY/BOSS seeds to unfinished animation-family and palette peers.",
-            "Character families are kept together whenever selected; a first family may exceed the nominal batch size rather than being split across art sessions.",
+            "Use family_boards/ for reference-vs-edit-vs-onion visual alignment while redrawing related character frames together.",
+            "Character families are kept together whenever selected; a first family may exceed nominal batch size rather than being split.",
             "Already-final masters are never reopened automatically by family expansion.",
             "Edit PNG files only in editable/; reference/ is the untouched visual baseline.",
             "Keep dimensions and alpha canvas size unchanged and do not rename kit files.",
-            "Finish with high_impact_art_sprint.py finish (or the Windows launcher) to stage edits, run master visual QA + animation-family QA, compose, Pixel-QA and commit only an all-green transaction.",
+            "Finish with high_impact_art_sprint.py finish to stage edits, run master visual QA + animation-family QA, compose, Pixel-QA and commit only an all-green transaction.",
             "MasterWorkspace is not mutated when visual QA, animation consistency, Pixel QA or hires.txt preservation fails.",
             "Stale MasterWorkspace conflicts are blocked before and again after candidate QA.",
             "All local board/PNG outputs can contain ROM-derived graphics and must never be committed.",
         ],
-        "family_bundles": family_plan["bundles"],
-        "deferred_families": family_plan["deferred"],
-        "items": items,
+        "family_bundles": family_plan["bundles"], "deferred_families": family_plan["deferred"], "items": items,
     }
-    (kit_dir / MANIFEST_NAME).write_text(json.dumps(manifest, indent=2), encoding="utf-8")
-    board = _make_board(items, kit_dir)
-    manifest["local_board"] = board
     (kit_dir / MANIFEST_NAME).write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
     result = {
-        "status": "READY" if items and not missing else ("PARTIAL" if items else "BLOCKED"),
-        "selection_mode": manifest["selection_mode"],
-        "exported": len(items),
-        "missing": len(missing),
-        "family_bundle_count": family_plan["family_bundle_count"],
-        "deferred_family_count": family_plan["deferred_family_count"],
-        "matrix": {
-            "overall_weighted_percent": matrix["overall_weighted_percent"],
-            "captured_unfinished": matrix["captured_unfinished"],
-            "blocking_items": matrix["blocking_items"],
-        },
-        "kit": str(kit_dir.resolve()),
-        "board": str((kit_dir / board).resolve()) if board else None,
-        "manifest": str((kit_dir / MANIFEST_NAME).resolve()),
-        "dashboard": matrix["outputs"]["dashboard"],
-        "batch_csv": matrix["outputs"]["batch_csv"],
-        "family_batch_json": family_outputs["json"],
-        "family_batch_csv": family_outputs["csv"],
+        "status": "READY" if items and not missing else ("PARTIAL" if items else "BLOCKED"), "selection_mode": manifest["selection_mode"],
+        "exported": len(items), "missing": len(missing), "family_bundle_count": family_plan["family_bundle_count"],
+        "deferred_family_count": family_plan["deferred_family_count"], "family_contact_board_count": family_boards["family_count"],
+        "matrix": {"overall_weighted_percent": matrix["overall_weighted_percent"], "captured_unfinished": matrix["captured_unfinished"], "blocking_items": matrix["blocking_items"]},
+        "kit": str(kit_dir.resolve()), "board": str((kit_dir / board).resolve()) if board else None,
+        "family_boards_manifest": str((kit_dir / "FAMILY_CONTACT_BOARDS.json").resolve()), "manifest": str((kit_dir / MANIFEST_NAME).resolve()),
+        "dashboard": matrix["outputs"]["dashboard"], "batch_csv": matrix["outputs"]["batch_csv"],
+        "family_batch_json": family_outputs["json"], "family_batch_csv": family_outputs["csv"],
     }
     (kit_dir / "HIGH_IMPACT_SPRINT_READY.json").write_text(json.dumps(result, indent=2), encoding="utf-8")
     return result
@@ -163,35 +130,17 @@ def prepare_high_impact_sprint(
 def main() -> int:
     parser = argparse.ArgumentParser(description="Project #002 family-aware high-impact art sprint director")
     commands = parser.add_subparsers(dest="command", required=True)
-
     prepare = commands.add_parser("prepare", help="Build matrix and export a family-aware top-impact batch")
-    prepare.add_argument("pack", type=Path)
-    prepare.add_argument("workspace", type=Path)
-    prepare.add_argument("kit", type=Path)
-    prepare.add_argument("reports", type=Path)
-    prepare.add_argument("--queue", type=Path)
-    prepare.add_argument("--batch-size", type=int, default=30)
-    prepare.add_argument("--overwrite", action="store_true")
-
+    prepare.add_argument("pack", type=Path); prepare.add_argument("workspace", type=Path); prepare.add_argument("kit", type=Path); prepare.add_argument("reports", type=Path)
+    prepare.add_argument("--queue", type=Path); prepare.add_argument("--batch-size", type=int, default=30); prepare.add_argument("--overwrite", action="store_true")
     finish = commands.add_parser("finish", help="Stage edited family batch, compose, Pixel-QA and transactionally commit an all-green result")
-    finish.add_argument("pack", type=Path)
-    finish.add_argument("workspace", type=Path)
-    finish.add_argument("kit", type=Path)
-    finish.add_argument("output", type=Path)
-    finish.add_argument("--overwrite", action="store_true")
-
+    finish.add_argument("pack", type=Path); finish.add_argument("workspace", type=Path); finish.add_argument("kit", type=Path); finish.add_argument("output", type=Path); finish.add_argument("--overwrite", action="store_true")
     args = parser.parse_args()
     if args.command == "prepare":
-        result = prepare_high_impact_sprint(
-            args.pack, args.workspace, args.kit, args.reports,
-            queue=args.queue, batch_size=max(1, args.batch_size), overwrite=args.overwrite,
-        )
-        exit_code = 0
+        result = prepare_high_impact_sprint(args.pack, args.workspace, args.kit, args.reports, queue=args.queue, batch_size=max(1, args.batch_size), overwrite=args.overwrite); exit_code = 0
     else:
-        result = transactional_finish_sprint(args.pack, args.workspace, args.kit, args.output, overwrite=args.overwrite)
-        exit_code = 0 if result.get("transaction_status") == "COMMITTED" else 3
-    print(json.dumps(result, indent=2))
-    return exit_code
+        result = transactional_finish_sprint(args.pack, args.workspace, args.kit, args.output, overwrite=args.overwrite); exit_code = 0 if result.get("transaction_status") == "COMMITTED" else 3
+    print(json.dumps(result, indent=2)); return exit_code
 
 
 if __name__ == "__main__":
