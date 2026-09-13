@@ -1,6 +1,7 @@
 param(
     [int]$AttestIndex = 0,
-    [string]$Reviewer = $env:USERNAME
+    [string]$Reviewer = $env:USERNAME,
+    [switch]$NoOpen
 )
 
 $ErrorActionPreference = 'Stop'
@@ -43,7 +44,7 @@ if ($AttestIndex -gt 0) {
 & $exe @args | Out-Host
 if ($LASTEXITCODE -ne 0) { throw "Gate A review handoff failed with exit code $LASTEXITCODE" }
 
-if (Test-Path $Dashboard) {
+if ((-not $NoOpen) -and (Test-Path $Dashboard)) {
     Start-Process $Dashboard
     Write-Host ("GATE A REVIEW DASHBOARD: {0}" -f $Dashboard) -ForegroundColor Green
 }
