@@ -91,8 +91,16 @@ def build_plan(manifest_path: Path, capture_dir: Path | None = None) -> dict:
     completed = [row for row in missions if row["done"]]
     status = mission_status(manifest_path)
     ledger = build_ledger(manifest_path, capture_dir) if capture_dir is not None else None
+    recovery = ledger.get("recovery", {}) if ledger else {
+        "mode": "NOT_CHECKED",
+        "gameplay_launch_allowed": True,
+        "mission_recording_allowed": False,
+        "hard_blockers": [],
+        "recoverable_blockers": [],
+        "targets": [],
+    }
     return {
-        "schema": "swir.project002.guided-capture-marathon.v2",
+        "schema": "swir.project002.guided-capture-marathon.v3",
         "generated_utc": datetime.now(timezone.utc).isoformat(),
         "attestation_required": ATTESTATION,
         "done": status["done"],
@@ -102,10 +110,16 @@ def build_plan(manifest_path: Path, capture_dir: Path | None = None) -> dict:
         "capture_admission_gate": ledger["admission_gate"] if ledger else "NOT_CHECKED",
         "capture_structural_blockers": ledger["structural_blockers"] if ledger else [],
         "capture_fingerprint_sha256": ledger["capture_fingerprint_sha256"] if ledger else None,
+        "recovery_mode": recovery.get("mode", "NOT_CHECKED"),
+        "gameplay_launch_allowed": bool(recovery.get("gameplay_launch_allowed", True)),
+        "mission_recording_allowed": bool(recovery.get("mission_recording_allowed", False)),
+        "recovery_targets": list(recovery.get("targets", [])),
+        "hard_preflight_blockers": list(recovery.get("hard_blockers", [])),
+        "recoverable_blockers": list(recovery.get("recoverable_blockers", [])),
         "pending": pending,
         "completed": completed,
         "next": pending[0] if pending else None,
-        "important_note": "Missions are completed only by explicit in-game attestation after real MesenCE gameplay, and only when the current capture passes structural integrity admission. Tile-count growth never auto-completes a mission.",
+        "important_note": "Missions are completed only by explicit in-game attestation after real MesenCE gameplay, and only when the current capture passes structural integrity admission. Recoverable history regressions may launch gameplay recovery mode, but VERIFIED_IN_GAME recording stays blocked until admission returns to PASS. Tile-count growth never auto-completes a mission.",
     }
 
 
@@ -156,6 +170,7 @@ def confirm_mission(
             "admission_gate": postflight["admission_gate"],
             "fingerprint_sha256": postflight["capture_fingerprint_sha256"],
             "structural_blockers": postflight["structural_blockers"],
+            "recovery_mode": postflight["recovery"]["mode"],
         },
         "stagnating_warning": all(int(value) <= 0 for value in session["delta"].values()),
         "plan": plan,
@@ -182,6 +197,10 @@ def write_dashboard(manifest_path: Path, output: Path, capture_dir: Path | None 
             f"<p><b>{row['group']}</b> · verified session {html.escape(str(row.get('last_session') or '—'))}</p>"
             "</section>"
         )
+    recovery_cards = "".join(
+        f"<li><b>{html.escape(str(item.get('kind', 'RECOVERY')))}</b> — {html.escape(str(item.get('action', '')))}</li>"
+        for item in plan["recovery_targets"]
+    ) or "<li>No recovery targets.</li>"
     body = "".join(cards) or "<p>No mission entries.</p>"
     admission = html.escape(plan["capture_admission_gate"])
     structural = ", ".join(plan["capture_structural_blockers"]) or "none"
@@ -189,7 +208,7 @@ def write_dashboard(manifest_path: Path, output: Path, capture_dir: Path | None 
     output.write_text(
         f"""<!doctype html><html><head><meta charset='utf-8'><title>Project #002 Guided Capture Marathon</title>
 <style>body{{font:15px system-ui;max-width:1100px;margin:30px auto;padding:0 22px;background:#0d1117;color:#e6edf3}}.hero,.mission{{background:#161b22;border:1px solid #30363d;border-radius:14px;padding:16px;margin:12px 0}}.pending{{border-left:5px solid #f2cc60}}.done{{border-left:5px solid #3fb950}}code{{color:#79c0ff}}li{{margin:5px 0}}</style></head><body>
-<div class='hero'><h1>Guided Capture Marathon</h1><h2>{plan['done']}/{plan['total']} missions · {plan['percent']}% capture missions</h2><p>Mission gate: <b>{plan['release_capture_gate']}</b> · Capture admission: <b>{admission}</b></p><p>Structural blockers: {html.escape(structural)}</p><p>Capture fingerprint: <code>{html.escape(fingerprint)}</code></p><p>{html.escape(plan['important_note'])}</p></div>{body}</body></html>""",
+<div class='hero'><h1>Guided Capture Marathon</h1><h2>{plan['done']}/{plan['total']} missions · {plan['percent']}% capture missions</h2><p>Mission gate: <b>{plan['release_capture_gate']}</b> · Capture admission: <b>{admission}</b> · Recovery mode: <b>{html.escape(plan['recovery_mode'])}</b></p><p>Gameplay launch allowed: <b>{plan['gameplay_launch_allowed']}</b> · Mission recording allowed: <b>{plan['mission_recording_allowed']}</b></p><p>Structural blockers: {html.escape(structural)}</p><p>Capture fingerprint: <code>{html.escape(fingerprint)}</code></p><p>{html.escape(plan['important_note'])}</p><h3>Recovery targets</h3><ul>{recovery_cards}</ul></div>{body}</body></html>""",
         encoding="utf-8",
     )
     output.with_suffix(".json").write_text(json.dumps(plan, indent=2), encoding="utf-8")
