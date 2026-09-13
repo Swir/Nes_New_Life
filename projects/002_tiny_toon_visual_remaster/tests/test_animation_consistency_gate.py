@@ -132,11 +132,13 @@ class AnimationConsistencyGateTests(unittest.TestCase):
             for name in ("idle.png", "walk.png", "jump.png", "pal_a.png", "pal_b.png", "world.png"):
                 self._sprite(root / "editable" / name, (8, 6, 23, 27))
             report_path = root / "report.json"
-            audit_animation_consistency(root, [{"master_file": "walk.png"}], report_path)
+            report = audit_animation_consistency(root, [{"master_file": "walk.png"}], report_path)
             text = report_path.read_text(encoding="utf-8")
             self.assertNotIn(str(root), text)
             self.assertNotIn("image_bytes", text)
-            self.assertIn("walk.png", text)
+            self.assertEqual("swir.project002.animation-consistency-gate.v1", report["schema"])
+            self.assertEqual(1, report["changed_character_masters"])
+            self.assertEqual(0, report["blocker_count"])
         finally:
             temp.cleanup()
 
