@@ -14,6 +14,7 @@ $Manifest = Join-Path $ProjectRoot 'CAPTURE_MISSIONS.json'
 $MarathonTool = Join-Path $Tools 'guided_capture_marathon.py'
 $LedgerTool = Join-Path $Tools 'capture_integrity_ledger.py'
 $GapTool = Join-Path $Tools 'capture_gap_planner.py'
+$SequencerTool = Join-Path $Tools 'route_capture_sequencer.py'
 $Launcher = Join-Path $PSScriptRoot 'launch_remaster.ps1'
 $Bridge = Join-Path $PSScriptRoot 'Local_Capture_Bridge.ps1'
 $Reports = Join-Path $ProjectRoot 'Reports\CaptureMarathon'
@@ -21,6 +22,8 @@ $Dashboard = Join-Path $Reports 'CAPTURE_MARATHON.html'
 $IntegrityDashboard = Join-Path $Reports 'CAPTURE_INTEGRITY.html'
 $GapReports = Join-Path $ProjectRoot 'Reports\CaptureGapPlanner'
 $GapJson = Join-Path $GapReports 'CAPTURE_GAP_PLAN.json'
+$RouteReports = Join-Path $ProjectRoot 'Reports\RouteCaptureSequencer'
+$RouteDashboard = Join-Path $RouteReports 'ROUTE_CAPTURE_SESSION_PLAN.html'
 $ArtQueue = Join-Path $ProjectRoot 'Artwork\ART_QUEUE.csv'
 
 function Get-PythonCommand {
@@ -76,6 +79,14 @@ function Refresh-GapPlan {
     return $null
 }
 
+function Refresh-RoutePlan {
+    New-Item -ItemType Directory -Force -Path $RouteReports | Out-Null
+    $args = @($SequencerTool, $Manifest, '--output', $RouteReports)
+    if (Test-Path $GapJson) { $args += @('--gap-plan', $GapJson) }
+    $result = Invoke-PythonJson $Python $args
+    return $result.plan
+}
+
 function Show-GapFocus($GapPlan, [int]$Limit = 8, [string]$Group = '') {
     if (-not $GapPlan) { return }
     $rows = @($GapPlan.queue)
@@ -90,6 +101,29 @@ function Show-GapFocus($GapPlan, [int]$Limit = 8, [string]$Group = '') {
     foreach ($row in $top) {
         $family = if ($row.family) { " / $($row.family)" } else { '' }
         Write-Host ("  [{0}] {1}/{2}{3}: {4} — {5}" -f $row.score, $row.kind, $row.art_group, $family, $row.target, $row.reason)
+    }
+}
+
+function Show-RouteSession($Session) {
+    Write-Host '============================================================' -ForegroundColor DarkCyan
+    Write-Host ("PLAY ONCE — COVER TOGETHER [{0}]" -f $Session.route_mode) -ForegroundColor Cyan
+    Write-Host ("Session {0}: {1}" -f $Session.session_index, $Session.label) -ForegroundColor White
+    Write-Host '============================================================' -ForegroundColor DarkCyan
+    foreach ($Instruction in @($Session.instructions)) {
+        Write-Host ("  - {0}" -f $Instruction)
+    }
+    if (@($Session.gap_targets).Count -gt 0) {
+        Write-Host ''
+        Write-Host 'FOLD THESE LIVE CAPTURE GAPS INTO THE SAME PASS:' -ForegroundColor Magenta
+        foreach ($Target in @($Session.gap_targets)) {
+            $family = if ($Target.family) { " / $($Target.family)" } else { '' }
+            Write-Host ("  [{0}] {1}/{2}{3}: {4} — {5}" -f $Target.score, $Target.kind, $Target.art_group, $family, $Target.target, $Target.reason)
+        }
+    }
+    Write-Host ''
+    Write-Host 'Authoritative missions covered by this gameplay pass:' -ForegroundColor Yellow
+    foreach ($Mission in @($Session.missions)) {
+        Write-Host ("  - [{0}] {1} ({2})" -f $Mission.group, $Mission.label, $Mission.key)
     }
 }
 
@@ -119,11 +153,11 @@ if ($PreviousCapture) { $PreviousCapture = (Resolve-Path $PreviousCapture).Path 
 New-Item -ItemType Directory -Force -Path $Reports | Out-Null
 
 Write-Host ''
-Write-Host '=== PROJECT #002 — SMART GUIDED CAPTURE MARATHON ===' -ForegroundColor Cyan
-Write-Host 'This session can create real Capture Mission Control evidence and can recover a regressed local capture.' -ForegroundColor Yellow
-Write-Host 'A mission is recorded ONLY after explicit VERIFIED_IN_GAME confirmation and integrity admission PASS.'
+Write-Host '=== PROJECT #002 — ROUTE-AWARE GUIDED CAPTURE MARATHON ===' -ForegroundColor Cyan
+Write-Host 'Compatible missions and live gaps are grouped into fewer gameplay passes.' -ForegroundColor Yellow
+Write-Host 'Every mission is still recorded ONLY after explicit VERIFIED_IN_GAME confirmation and integrity admission PASS.'
 Write-Host 'Recoverable historical regression may launch gameplay, but evidence recording remains locked until coverage is restored.'
-Write-Host 'Tile growth, heuristics or the script itself never auto-complete a mission.'
+Write-Host 'Tile growth, heuristics, grouping or the script itself never auto-complete a mission.'
 Write-Host ''
 
 $Preflight = Invoke-PythonJson $Python @($MarathonTool, 'plan', $Manifest, '--capture', $CurrentCapture)
@@ -140,7 +174,11 @@ if (-not $Preflight.gameplay_launch_allowed) {
 }
 
 $GapPlan = Refresh-GapPlan
+$RoutePlan = Refresh-RoutePlan
 Show-GapFocus $GapPlan 10
+Write-Host ''
+Write-Host ("ROUTE SEQUENCER: {0} pending mission(s) compressed into {1} gameplay pass(es)." -f $RoutePlan.pending_mission_count, $RoutePlan.planned_session_count) -ForegroundColor Cyan
+if (Test-Path $RouteDashboard) { Write-Host ("Session dashboard: {0}" -f $RouteDashboard) -ForegroundColor DarkGray }
 
 if ($Preflight.recovery_mode -eq 'GAMEPLAY_RECOVERY_REQUIRED') {
     Write-Host ''
@@ -158,8 +196,6 @@ if ($Preflight.recovery_mode -eq 'GAMEPLAY_RECOVERY_REQUIRED') {
 $LaunchSucceeded = $?
 if (-not $LaunchSucceeded) { throw 'Could not start a verified-fullscreen MesenCE session.' }
 
-# A regression against verified history is recoverable only through real gameplay. Keep checking the live capture
-# until structural admission is clean; wrong scale/missing images were already rejected before launch.
 while ($Preflight.recovery_mode -eq 'GAMEPLAY_RECOVERY_REQUIRED') {
     Clear-Host
     Write-Host '============================================================' -ForegroundColor DarkYellow
@@ -169,7 +205,13 @@ while ($Preflight.recovery_mode -eq 'GAMEPLAY_RECOVERY_REQUIRED') {
         Write-Host ("  - {0}" -f $target.action)
     }
     $GapPlan = Refresh-GapPlan
+    $RoutePlan = Refresh-RoutePlan
     Show-GapFocus $GapPlan 12
+    if (@($RoutePlan.sessions).Count -gt 0) {
+        Write-Host ''
+        Write-Host 'Best combined recovery pass:' -ForegroundColor Cyan
+        Show-RouteSession $RoutePlan.sessions[0]
+    }
     Write-Host ''
     Write-Host 'Replay the indicated routes/states in the already running fullscreen MesenCE.' -ForegroundColor Yellow
     Write-Host 'R = recheck the live capture after attempting recovery'
@@ -202,48 +244,65 @@ if ($Plan.capture_admission_gate -ne 'PASS') {
         Write-Host ("Starting with {0}/{1} missions complete ({2}%)." -f $Plan.done, $Plan.total, $Plan.percent) -ForegroundColor Cyan
     }
 
-    foreach ($Mission in @($Plan.pending)) {
-        Clear-Host
-        $GapPlan = Refresh-GapPlan
-        Write-Host '============================================================' -ForegroundColor DarkCyan
-        Write-Host ("CAPTURE MISSION [{0}]  priority {1}" -f $Mission.group, $Mission.priority) -ForegroundColor Cyan
-        Write-Host $Mission.label -ForegroundColor White
-        Write-Host ("Key: {0}" -f $Mission.key) -ForegroundColor DarkGray
-        Write-Host '============================================================' -ForegroundColor DarkCyan
-        foreach ($Cue in @($Mission.cues)) { Write-Host ("  - {0}" -f $Cue) }
-        Show-GapFocus $GapPlan 6 $Mission.group
-        Write-Host ''
-        Write-Host 'Play this mission in the already running fullscreen MesenCE.' -ForegroundColor Yellow
-        Write-Host 'When you are done, return here:'
-        Write-Host '  V = I actually verified this mission in-game; integrity-check and record evidence'
-        Write-Host '  S = skip for now (NO completion recorded)'
-        Write-Host '  Q = finish marathon now'
+    $GapPlan = Refresh-GapPlan
+    $RoutePlan = Refresh-RoutePlan
+    $StopMarathon = $false
 
-        $Choice = ''
-        while ($Choice -notin @('V', 'S', 'Q')) {
-            $Choice = (Read-Host 'Choose V / S / Q').Trim().ToUpperInvariant()
-        }
-        if ($Choice -eq 'Q') { break }
-        if ($Choice -eq 'S') {
-            Write-Host 'Skipped — no ROADMAP/capture completion recorded.' -ForegroundColor Yellow
+    foreach ($Session in @($RoutePlan.sessions)) {
+        if ($StopMarathon) { break }
+        Clear-Host
+        Show-RouteSession $Session
+        Write-Host ''
+        Write-Host 'Play this grouped pass now in the already running fullscreen MesenCE.' -ForegroundColor Yellow
+        Write-Host 'Cover all listed objectives before returning here. This reduces restarts; it does NOT merge evidence.' -ForegroundColor Yellow
+        [void](Read-Host 'When this gameplay pass is complete, press ENTER to verify its individual missions')
+
+        if (@($Session.missions).Count -eq 0) {
+            Write-Host 'This was an advisory gap-only pass. No mission completion was recorded.' -ForegroundColor Yellow
             continue
         }
 
-        try {
-            $Result = Invoke-PythonJson $Python @(
-                $MarathonTool, 'confirm', $Manifest, $CurrentCapture, $Mission.key,
-                '--attestation', 'VERIFIED_IN_GAME'
-            )
-        } catch {
-            Write-Host 'Mission was NOT recorded because live capture integrity is not admissible.' -ForegroundColor Red
-            Write-Host $_.Exception.Message -ForegroundColor Red
-            Write-Host 'Return to gameplay and restore the missing capture coverage before attempting further attestations.' -ForegroundColor Yellow
-            break
-        }
-        Write-Host ("RECORDED: {0}. Capture missions now {1}/{2} ({3}%)." -f $Mission.key, $Result.plan.done, $Result.plan.total, $Result.plan.percent) -ForegroundColor Green
-        Write-Host ("Integrity admission: {0}; fingerprint: {1}" -f $Result.capture_integrity.admission_gate, $Result.capture_integrity.fingerprint_sha256) -ForegroundColor DarkGreen
-        if ($Result.stagnating_warning) {
-            Write-Host 'NOTE: this confirmation produced no structural tile/palette/image growth. That can be valid for reused graphics, but review the mission before relying on it.' -ForegroundColor Yellow
+        foreach ($MissionRef in @($Session.missions)) {
+            $Mission = @($Plan.pending | Where-Object { $_.key -eq $MissionRef.key } | Select-Object -First 1)
+            if ($Mission.Count -eq 0) { continue }
+            $Mission = $Mission[0]
+            Write-Host ''
+            Write-Host ("VERIFY [{0}] {1}" -f $Mission.group, $Mission.label) -ForegroundColor Cyan
+            foreach ($Cue in @($Mission.cues)) { Write-Host ("  - {0}" -f $Cue) }
+            Write-Host '  V = I actually verified this mission in the grouped gameplay pass; integrity-check and record evidence'
+            Write-Host '  S = not fully verified; keep pending'
+            Write-Host '  Q = finish marathon now'
+            $Choice = ''
+            while ($Choice -notin @('V', 'S', 'Q')) {
+                $Choice = (Read-Host 'Choose V / S / Q').Trim().ToUpperInvariant()
+            }
+            if ($Choice -eq 'Q') {
+                $StopMarathon = $true
+                break
+            }
+            if ($Choice -eq 'S') {
+                Write-Host 'Kept pending — no ROADMAP/capture completion recorded.' -ForegroundColor Yellow
+                continue
+            }
+
+            try {
+                $Result = Invoke-PythonJson $Python @(
+                    $MarathonTool, 'confirm', $Manifest, $CurrentCapture, $Mission.key,
+                    '--attestation', 'VERIFIED_IN_GAME',
+                    '--notes', ("Route-aware grouped pass: {0}" -f $Session.session_key)
+                )
+            } catch {
+                Write-Host 'Mission was NOT recorded because live capture integrity is not admissible.' -ForegroundColor Red
+                Write-Host $_.Exception.Message -ForegroundColor Red
+                Write-Host 'Return to gameplay and restore the missing capture coverage before attempting further attestations.' -ForegroundColor Yellow
+                $StopMarathon = $true
+                break
+            }
+            Write-Host ("RECORDED: {0}. Capture missions now {1}/{2} ({3}%)." -f $Mission.key, $Result.plan.done, $Result.plan.total, $Result.plan.percent) -ForegroundColor Green
+            Write-Host ("Integrity admission: {0}; fingerprint: {1}" -f $Result.capture_integrity.admission_gate, $Result.capture_integrity.fingerprint_sha256) -ForegroundColor DarkGreen
+            if ($Result.stagnating_warning) {
+                Write-Host 'NOTE: this confirmation produced no structural tile/palette/image growth. That can be valid for reused graphics, but review the mission before relying on it.' -ForegroundColor Yellow
+            }
         }
     }
 }
@@ -251,10 +310,13 @@ if ($Plan.capture_admission_gate -ne 'PASS') {
 Invoke-Python $Python @($MarathonTool, 'dashboard', $Manifest, $Dashboard, '--capture', $CurrentCapture)
 if (Test-Path $Dashboard) { Start-Process $Dashboard }
 $FinalPlan = Invoke-PythonJson $Python @($MarathonTool, 'plan', $Manifest, '--capture', $CurrentCapture)
+$GapPlan = Refresh-GapPlan
+$RoutePlan = Refresh-RoutePlan
 
 Write-Host ''
 Write-Host ("CAPTURE MARATHON STATUS: {0}/{1} ({2}%) — gate {3}" -f $FinalPlan.done, $FinalPlan.total, $FinalPlan.percent, $FinalPlan.release_capture_gate) -ForegroundColor Cyan
 Write-Host ("CAPTURE INTEGRITY ADMISSION: {0}; recovery mode: {1}" -f $FinalPlan.capture_admission_gate, $FinalPlan.recovery_mode) -ForegroundColor Cyan
+Write-Host ("NEXT ROUTE PLAN: {0} pending mission(s) in {1} gameplay pass(es)." -f $RoutePlan.pending_mission_count, $RoutePlan.planned_session_count) -ForegroundColor Cyan
 Write-Host 'Generating privacy-safe Local Capture Bridge evidence from this session...' -ForegroundColor Cyan
 
 $BridgeArgs = @('-CurrentCapture', $CurrentCapture)
@@ -273,5 +335,5 @@ if ($FinalPlan.release_capture_gate -eq 'PASS' -and $FinalPlan.capture_admission
     Write-Host 'CAPTURE MARATHON COMPLETE: all explicit capture missions are verified and the safe handoff is clean.' -ForegroundColor Green
     Write-Host 'Next: run regression-safe Capture Promotion Director before any art workspace sync.' -ForegroundColor Green
 } else {
-    Write-Host 'Marathon session saved. Continue pending/recovery work next time; nothing unverified or structurally regressed was auto-completed.' -ForegroundColor Yellow
+    Write-Host 'Marathon session saved. Continue the sequencer plan next time; nothing unverified or structurally regressed was auto-completed.' -ForegroundColor Yellow
 }
