@@ -7,6 +7,7 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
+from animation_consistency_gate import audit_animation_consistency
 from art_sprint_kit import MANIFEST_NAME, _sha256, import_sprint_kit
 from art_workspace import apply_workspace, scan_workspace
 from visual_quality_gate import audit_workspace_visual_quality
@@ -73,11 +74,11 @@ def transactional_finish_sprint(
     *,
     overwrite: bool = False,
 ) -> dict:
-    """Stage sprint edits, run visual + pack QA, then commit only an all-green candidate.
+    """Stage sprint edits, run visual/family/pack QA, then commit only an all-green candidate.
 
     The authoritative MasterWorkspace and output pack remain untouched when catastrophic
-    master-tile visual regressions are detected, Pixel QA fails, hires.txt mapping
-    preservation fails, or the real workspace becomes stale while the transaction runs.
+    master-tile visual regressions, animation-family geometry inconsistencies, Pixel QA
+    failures, hires.txt mapping changes or stale workspace conflicts are detected.
     """
     pack_dir = Path(pack_dir)
     workspace = Path(workspace)
@@ -112,12 +113,13 @@ def transactional_finish_sprint(
 
         if visual_quality.get("qa_gate") != "PASS":
             result = {
-                "schema": "swir.project002.transactional-art-commit.v2",
+                "schema": "swir.project002.transactional-art-commit.v3",
                 "generated_utc": datetime.now(timezone.utc).isoformat(),
                 "changed_candidates": len(changed),
                 "imported": int(imported.get("imported", 0)),
                 "imported_files": list(imported.get("imported_files", [])),
                 "visual_quality_gate": visual_quality,
+                "animation_consistency_gate": {"qa_gate": "NOT_RUN"},
                 "qa_gate": "NOT_RUN",
                 "mapping_preserved": False,
                 "workspace_committed": False,
@@ -129,17 +131,40 @@ def transactional_finish_sprint(
             (kit_dir / "TRANSACTIONAL_ART_FINISH.json").write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
             return result
 
+        animation_report_path = kit_dir / "ART_ANIMATION_CONSISTENCY_GATE.json"
+        animation_consistency = audit_animation_consistency(staged_workspace, changed, animation_report_path)
+        if animation_consistency.get("qa_gate") != "PASS":
+            result = {
+                "schema": "swir.project002.transactional-art-commit.v3",
+                "generated_utc": datetime.now(timezone.utc).isoformat(),
+                "changed_candidates": len(changed),
+                "imported": int(imported.get("imported", 0)),
+                "imported_files": list(imported.get("imported_files", [])),
+                "visual_quality_gate": visual_quality,
+                "animation_consistency_gate": animation_consistency,
+                "qa_gate": "NOT_RUN",
+                "mapping_preserved": False,
+                "workspace_committed": False,
+                "output_committed": False,
+                "transaction_status": "BLOCKED_ANIMATION_CONSISTENCY",
+                "next_action": "Repair family/palette frame geometry listed in ART_ANIMATION_CONSISTENCY_GATE.json; authoritative state was not modified.",
+                "roadmap_policy": "A transaction commit is production evidence only; it never edits Gate A-D automatically.",
+            }
+            (kit_dir / "TRANSACTIONAL_ART_FINISH.json").write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+            return result
+
         applied = apply_workspace(pack_dir, staged_workspace, staged_output, overwrite=True)
         qa_gate = str(applied.get("pixel_qa", {}).get("qa_gate", "FAIL"))
         mapping_preserved = bool(applied.get("mapping_preserved", False))
 
         base_result = {
-            "schema": "swir.project002.transactional-art-commit.v2",
+            "schema": "swir.project002.transactional-art-commit.v3",
             "generated_utc": datetime.now(timezone.utc).isoformat(),
             "changed_candidates": len(changed),
             "imported": int(imported.get("imported", 0)),
             "imported_files": list(imported.get("imported_files", [])),
             "visual_quality_gate": visual_quality,
+            "animation_consistency_gate": animation_consistency,
             "qa_gate": qa_gate,
             "mapping_preserved": mapping_preserved,
             "workspace_committed": False,
@@ -153,7 +178,6 @@ def transactional_finish_sprint(
             (kit_dir / "TRANSACTIONAL_ART_FINISH.json").write_text(json.dumps(base_result, indent=2) + "\n", encoding="utf-8")
             return base_result
 
-        # Re-check the real workspace after the potentially long visual/compose/QA phase.
         _assert_real_workspace_fresh(workspace, changed)
 
         (backup_root / "editable").mkdir(parents=True, exist_ok=True)
@@ -182,7 +206,7 @@ def transactional_finish_sprint(
             "workspace_committed": True,
             "output_committed": True,
             "committed_files": committed_files,
-            "next_action": "Candidate passed master-tile visual regression QA, Pixel QA and hires.txt preservation and was committed atomically.",
+            "next_action": "Candidate passed master-tile visual QA, animation consistency QA, Pixel QA and hires.txt preservation and was committed atomically.",
         })
         (kit_dir / "TRANSACTIONAL_ART_FINISH.json").write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
         return result
