@@ -48,3 +48,11 @@ if (Test-Path $Dashboard) {
     Write-Host ("GATE A REVIEW DASHBOARD: {0}" -f $Dashboard) -ForegroundColor Green
 }
 Write-Host 'ROADMAP.md was not edited automatically. Any checkbox update still requires a reviewed repository change.' -ForegroundColor Cyan
+
+$PatchDirector = Join-Path $PSScriptRoot 'Roadmap_Patch_Director.ps1'
+if (Test-Path $PatchDirector) {
+    Write-Host ''
+    Write-Host 'Refreshing exact ROADMAP patch preview from current attestations...' -ForegroundColor Cyan
+    & $PatchDirector -NoOpen
+    if ($LASTEXITCODE -ne 0) { throw "ROADMAP patch preview failed with exit code $LASTEXITCODE" }
+}
