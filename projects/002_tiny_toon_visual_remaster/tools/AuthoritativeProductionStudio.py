@@ -59,6 +59,11 @@ class AuthoritativeProductionStudio(AuthoritativeRemasterStudio):
             text="CTRL+F12  NEXT-BEST CAPTURE LOOP",
             command=lambda: self.run_windows("Capture_Next_Best_Loop.bat"),
         ).pack(side="left", padx=4)
+        ttk.Button(
+            panel,
+            text="CTRL+SHIFT+F12  GATE A REVIEW",
+            command=lambda: self.run_windows("Gate_A_Review_Attestation.bat"),
+        ).pack(side="left", padx=4)
         ttk.Button(panel, text="Open cockpit report", command=self.open_cockpit_report).pack(side="left", padx=4)
 
     def _bind_shortcuts(self) -> None:
@@ -70,6 +75,7 @@ class AuthoritativeProductionStudio(AuthoritativeRemasterStudio):
         self.bind("<Control-F10>", lambda event: self.open_active_family_workbench())
         self.bind("<Control-F11>", lambda event: self.run_windows("Finish_Family_And_Playtest.bat"))
         self.bind("<Control-F12>", lambda event: self.run_windows("Capture_Next_Best_Loop.bat"))
+        self.bind("<Control-Shift-F12>", lambda event: self.run_windows("Gate_A_Review_Attestation.bat"))
 
     def refresh_production_cockpit(self) -> None:
         root = self.workspace if self.workspace else PROJECT_ROOT
