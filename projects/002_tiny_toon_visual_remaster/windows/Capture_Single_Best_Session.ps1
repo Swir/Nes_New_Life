@@ -109,7 +109,8 @@ function Show-Session($Session) {
     Write-Host '============================================================' -ForegroundColor DarkCyan
     foreach ($Instruction in @($Session.instructions)) { Write-Host ("  - {0}" -f $Instruction) }
     foreach ($Gap in @($Session.gap_targets)) {
-        Write-Host ("  GAP [{0}/{1}] {2}: {3}" -f $Gap.kind, $Gap.art_group, ($Gap.family ?? $Gap.target), $Gap.reason) -ForegroundColor Magenta
+        $gapTarget = if ($Gap.family) { $Gap.family } else { $Gap.target }
+        Write-Host ("  GAP [{0}/{1}] {2}: {3}" -f $Gap.kind, $Gap.art_group, $gapTarget, $Gap.reason) -ForegroundColor Magenta
     }
     foreach ($Mission in @($Session.missions)) {
         Write-Host ("  MISSION [{0}] {1} ({2})" -f $Mission.group, $Mission.label, $Mission.key) -ForegroundColor Yellow
