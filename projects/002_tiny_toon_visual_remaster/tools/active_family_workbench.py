@@ -19,9 +19,13 @@ def _load_json(path: Path) -> dict:
 
 def _safe_relative(path_text: str) -> Path:
     rel = Path(path_text)
-    if rel.is_absolute() or ".." in rel.parts:
+    if not path_text or rel.is_absolute() or ".." in rel.parts:
         raise WorkbenchError(f"Unsafe workbench path: {path_text}")
     return rel
+
+
+def _item_key(row: dict) -> tuple[str, str]:
+    return (str(row.get("tile_id", "")).upper(), str(row.get("palette", "")).upper())
 
 
 def resolve_active_family_workbench(kit_dir: Path) -> dict:
@@ -36,10 +40,14 @@ def resolve_active_family_workbench(kit_dir: Path) -> dict:
 
     items = sprint.get("items") or sprint.get("batch") or []
     priority_by_key: dict[tuple[str, str], int] = {}
+    item_by_key: dict[tuple[str, str], dict] = {}
     for item in items:
         try:
-            key = (str(item.get("tile_id", "")).upper(), str(item.get("palette", "")).upper())
-            priority_by_key[key] = min(priority_by_key.get(key, 10**9), int(item.get("priority", 10**9)))
+            key = _item_key(item)
+            priority = int(item.get("priority", 10**9))
+            if key not in priority_by_key or priority < priority_by_key[key]:
+                priority_by_key[key] = priority
+                item_by_key[key] = item
         except (TypeError, ValueError):
             continue
 
@@ -49,18 +57,20 @@ def resolve_active_family_workbench(kit_dir: Path) -> dict:
         board_path = kit_dir / rel_board
         if not board_path.is_file():
             continue
-        member_priorities = []
-        editable_files = []
         members = family.get("metrics") or []
-        for member in members:
-            key = (str(member.get("tile_id", "")).upper(), str(member.get("palette", "")).upper())
-            member_priorities.append(priority_by_key.get(key, int(member.get("priority", 10**9))))
-        for item in items:
-            item_key = (str(item.get("tile_id", "")).upper(), str(item.get("palette", "")).upper())
-            if item_key in priority_by_key and priority_by_key[item_key] in member_priorities:
-                kit_file = item.get("kit_file")
-                if kit_file:
-                    editable_files.append(str(_safe_relative(str(kit_file))))
+        member_keys = {_item_key(member) for member in members}
+        member_priorities = [
+            priority_by_key.get(_item_key(member), int(member.get("priority", 10**9)))
+            for member in members
+        ]
+        editable_files = []
+        for key in member_keys:
+            item = item_by_key.get(key)
+            if not item:
+                continue
+            kit_file = item.get("kit_file")
+            if kit_file:
+                editable_files.append(str(_safe_relative(str(kit_file))))
         candidates.append(
             {
                 "family": str(family.get("family", "UNKNOWN")),
