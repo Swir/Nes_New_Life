@@ -34,6 +34,8 @@ class AuthoritativeProductionStudioTests(unittest.TestCase):
             "Full_Capture_To_HD_Autopilot.bat",
             "Continue_HD_Art_Session.bat",
             "PRODUCTION_COCKPIT",
+            "ROADMAP EVIDENCE READINESS",
+            "READY_FOR_HUMAN_REVIEW",
             "DO THIS NEXT",
             "ROADMAP Gate A–D",
         ):
@@ -43,10 +45,18 @@ class AuthoritativeProductionStudioTests(unittest.TestCase):
         required = {
             "Full_Capture_To_HD_Autopilot.bat",
             "Continue_HD_Art_Session.bat",
+            "Roadmap_Evidence_Readiness.bat",
             "Final_Release_Gate.bat",
             "Authoritative_Remaster_Studio.bat",
         }
         self.assertEqual([], sorted(name for name in required if not (WINDOWS / name).is_file()))
+
+    def test_evidence_readiness_launcher_is_read_only(self) -> None:
+        ps1 = (WINDOWS / "Roadmap_Evidence_Readiness.ps1").read_text(encoding="utf-8")
+        tool = (TOOLS / "roadmap_evidence_readiness.py").read_text(encoding="utf-8")
+        self.assertIn("never edits ROADMAP Gate A-D", ps1)
+        self.assertIn("READ-ONLY", tool)
+        self.assertNotIn("write_text(roadmap", tool.lower())
 
 
 if __name__ == "__main__":
