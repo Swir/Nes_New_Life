@@ -11,15 +11,17 @@ Before this milestone, a sprint finish imported edited PNGs into `Artwork/Master
 3. Clone the workspace into a local transaction directory under `.ArtTransactions/`.
 4. Import sprint edits into the staged workspace only.
 5. Run the **master-tile visual quality gate** against staged `original/` vs `editable/` PNGs.
-6. Block catastrophic redraws such as fully transparent output, severe alpha/bounding-box collapse, color collapse, detail collapse, invalid PNG or changed dimensions before candidate-pack composition.
-7. Compose a staged candidate HD pack only when visual quality passes.
-8. Require **Pixel QA = PASS** and **`hires.txt` mapping preservation = true**.
-9. Re-check the real workspace hashes after QA so a concurrent/stale edit cannot be overwritten.
-10. Swap the validated candidate pack into place and atomically replace only the edited master PNGs.
-11. Re-scan the real workspace.
-12. On any commit-time exception, restore changed master files and the previous output pack from the transaction rollback area.
+6. Block catastrophic single-master redraw failures such as full transparency, severe alpha/bounding-box collapse, color collapse, detail collapse, invalid PNG or changed dimensions.
+7. Run the **animation-family consistency gate** across staged PLAYER/ENEMY/BOSS masters.
+8. Block catastrophic family geometry drift: frame scale collapse/expansion, large canvas-center jumps, extreme alpha-coverage outliers and palette-variant silhouette mismatches.
+9. Compose a staged candidate HD pack only when both master-level and family-level quality gates pass.
+10. Require **Pixel QA = PASS** and **`hires.txt` mapping preservation = true**.
+11. Re-check the real workspace hashes after QA so a concurrent/stale edit cannot be overwritten.
+12. Swap the validated candidate pack into place and atomically replace only the edited master PNGs.
+13. Re-scan the real workspace.
+14. On any commit-time exception, restore changed master files and the previous output pack from the transaction rollback area.
 
-A visual-quality failure returns `BLOCKED_VISUAL_QA` and does not even attempt candidate-pack composition. A failed Pixel QA or mapping-preservation check returns `BLOCKED_QA`. Both paths leave the authoritative MasterWorkspace and current output pack untouched.
+A master-level failure returns `BLOCKED_VISUAL_QA`. A family-level failure returns `BLOCKED_ANIMATION_CONSISTENCY`. In both cases candidate-pack composition is skipped and the authoritative MasterWorkspace plus current output pack remain untouched. Failed Pixel QA or mapping preservation returns `BLOCKED_QA` with the same no-mutation guarantee.
 
 ## Integration
 
@@ -28,13 +30,16 @@ The transaction gate is used by:
 - `high_impact_art_sprint.py finish`, including the Windows High-Impact Art Sprint finish path;
 - `art_session_controller.py`, so the continuous QA-gated art loop cannot archive a sprint or generate the next batch until the current batch has really committed.
 
-`TRANSACTIONAL_ART_FINISH.json` schema v2 now embeds the visual-quality result in addition to Pixel QA and mapping-preservation state. `ART_VISUAL_QUALITY_GATE.json` is written beside the local sprint manifest for focused repair work.
+`TRANSACTIONAL_ART_FINISH.json` schema v3 embeds both `visual_quality_gate` and `animation_consistency_gate` in addition to Pixel QA and mapping-preservation state. Focused local reports are written as:
 
-See `VISUAL_QUALITY_GATE.md` for thresholds, blocker semantics and privacy guarantees.
+- `ART_VISUAL_QUALITY_GATE.json`
+- `ART_ANIMATION_CONSISTENCY_GATE.json`
+
+See `VISUAL_QUALITY_GATE.md` and `ANIMATION_CONSISTENCY_GATE.md` for thresholds, blocker semantics and privacy guarantees.
 
 ## Local-only safety
 
-The temporary transaction directory can contain ROM-derived local art and is deleted after success, visual-QA block, Pixel-QA block, or exception. It must never be committed. No ROM, save state, captured PNG/JPG, emulator binary, ripped commercial art/audio, or local derivative output is added to the repository by this milestone.
+The temporary transaction directory can contain ROM-derived local art and is deleted after success, QA block or exception. It must never be committed. No ROM, save state, captured PNG/JPG, emulator binary, ripped commercial art/audio, or local derivative output is added to the repository by this milestone.
 
 ## ROADMAP policy
 
