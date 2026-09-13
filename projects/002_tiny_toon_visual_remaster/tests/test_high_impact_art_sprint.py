@@ -38,7 +38,7 @@ class HighImpactArtSprintTests(unittest.TestCase):
             encoding="utf-8",
         )
 
-    def test_prepare_exports_exact_matrix_batch(self) -> None:
+    def test_prepare_exports_family_aware_matrix_seed_batch(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
             pack, workspace = root / "pack", root / "workspace"
@@ -48,14 +48,18 @@ class HighImpactArtSprintTests(unittest.TestCase):
 
             result = prepare_high_impact_sprint(pack, workspace, kit, reports, batch_size=2)
             self.assertEqual(result["status"], "READY")
-            self.assertEqual(result["exported"], 2)
+            self.assertGreaterEqual(result["exported"], 1)
             self.assertTrue((reports / "NEXT_HIGH_IMPACT_ART_BATCH.csv").is_file())
+            self.assertTrue((reports / "FAMILY_AWARE_ART_BATCH.json").is_file())
             self.assertTrue((kit / "LOCAL_ART_SPRINT_BOARD.png").is_file())
 
             manifest = json.loads((kit / "ART_SPRINT_KIT.json").read_text(encoding="utf-8"))
             matrix = json.loads((reports / "VISUAL_COMPLETION_MATRIX.json").read_text(encoding="utf-8"))
-            self.assertEqual(manifest["selection_mode"], "visual-completion-high-impact")
-            expected = [(row["tile_id"], row["palette"]) for row in matrix["next_batch"]]
+            family_plan = json.loads((reports / "FAMILY_AWARE_ART_BATCH.json").read_text(encoding="utf-8"))
+            self.assertEqual(manifest["selection_mode"], "visual-completion-family-aware-high-impact")
+            self.assertEqual(manifest["schema"], 3)
+            self.assertEqual(manifest["matrix_seed_count"], len(matrix["next_batch"]))
+            expected = [(row["tile_id"], row["palette"]) for row in family_plan["selection"]]
             actual = [(row["tile_id"], row["palette"]) for row in manifest["items"]]
             self.assertEqual(actual, expected)
 
