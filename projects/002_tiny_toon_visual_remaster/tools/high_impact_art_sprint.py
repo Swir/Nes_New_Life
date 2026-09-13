@@ -8,7 +8,8 @@ from pathlib import Path
 
 from PIL import Image
 
-from art_sprint_kit import MANIFEST_NAME, _make_board, _read_state, _sha256, finish_sprint
+from art_sprint_kit import MANIFEST_NAME, _make_board, _read_state, _sha256
+from transactional_art_commit import transactional_finish_sprint
 from visual_completion_matrix import build_and_write
 
 
@@ -108,8 +109,9 @@ def prepare_high_impact_sprint(
             "This kit is the exact NEXT_HIGH_IMPACT_ART_BATCH selected by Visual Completion Matrix.",
             "Edit PNG files only in editable/; reference/ is the untouched visual baseline.",
             "Keep dimensions and alpha canvas size unchanged and do not rename kit files.",
-            "Finish with high_impact_art_sprint.py finish (or the Windows launcher) to import, compose and Pixel-QA the exact build.",
-            "Stale MasterWorkspace conflicts are blocked by SHA-256 checks during import.",
+            "Finish with high_impact_art_sprint.py finish (or the Windows launcher) to stage edits, compose, Pixel-QA and commit only an all-green transaction.",
+            "MasterWorkspace is not mutated when Pixel QA or hires.txt preservation fails.",
+            "Stale MasterWorkspace conflicts are blocked before and again after candidate QA.",
             "All local board/PNG outputs can contain ROM-derived graphics and must never be committed.",
         ],
         "items": items,
@@ -152,7 +154,7 @@ def main() -> int:
     prepare.add_argument("--batch-size", type=int, default=30)
     prepare.add_argument("--overwrite", action="store_true")
 
-    finish = commands.add_parser("finish", help="Import edited batch, compose output pack and run Pixel QA")
+    finish = commands.add_parser("finish", help="Stage edited batch, compose, Pixel-QA and transactionally commit an all-green result")
     finish.add_argument("pack", type=Path)
     finish.add_argument("workspace", type=Path)
     finish.add_argument("kit", type=Path)
@@ -165,10 +167,12 @@ def main() -> int:
             args.pack, args.workspace, args.kit, args.reports,
             queue=args.queue, batch_size=max(1, args.batch_size), overwrite=args.overwrite,
         )
+        exit_code = 0
     else:
-        result = finish_sprint(args.pack, args.workspace, args.kit, args.output, overwrite=args.overwrite)
+        result = transactional_finish_sprint(args.pack, args.workspace, args.kit, args.output, overwrite=args.overwrite)
+        exit_code = 0 if result.get("transaction_status") == "COMMITTED" else 3
     print(json.dumps(result, indent=2))
-    return 0
+    return exit_code
 
 
 if __name__ == "__main__":

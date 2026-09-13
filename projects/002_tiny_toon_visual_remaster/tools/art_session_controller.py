@@ -6,8 +6,8 @@ import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 
-from art_sprint_kit import finish_sprint
 from high_impact_art_sprint import prepare_high_impact_sprint
+from transactional_art_commit import transactional_finish_sprint
 from visual_completion_matrix import build_and_write as build_visual_completion
 
 
@@ -50,9 +50,33 @@ def run_cycle(project_root: Path, source_pack: Path, *, batch_size: int = 30, ov
     if not (kit / "ART_SPRINT_KIT.json").is_file():
         raise FileNotFoundError("CurrentImpactSprint manifest is missing; prepare a sprint before finishing an art session.")
 
-    finish = finish_sprint(source_pack, workspace, kit, output_pack, overwrite=overwrite_output)
+    finish = transactional_finish_sprint(source_pack, workspace, kit, output_pack, overwrite=overwrite_output)
     qa_gate = str(finish.get("qa_gate", "FAIL"))
     mapping_preserved = bool(finish.get("mapping_preserved", False))
+    transaction_status = str(finish.get("transaction_status", "BLOCKED_QA"))
+
+    # A blocked transaction has deliberately left MasterWorkspace and the current output untouched.
+    # Do not calculate the next batch from a candidate that was never committed.
+    if transaction_status != "COMMITTED":
+        result = {
+            "schema": "swir.project002.art-session-controller.v2",
+            "generated_utc": datetime.now(timezone.utc).isoformat(),
+            "status": "BLOCKED_QA",
+            "transaction_status": transaction_status,
+            "qa_gate": qa_gate,
+            "mapping_preserved": mapping_preserved,
+            "captured_unfinished": None,
+            "blocking_items": None,
+            "matrix_weighted_percent": None,
+            "next_batch_count": 0,
+            "sprint": None,
+            "next_action": "Fix the blocked sprint candidate. No MasterWorkspace or output-pack mutation was committed.",
+            "roadmap_policy": "This controller never edits Gate A-D; only real gameplay/art/QA evidence may change release progress.",
+        }
+        out = root / "Reports" / "ArtSessionController"
+        out.mkdir(parents=True, exist_ok=True)
+        (out / "ART_SESSION_CONTROLLER.json").write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+        return result
 
     matrix = build_visual_completion(
         output_pack,
@@ -72,7 +96,7 @@ def run_cycle(project_root: Path, source_pack: Path, *, batch_size: int = 30, ov
 
     sprint = None
     if decision["continue_art"]:
-        # The finished kit is archived locally before the next exact batch is generated.
+        # The finished kit is archived locally only after the transaction is fully committed.
         archive_root = artwork / "SprintArchive"
         archive_root.mkdir(parents=True, exist_ok=True)
         stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
@@ -93,9 +117,10 @@ def run_cycle(project_root: Path, source_pack: Path, *, batch_size: int = 30, ov
         decision["archive"] = archived.name
 
     result = {
-        "schema": "swir.project002.art-session-controller.v1",
+        "schema": "swir.project002.art-session-controller.v2",
         "generated_utc": datetime.now(timezone.utc).isoformat(),
         "status": decision["status"],
+        "transaction_status": transaction_status,
         "qa_gate": qa_gate,
         "mapping_preserved": mapping_preserved,
         "captured_unfinished": captured_unfinished,
@@ -117,7 +142,7 @@ def run_cycle(project_root: Path, source_pack: Path, *, batch_size: int = 30, ov
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Project #002 finish-QA-refresh-next-batch art session controller")
+    parser = argparse.ArgumentParser(description="Project #002 transactional finish-QA-refresh-next-batch art session controller")
     parser.add_argument("project_root", type=Path)
     parser.add_argument("source_pack", type=Path)
     parser.add_argument("--batch-size", type=int, default=30)
