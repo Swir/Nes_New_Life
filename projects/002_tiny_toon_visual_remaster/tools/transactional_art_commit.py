@@ -9,6 +9,7 @@ from pathlib import Path
 
 from art_sprint_kit import MANIFEST_NAME, _sha256, import_sprint_kit
 from art_workspace import apply_workspace, scan_workspace
+from visual_quality_gate import audit_workspace_visual_quality
 
 
 def _load_manifest(kit_dir: Path) -> dict:
@@ -72,11 +73,11 @@ def transactional_finish_sprint(
     *,
     overwrite: bool = False,
 ) -> dict:
-    """Stage sprint edits, compose and QA them, then commit only an all-green candidate.
+    """Stage sprint edits, run visual + pack QA, then commit only an all-green candidate.
 
-    The authoritative MasterWorkspace and output pack remain untouched when Pixel QA fails,
-    hires.txt mapping preservation fails, or the real workspace becomes stale while the
-    transaction is running.
+    The authoritative MasterWorkspace and output pack remain untouched when catastrophic
+    master-tile visual regressions are detected, Pixel QA fails, hires.txt mapping
+    preservation fails, or the real workspace becomes stale while the transaction runs.
     """
     pack_dir = Path(pack_dir)
     workspace = Path(workspace)
@@ -106,16 +107,39 @@ def transactional_finish_sprint(
     try:
         shutil.copytree(workspace, staged_workspace)
         imported = import_sprint_kit(staged_workspace, kit_dir)
+        visual_report_path = kit_dir / "ART_VISUAL_QUALITY_GATE.json"
+        visual_quality = audit_workspace_visual_quality(staged_workspace, changed, visual_report_path)
+
+        if visual_quality.get("qa_gate") != "PASS":
+            result = {
+                "schema": "swir.project002.transactional-art-commit.v2",
+                "generated_utc": datetime.now(timezone.utc).isoformat(),
+                "changed_candidates": len(changed),
+                "imported": int(imported.get("imported", 0)),
+                "imported_files": list(imported.get("imported_files", [])),
+                "visual_quality_gate": visual_quality,
+                "qa_gate": "NOT_RUN",
+                "mapping_preserved": False,
+                "workspace_committed": False,
+                "output_committed": False,
+                "transaction_status": "BLOCKED_VISUAL_QA",
+                "next_action": "Fix catastrophic master-tile visual regressions listed in ART_VISUAL_QUALITY_GATE.json; authoritative state was not modified.",
+                "roadmap_policy": "A transaction commit is production evidence only; it never edits Gate A-D automatically.",
+            }
+            (kit_dir / "TRANSACTIONAL_ART_FINISH.json").write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+            return result
+
         applied = apply_workspace(pack_dir, staged_workspace, staged_output, overwrite=True)
         qa_gate = str(applied.get("pixel_qa", {}).get("qa_gate", "FAIL"))
         mapping_preserved = bool(applied.get("mapping_preserved", False))
 
         base_result = {
-            "schema": "swir.project002.transactional-art-commit.v1",
+            "schema": "swir.project002.transactional-art-commit.v2",
             "generated_utc": datetime.now(timezone.utc).isoformat(),
             "changed_candidates": len(changed),
             "imported": int(imported.get("imported", 0)),
             "imported_files": list(imported.get("imported_files", [])),
+            "visual_quality_gate": visual_quality,
             "qa_gate": qa_gate,
             "mapping_preserved": mapping_preserved,
             "workspace_committed": False,
@@ -129,7 +153,7 @@ def transactional_finish_sprint(
             (kit_dir / "TRANSACTIONAL_ART_FINISH.json").write_text(json.dumps(base_result, indent=2) + "\n", encoding="utf-8")
             return base_result
 
-        # Re-check the real workspace after the potentially long compose/QA phase.
+        # Re-check the real workspace after the potentially long visual/compose/QA phase.
         _assert_real_workspace_fresh(workspace, changed)
 
         (backup_root / "editable").mkdir(parents=True, exist_ok=True)
@@ -158,7 +182,7 @@ def transactional_finish_sprint(
             "workspace_committed": True,
             "output_committed": True,
             "committed_files": committed_files,
-            "next_action": "Transactional art candidate passed Pixel QA and hires.txt preservation and was committed atomically.",
+            "next_action": "Candidate passed master-tile visual regression QA, Pixel QA and hires.txt preservation and was committed atomically.",
         })
         (kit_dir / "TRANSACTIONAL_ART_FINISH.json").write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
         return result
