@@ -28,6 +28,7 @@ class AuthoritativeRemasterStudioTests(unittest.TestCase):
         required = {
             "Guided_Capture_Marathon.bat",
             "Local_Capture_Bridge.bat",
+            "Capture_Coverage_Acceptance.bat",
             "Promote_Capture_To_HD.bat",
             "Finish_High_Impact_Art_Sprint.bat",
             "Build_HD_Playtest.bat",
@@ -43,6 +44,8 @@ class AuthoritativeRemasterStudioTests(unittest.TestCase):
         for token in (
             "GUIDED CAPTURE MARATHON",
             "Local Capture Bridge",
+            "CHECK CAPTURE ACCEPTANCE",
+            "CaptureCoverageAcceptance",
             "High-Impact Sprint",
             "Verified fullscreen playtest",
             "Final Regression Cockpit",

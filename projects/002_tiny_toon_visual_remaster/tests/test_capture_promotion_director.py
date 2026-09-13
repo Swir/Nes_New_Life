@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 TOOLS = ROOT / "tools"
 sys.path.insert(0, str(TOOLS))
 
-from capture_promotion_director import promote_capture  # noqa: E402
+from capture_promotion_director import _promotion_acceptance, promote_capture  # noqa: E402
 
 
 class CapturePromotionDirectorTests(unittest.TestCase):
@@ -58,6 +58,9 @@ class CapturePromotionDirectorTests(unittest.TestCase):
 
             self.assertEqual(result["promotion_gate"], "PROMOTED")
             self.assertEqual(result["capture_regressions"], 0)
+            self.assertEqual(result["coverage_acceptance"]["promotion_admission"]["gate"], "PASS")
+            self.assertEqual(result["coverage_acceptance"]["promotion_admission"]["mode"], "INCREMENTAL_CAPTURE_READY")
+            self.assertTrue((project / "Reports" / "CaptureCoverageAcceptance" / "CAPTURE_COVERAGE_ACCEPTANCE.json").is_file())
             self.assertTrue((project / "Artwork" / "ART_QUEUE.csv").is_file())
             self.assertTrue((project / "Artwork" / "MasterWorkspace" / "MASTER_TILES.json").is_file())
             self.assertTrue((project / "Artwork" / "VISUAL_CONTEXT_REVIEW.csv").is_file())
@@ -83,11 +86,33 @@ class CapturePromotionDirectorTests(unittest.TestCase):
             manifest_before = (project / "Artwork" / "MasterWorkspace" / "MASTER_TILES.json").read_bytes()
 
             second = promote_capture(project, regressed, previous_capture=previous, top=5)
-            self.assertEqual(second["promotion_gate"], "BLOCKED_REGRESSION")
+            self.assertIn(second["promotion_gate"], {"BLOCKED_REGRESSION", "BLOCKED_ACCEPTANCE"})
             self.assertGreater(second["capture_regressions"], 0)
             self.assertEqual((project / "Artwork" / "ART_QUEUE.csv").read_bytes(), queue_before)
             self.assertEqual((project / "Artwork" / "MasterWorkspace" / "MASTER_TILES.json").read_bytes(), manifest_before)
             self.assertEqual(second["next_actions"][0]["kind"], "CAPTURE_REGRESSION")
+
+    def test_promotion_admission_ignores_only_full_coverage_blockers(self) -> None:
+        incremental = _promotion_acceptance({
+            "acceptance_gate": "BLOCKED",
+            "capture_fingerprint_sha256": "abc",
+            "hard_blockers": [
+                {"kind": "MISSION_COVERAGE", "detail": "pending"},
+                {"kind": "GROUP_SIGNAL", "detail": "not captured yet"},
+            ],
+        })
+        self.assertEqual(incremental["gate"], "PASS")
+        self.assertEqual(incremental["mode"], "INCREMENTAL_CAPTURE_READY")
+
+        unsafe = _promotion_acceptance({
+            "acceptance_gate": "BLOCKED",
+            "capture_fingerprint_sha256": "abc",
+            "hard_blockers": [
+                {"kind": "MISSION_PROVENANCE", "detail": "untrusted"},
+            ],
+        })
+        self.assertEqual(unsafe["gate"], "BLOCKED")
+        self.assertEqual(unsafe["mode"], "UNSAFE_CAPTURE")
 
     def test_reports_are_metadata_only(self) -> None:
         with tempfile.TemporaryDirectory() as td:
@@ -99,9 +124,12 @@ class CapturePromotionDirectorTests(unittest.TestCase):
             promote_capture(project, capture, top=5)
 
             promotion = project / "Reports" / "CapturePromotion"
+            acceptance = project / "Reports" / "CaptureCoverageAcceptance"
             self.assertEqual(list(promotion.glob("*.png")), [])
+            self.assertEqual(list(acceptance.glob("*.png")), [])
             data = json.loads((promotion / "CAPTURE_PROMOTION.json").read_text(encoding="utf-8"))
             self.assertEqual(data["promotion_gate"], "PROMOTED")
+            self.assertIn("coverage_acceptance", data)
 
 
 if __name__ == "__main__":
