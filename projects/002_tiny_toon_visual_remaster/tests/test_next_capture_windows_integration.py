@@ -24,7 +24,7 @@ class NextCaptureWindowsIntegrationTests(unittest.TestCase):
         self.assertIn("Local_Capture_Bridge.ps1", source)
         launcher_call = source.index("& $Launcher -RomPath")
         bridge_call = source.index("& $Bridge @BridgeArgs")
-        acceptance_call = source.index("& $Acceptance -CurrentCapture")
+        acceptance_call = source.rindex("& $Acceptance -CurrentCapture")
         self.assertLess(launcher_call, bridge_call)
         self.assertLess(bridge_call, acceptance_call)
         self.assertIn("Refresh-GapAndRoute", source)
