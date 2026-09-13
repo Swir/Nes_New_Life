@@ -22,8 +22,11 @@ class NextCaptureWindowsIntegrationTests(unittest.TestCase):
     def test_single_session_refreshes_safe_evidence_after_gameplay(self) -> None:
         source = (WINDOWS / "Capture_Single_Best_Session.ps1").read_text(encoding="utf-8")
         self.assertIn("Local_Capture_Bridge.ps1", source)
-        self.assertLess(source.index("& $Launcher"), source.index("& $Bridge"))
-        self.assertLess(source.index("& $Bridge"), source.index("& $Acceptance"))
+        launcher_call = source.index("& $Launcher -RomPath")
+        bridge_call = source.index("& $Bridge @BridgeArgs")
+        acceptance_call = source.index("& $Acceptance -CurrentCapture")
+        self.assertLess(launcher_call, bridge_call)
+        self.assertLess(bridge_call, acceptance_call)
         self.assertIn("Refresh-GapAndRoute", source)
 
     def test_local_path_memory_is_outside_repository_and_clearable(self) -> None:
