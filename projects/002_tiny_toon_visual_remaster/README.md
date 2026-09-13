@@ -96,13 +96,33 @@ Triage can emit Gate A `CANDIDATE_REVIEW` hints from Mesen condition names, but 
 
 See `CAPTURE_EVIDENCE_TRIAGE.md`.
 
+### Capture Coverage Acceptance — fingerprint-bound production checkpoint
+
+Before a capture is allowed to mutate the production art workspace, Project #002 can combine Capture Integrity Ledger, all eleven mission provenance records and structural PLAYER/BOSS/ENEMY/WORLD/UI/EFFECTS signals into one fingerprint-bound acceptance report:
+
+```text
+windows/Capture_Coverage_Acceptance.bat
+```
+
+The report emits either `BLOCKED` or `READY_FOR_GATE_A_REVIEW` for **full capture review**. The latter still does not mark Gate A complete; it only means hard metadata/provenance blockers are clear enough for a human to review real MesenCE gameplay evidence.
+
+Capture Promotion Director now consumes this same acceptance model automatically. It separates full-game acceptance from **production admission**:
+
+- `FULL_CAPTURE_READY` — hard capture checks are clear and the full capture can proceed to manual Gate A review,
+- `INCREMENTAL_CAPTURE_READY` — integrity/provenance is safe enough for iterative HD art production even though some gameplay missions/groups are still pending,
+- `UNSAFE_CAPTURE` — integrity failure, structural failure, regression, at-risk verified mission or untrusted mission provenance blocks `ART_QUEUE.csv` / `MasterWorkspace` mutation.
+
+Pending missions and not-yet-seen groups remain real Gate A/release blockers. They are never treated as completion, but they also no longer force the art pipeline to stop when the available capture is otherwise safe.
+
+See `CAPTURE_COVERAGE_ACCEPTANCE.md` and `CAPTURE_PROMOTION_DIRECTOR.md`.
+
 ## Production workflow
 
 The current high-impact path is:
 
-`Guided fullscreen MesenCE capture → explicit Capture Mission Control attestation → Local Capture Bridge → GitHub Capture Evidence Triage → Capture Promotion Director → incremental sync → Visual Context Audit → Animation Family Workbench → Visual Completion Matrix → Final Art Priority / high-impact batch → Final Art Sprint Kit → build-bound Pixel QA → one-click verified-fullscreen playtest → Final Regression Cockpit → Final Release Readiness Director → gated ZIP`
+`Guided fullscreen MesenCE capture → explicit Capture Mission Control attestation → Local Capture Bridge → GitHub Capture Evidence Triage → fingerprint-bound Capture Coverage Acceptance → acceptance-gated Capture Promotion Director → incremental sync → Visual Context Audit → Animation Family Workbench → Visual Completion Matrix → Final Art Priority / high-impact batch → Final Art Sprint Kit → build-bound Pixel QA → one-click verified-fullscreen playtest → Final Regression Cockpit → Final Release Readiness Director → gated ZIP`
 
-`tools/AuthoritativeRemasterStudio.py` remains the preferred production command center for capture handoff, promotion, art, QA and release. `windows/Guided_Capture_Marathon.bat` is the preferred long-form Gate A capture session launcher. The older `TinyToonRemasterStudio.py` remains available for compatibility.
+`tools/AuthoritativeRemasterStudio.py` remains the preferred production command center for capture handoff, acceptance, promotion, art, QA and release. It exposes **CHECK CAPTURE ACCEPTANCE** (Ctrl+F5) before F5 promotion so exact blockers and the current fingerprint can be inspected without leaving the Studio. `windows/Guided_Capture_Marathon.bat` is the preferred long-form Gate A capture session launcher. The older `TinyToonRemasterStudio.py` remains available for compatibility.
 
 ### Production Sprint Control Center
 
@@ -297,7 +317,8 @@ See `FINAL_RELEASE_READINESS_DIRECTOR.md` and `FINAL_REGRESSION_COCKPIT.md`.
 - `local_capture_bridge.py` — privacy-safe local capture → metadata-only GitHub evidence handoff
 - `capture_evidence_validator.py` — schema/privacy guard that rejects paths and forbidden payloads
 - `capture_evidence_triage.py` — GitHub-side evidence history, regression gate, Gate A review hints and `DO THIS NEXT`
-- `capture_promotion_director.py` — regression-safe fresh-capture promotion into production
+- `capture_coverage_acceptance.py` — fingerprint-bound mission/integrity/group acceptance matrix; never auto-completes Gate A–D
+- `capture_promotion_director.py` — acceptance-gated, regression-safe fresh-capture promotion into production
 - `production_sprint.py` — unified metadata-only `DO THIS NEXT` dashboard across capture/review/art evidence
 - `production_sync.py` — resume-safe repeated-capture synchronization
 - `art_production.py` — workboards, exact dedupe, near-duplicate hints and master propagation
@@ -314,11 +335,12 @@ See `FINAL_RELEASE_READINESS_DIRECTOR.md` and `FINAL_REGRESSION_COCKPIT.md`.
 - `final_regression_cockpit.py` — exact-build 10-case full-game visual regression evidence
 - `final_release_director.py` — authoritative seven-gate release/package decision
 - `studio_command_center.py` — GUI-facing orchestration layer
-- `AuthoritativeRemasterStudio.py` — current F4–F11 privacy/capture/art/QA/release production GUI
+- `AuthoritativeRemasterStudio.py` — current privacy/capture/acceptance/art/QA/release production GUI
 - `TinyToonRemasterStudio.py` — legacy-compatible broader production GUI
 - `windows/Start_Remaster.bat` — one-click Windows launcher
 - `windows/Guided_Capture_Marathon.bat` — verified-fullscreen mission-by-mission Gate A capture + safe handoff
 - `windows/Local_Capture_Bridge.bat` — one-click privacy-safe local evidence + optional GitHub PR
+- `windows/Capture_Coverage_Acceptance.bat` — one-click fingerprint-bound acceptance dashboard
 - `windows/Build_HD_Playtest.bat` — one-click QA-gated build/deploy + verified-fullscreen MesenCE launch
 - `windows/Visual_Completion_Matrix.bat` — one-click captured-art completion dashboard and high-impact batch
 - `windows/Final_Release_Gate.bat` — one-click seven-gate final audit/package flow
