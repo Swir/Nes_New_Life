@@ -1,11 +1,16 @@
 from __future__ import annotations
 
 import json
+import sys
 import tempfile
 import unittest
 from pathlib import Path
 
-from tools.gate_a_evidence_matrix import MISSION_CRITERIA, build_matrix, write_outputs
+ROOT = Path(__file__).resolve().parents[1]
+TOOLS = ROOT / "tools"
+sys.path.insert(0, str(TOOLS))
+
+from gate_a_evidence_matrix import MISSION_CRITERIA, build_matrix, write_outputs
 
 
 def _acceptance(*, verified: set[str] | None = None, regression_count: int = 0, at_risk: list[str] | None = None) -> dict:
