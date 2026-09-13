@@ -77,7 +77,7 @@ class NextCaptureActionTests(unittest.TestCase):
         self.assertEqual(result["status"], "NO_CAPTURE_SESSION_PENDING")
         self.assertIsNone(result["session"])
         self.assertIn("Capture Coverage Acceptance", result["next_action"])
-        self.assertNotIn("Gate A complete", result["next_action"])
+        self.assertIn("do not mark Gate A complete", result["next_action"])
 
     def test_outputs_are_metadata_only(self) -> None:
         with tempfile.TemporaryDirectory() as td:
