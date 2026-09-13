@@ -6,11 +6,12 @@ It exists because the older `TinyToonRemasterStudio.py` still exposes legacy Top
 
 ## Production path
 
-`capture → safe promotion → Visual Completion Matrix → family-aware High-Impact Art Sprint → active family workbench → transactional visual/family/Pixel QA → verified fullscreen MesenCE playtest → Final Regression Cockpit → Final Release Gate`
+`route-aware next-best capture loop → safe promotion → Visual Completion Matrix → family-aware High-Impact Art Sprint → active family workbench → transactional visual/family/Pixel QA → verified fullscreen MesenCE playtest → Final Regression Cockpit → Final Release Gate`
 
 The Studio can:
 
-- launch regression-safe capture promotion,
+- launch the route-aware Guided Capture Marathon and, through the next-best loop, resolve the single highest-impact remaining gameplay pass after the session,
+- promote regression-safe capture only through the existing acceptance-gated path,
 - run Visual Completion Matrix directly against the selected local workspace and HD pack,
 - export the exact `NEXT_HIGH_IMPACT_ART_BATCH` into `Artwork/CurrentImpactSprint`,
 - resolve the highest-priority PLAYER/ENEMY/BOSS family from the current family-aware sprint,
@@ -21,6 +22,16 @@ The Studio can:
 - launch the exact-build Final Regression Cockpit,
 - run the seven-gate Final Release Readiness audit,
 - launch gated release packaging only through the existing Final Release Gate.
+
+## Next-best capture loop
+
+`CTRL+F12` launches `windows/Capture_Next_Best_Loop.bat`.
+
+The launcher first runs the real route-aware `Guided_Capture_Marathon.ps1`, so the local ROM remains the only source of gameplay, physics, timing and level progression. After the gameplay/verification session returns, it consumes the freshly generated `ROUTE_CAPTURE_SESSION_PLAN.json` and writes a metadata-only `Reports/NextCaptureAction/NEXT_CAPTURE_ACTION.json` + HTML dashboard.
+
+The resolver always selects only the highest-ranked remaining route session. A session containing `CAPTURE_REGRESSION` is surfaced as `RECOVER_CAPTURE_REGRESSION`; otherwise the highest-impact pending mission/gap bundle is surfaced as `CAPTURE_HIGHEST_IMPACT_SESSION`. If no session remains, the result is `NO_CAPTURE_SESSION_PENDING` and explicitly directs the operator to Capture Coverage Acceptance instead of claiming Gate A completion.
+
+The next-action report contains session labels, mission keys, gap metadata and instructions only. It never copies capture pixels, writes Capture Mission Control completion or changes ROADMAP Gate A-D.
 
 ## Active family workbench
 
@@ -48,6 +59,7 @@ This is intentionally a production accelerator, not ROADMAP evidence. A successf
 - `CTRL+F9` ROADMAP Evidence Readiness
 - `CTRL+F10` open active family workbench
 - `CTRL+F11` commit family + QA + verified fullscreen playtest
+- `CTRL+F12` run route-aware capture and resolve the single next-best gameplay pass
 
 ## Windows launch
 
