@@ -66,16 +66,18 @@ class GateAEvidenceMatrixTests(unittest.TestCase):
         self.assertEqual(rare["status"], "BLOCKED_AT_RISK")
         self.assertEqual(result["criteria"][-1]["status"], "BLOCKED_AT_RISK")
 
-    def test_outputs_are_metadata_only_and_do_not_touch_roadmap(self) -> None:
+    def test_outputs_are_metadata_only_and_do_not_embed_game_payloads(self) -> None:
         result = build_matrix(_acceptance(verified={key for key, _ in MISSION_CRITERIA}))
         with tempfile.TemporaryDirectory() as tmp:
             outputs = write_outputs(result, Path(tmp))
             payload = Path(outputs["json"]).read_text(encoding="utf-8")
-            self.assertNotIn("ROADMAP.md", payload)
             self.assertNotIn(".png", payload.lower())
+            self.assertNotIn(".jpg", payload.lower())
             self.assertNotIn(".nes", payload.lower())
+            self.assertNotIn("C:\\\\", payload)
             loaded = json.loads(payload)
             self.assertEqual(loaded["schema"], "swir.project002.gate-a-evidence-matrix.v1")
+            self.assertIn("never edits ROADMAP.md", loaded["roadmap_policy"])
 
 
 if __name__ == "__main__":
