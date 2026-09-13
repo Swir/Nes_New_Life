@@ -1,5 +1,17 @@
 # Changelog — Project #002 Tiny Toon Visual Remaster
 
+## 1.0.0-rc20 — Acceptance-gated capture production handoff
+
+- wired `capture_coverage_acceptance.py` directly into `capture_promotion_director.py` before any `ART_QUEUE.csv` / `MasterWorkspace` mutation
+- split full capture readiness from safe incremental art admission: `READY_FOR_GATE_A_REVIEW` still requires real gameplay review, while `INCREMENTAL_CAPTURE_READY` may continue iterative HD art when integrity/provenance is safe but missions/groups are still pending
+- integrity admission failure, structural capture failure, `CAPTURE_REGRESSION`, at-risk verified missions and untrusted mission provenance now block promotion as `UNSAFE_CAPTURE`
+- promotion reports now carry the exact capture fingerprint, full acceptance gate, production-admission mode, hard blockers and acceptance report paths
+- Authoritative Remaster Studio now exposes **CHECK CAPTURE ACCEPTANCE** / Ctrl+F5 and displays the current fingerprint, verified mission count, hard blockers and exact `DO THIS NEXT`
+- expanded promotion and Studio tests so unsafe evidence cannot silently mutate production state and acceptance reports remain metadata-only
+- refreshed README, Capture Promotion Director documentation and authoritative Project #002 ROADMAP around the new capture → acceptance → promotion path
+- ROADMAP Gate A–D remains 0/52 = 0.0%; this tooling milestone does not substitute for real local gameplay/capture/art/QA evidence
+- no ROM, save state, ROM-derived capture PNG/JPG, ripped commercial art/audio or emulator binary is committed
+
 ## 1.0.0-rc19 — Guided Fullscreen Capture Marathon
 
 - added `guided_capture_marathon.py` as an explicit evidence-first controller for the eleven authoritative Capture Mission Control areas
@@ -63,7 +75,7 @@
 - added `windows/High_Impact_Art_Sprint.bat` and `windows/Finish_High_Impact_Art_Sprint.bat` plus PowerShell orchestration for Windows one-click prepare/finish
 - added synthetic tests for exact matrix-to-kit selection, safe Pixel-QA finish and protection against implicit overwrite of an existing artist sprint
 - added `HIGH_IMPACT_ART_SPRINT.md` and advanced ROADMAP so the default art-production loop executes the matrix-selected batch directly
-- PR #41 CI passes Python compile, full unit tests and Windows PowerShell parse before merge
+- PR #41 CI passes Python compile, full unit tests and PowerShell parse before merge
 - no ROM, save state, ROM-derived capture, ripped commercial art/audio, emulator binary or local derivative PNG is committed
 
 ## 1.0.0-rc14 — Visual Completion Matrix + high-impact art batch
