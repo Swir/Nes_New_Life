@@ -9,6 +9,7 @@ from pathlib import Path
 
 from animation_workbench import write_dashboard as write_animation_dashboard
 from art_sprint_kit import export_sprint_kit
+from capture_coverage_acceptance import build_acceptance_manifest, write_outputs as write_acceptance_outputs
 from capture_gap_planner import build_capture_queue, write_outputs as write_capture_gap_outputs
 from capture_mission_control import ensure_manifest, mission_status
 from final_art_priority import write_priority_board
@@ -17,6 +18,15 @@ from production_sync import prepare_incremental
 from release_candidate import ensure_regression_manifest
 from validate_hdpack import validate
 from visual_context_audit import write_dashboard as write_visual_dashboard
+
+
+PROMOTION_ACCEPTANCE_BLOCKERS = {
+    "INTEGRITY_ADMISSION",
+    "STRUCTURAL_CAPTURE",
+    "CAPTURE_REGRESSION",
+    "AT_RISK_MISSION",
+    "MISSION_PROVENANCE",
+}
 
 
 def _paths(project_root: Path) -> dict[str, Path]:
@@ -80,6 +90,33 @@ def _next_actions(capture_gap: dict, capture_status: dict, priority: dict | None
     return sorted(actions, key=lambda row: -int(row.get("priority", 0)))
 
 
+def _promotion_acceptance(acceptance: dict) -> dict:
+    blockers = [
+        row for row in acceptance.get("hard_blockers", [])
+        if str(row.get("kind", "")) in PROMOTION_ACCEPTANCE_BLOCKERS
+    ]
+    if blockers:
+        gate = "BLOCKED"
+        mode = "UNSAFE_CAPTURE"
+    elif acceptance.get("acceptance_gate") == "READY_FOR_GATE_A_REVIEW":
+        gate = "PASS"
+        mode = "FULL_CAPTURE_READY"
+    else:
+        gate = "PASS"
+        mode = "INCREMENTAL_CAPTURE_READY"
+    return {
+        "gate": gate,
+        "mode": mode,
+        "blocking_kinds": [str(row.get("kind", "")) for row in blockers],
+        "blockers": blockers,
+        "full_capture_acceptance_gate": acceptance.get("acceptance_gate", "BLOCKED"),
+        "capture_fingerprint_sha256": acceptance.get("capture_fingerprint_sha256", ""),
+        "important_note": (
+            "Promotion admission blocks unsafe integrity/provenance/regression evidence. Pending missions and not-yet-seen production groups may still be promoted incrementally for art work; they continue to block full Gate A acceptance and release."
+        ),
+    }
+
+
 def _write_dashboard(result: dict, output_dir: Path) -> dict:
     output_dir.mkdir(parents=True, exist_ok=True)
     json_path = output_dir / "CAPTURE_PROMOTION.json"
@@ -99,6 +136,7 @@ def _write_dashboard(result: dict, output_dir: Path) -> dict:
         for row in result.get("next_actions", [])
     ) or "<tr><td colspan='5'>No queued action.</td></tr>"
     gate = result.get("promotion_gate", "BLOCKED")
+    admission = result.get("coverage_acceptance", {}).get("promotion_admission", {})
     document = f"""<!doctype html><html lang='en'><head><meta charset='utf-8'>
 <title>Project #002 Capture Promotion Director</title><style>
 body{{font:15px system-ui;max-width:1250px;margin:30px auto;padding:0 22px;background:#0d1117;color:#e6edf3}}
@@ -109,6 +147,8 @@ table{{width:100%;border-collapse:collapse}}th,td{{padding:8px;border-bottom:1px
 <div class='card'><h2>Promotion gate: <span class='{'pass' if gate == 'PROMOTED' else 'blocked'}'>{html.escape(gate)}</span></h2>
 <p>{html.escape(result.get('important_note', ''))}</p>
 <p>Candidate: <code>{html.escape(result.get('candidate_capture', ''))}</code></p>
+<p>Coverage admission: <b>{html.escape(str(admission.get('gate', 'UNKNOWN')))}</b> · mode <b>{html.escape(str(admission.get('mode', 'UNKNOWN')))}</b></p>
+<p>Full capture acceptance: <b>{html.escape(str(admission.get('full_capture_acceptance_gate', 'UNKNOWN')))}</b></p>
 <p>Capture regressions: {result.get('capture_regressions', 0)}</p></div>
 <div class='card'><h2>Do this next</h2><table><tr><th>Priority</th><th>Type</th><th>Group</th><th>Target</th><th>Reason</th></tr>{rows}</table></div>
 </body></html>"""
@@ -126,9 +166,10 @@ def promote_capture(
 ) -> dict:
     """Validate and promote a candidate MesenCE capture into the local art-production pipeline.
 
-    A candidate with capture regressions is never synchronized into MasterWorkspace. This preserves the
-    previous production baseline and prevents a smaller/poorer capture from silently retiring useful art.
-    Explicit Capture Mission Control items are never auto-completed by this function.
+    Promotion now consumes the same fingerprint-bound Capture Coverage Acceptance manifest used by the
+    guided/bridge evidence path. Unsafe integrity/provenance/regression evidence is blocked before any
+    MasterWorkspace mutation. Pending full-game missions remain allowed for incremental art production,
+    but they continue to block Gate A and final release.
     """
     p = _paths(project_root)
     capture = Path(current_capture)
@@ -142,6 +183,10 @@ def promote_capture(
     if errors:
         raise ValueError("Candidate capture failed HD Pack validation: " + "; ".join(errors))
 
+    acceptance = build_acceptance_manifest(p["root"], capture, previous_capture=previous)
+    acceptance_outputs = write_acceptance_outputs(acceptance, p["reports"] / "CaptureCoverageAcceptance")
+    admission = _promotion_acceptance(acceptance)
+
     existing_queue = p["queue"] if p["queue"].is_file() else None
     gap = build_capture_queue(
         capture,
@@ -154,23 +199,47 @@ def promote_capture(
     regressions = [row for row in gap.get("queue", []) if row.get("kind") == "CAPTURE_REGRESSION"]
     capture_status = mission_status(p["capture_manifest"])
 
+    if regressions:
+        promotion_gate = "BLOCKED_REGRESSION"
+    elif admission["gate"] != "PASS":
+        promotion_gate = "BLOCKED_ACCEPTANCE"
+    else:
+        promotion_gate = "PROMOTED"
+
     result: dict = {
-        "schema": 1,
+        "schema": 2,
         "generated_utc": datetime.now(timezone.utc).isoformat(),
         "candidate_capture": str(capture.resolve()),
         "previous_capture": str(previous.resolve()) if previous else None,
-        "promotion_gate": "BLOCKED_REGRESSION" if regressions else "PROMOTED",
+        "promotion_gate": promotion_gate,
         "capture_regressions": len(regressions),
         "capture_mission_gate": capture_status.get("release_capture_gate", "BLOCKED"),
+        "coverage_acceptance": {
+            "acceptance_gate": acceptance.get("acceptance_gate", "BLOCKED"),
+            "promotion_admission": admission,
+            "mission_summary": acceptance.get("mission_summary", {}),
+            "hard_blockers": acceptance.get("hard_blockers", []),
+            "next_action": acceptance.get("next_action", {}),
+            "outputs": acceptance_outputs,
+        },
         "warnings": warnings,
         "gap_outputs": gap_outputs,
         "important_note": (
-            "Promotion is blocked only by structural capture regression. Capture Mission Control remains explicit/manual and still governs full-game release coverage."
+            "Promotion is admitted only when fingerprint-bound capture integrity/provenance is safe. Full-game mission coverage remains explicit/manual and still governs Gate A/release; incomplete but safe capture may continue into incremental HD art production."
         ),
     }
 
-    if regressions:
+    if promotion_gate != "PROMOTED":
         result["next_actions"] = _next_actions(gap, capture_status, None)
+        if promotion_gate == "BLOCKED_ACCEPTANCE":
+            for blocker in admission["blockers"]:
+                result["next_actions"].insert(0, {
+                    "priority": 110,
+                    "kind": str(blocker.get("kind", "CAPTURE_ACCEPTANCE")),
+                    "group": "",
+                    "target": "capture evidence",
+                    "reason": str(blocker.get("detail", "Capture acceptance admission failed.")),
+                })
         result["outputs"] = _write_dashboard(result, p["reports"] / "CapturePromotion")
         return result
 
@@ -218,7 +287,7 @@ def promote_capture(
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Project #002 regression-safe capture promotion director")
+    parser = argparse.ArgumentParser(description="Project #002 acceptance-gated regression-safe capture promotion director")
     parser.add_argument("project_root", type=Path)
     parser.add_argument("current_capture", type=Path)
     parser.add_argument("--previous-capture", type=Path)
