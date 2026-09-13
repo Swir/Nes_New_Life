@@ -36,6 +36,9 @@ class AuthoritativeProductionStudioTests(unittest.TestCase):
             "PRODUCTION_COCKPIT",
             "ROADMAP EVIDENCE READINESS",
             "READY_FOR_HUMAN_REVIEW",
+            "OPEN ACTIVE FAMILY WORKBENCH",
+            "Finish_Family_And_Playtest.bat",
+            "ACTIVE FAMILY ART WORKBENCH",
             "DO THIS NEXT",
             "ROADMAP Gate A–D",
         ):
@@ -46,10 +49,21 @@ class AuthoritativeProductionStudioTests(unittest.TestCase):
             "Full_Capture_To_HD_Autopilot.bat",
             "Continue_HD_Art_Session.bat",
             "Roadmap_Evidence_Readiness.bat",
+            "Finish_Family_And_Playtest.bat",
+            "Finish_Family_And_Playtest.ps1",
             "Final_Release_Gate.bat",
             "Authoritative_Remaster_Studio.bat",
         }
         self.assertEqual([], sorted(name for name in required if not (WINDOWS / name).is_file()))
+
+    def test_family_finish_is_fail_closed_before_playtest(self) -> None:
+        ps1 = (WINDOWS / "Finish_Family_And_Playtest.ps1").read_text(encoding="utf-8")
+        finish_pos = ps1.index("High_Impact_Art_Sprint.ps1")
+        playtest_pos = ps1.index("Build_HD_Playtest.ps1")
+        self.assertLess(finish_pos, playtest_pos)
+        self.assertIn("Playtest was NOT started", ps1)
+        self.assertIn("-Finish", ps1)
+        self.assertIn("-Overwrite", ps1)
 
     def test_evidence_readiness_launcher_is_read_only(self) -> None:
         ps1 = (WINDOWS / "Roadmap_Evidence_Readiness.ps1").read_text(encoding="utf-8")
