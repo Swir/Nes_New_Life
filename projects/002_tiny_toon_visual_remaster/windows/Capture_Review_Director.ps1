@@ -69,7 +69,7 @@ while ($state.state -eq 'REVIEW_REQUIRED') {
     Write-Host ("NEXT REVIEW #{0}: {1}" -f $index, $next.criterion) -ForegroundColor Cyan
     Write-Host $next.instruction -ForegroundColor Yellow
     Write-Host 'The review launcher will require the exact token VERIFIED_GATE_A. Any other input cancels without changing evidence state.'
-    & $ReviewLauncher -AttestIndex $index
+    & $ReviewLauncher -AttestIndex $index -NoOpen
     if ($LASTEXITCODE -ne 0) {
         Write-Host 'Review was not attested. Stopping without changing ROADMAP.' -ForegroundColor Yellow
         break
