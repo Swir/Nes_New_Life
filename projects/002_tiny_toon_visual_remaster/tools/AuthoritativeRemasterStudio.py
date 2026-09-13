@@ -9,6 +9,7 @@ from pathlib import Path
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
+from capture_coverage_acceptance import build_acceptance_manifest, write_outputs as write_capture_acceptance
 from high_impact_art_sprint import prepare_high_impact_sprint
 from visual_completion_matrix import build_and_write as build_visual_completion
 from final_release_director import audit_and_write as final_release_audit_and_write
@@ -37,7 +38,7 @@ class AuthoritativeRemasterStudio(tk.Tk):
         self.capture: Path | None = None
         self.pack: Path | None = None
         self.batch_size = tk.IntVar(value=30)
-        self.status = tk.StringVar(value="Select your local workspace and accepted MesenCE capture.")
+        self.status = tk.StringVar(value="Select your local workspace and current MesenCE capture.")
         self._build()
         self._bind_shortcuts()
 
@@ -48,13 +49,13 @@ class AuthoritativeRemasterStudio(tk.Tk):
         ttk.Label(root, text="PROJECT #002 — TINY TOON VISUAL REMASTER", font=("Segoe UI", 17, "bold")).pack(anchor="w")
         ttk.Label(
             root,
-            text="Authoritative path: guided fullscreen capture → safe evidence → promotion → highest-impact HD art → Pixel QA → 10/10 regression → gated ZIP",
+            text="Authoritative path: guided fullscreen capture → safe evidence → coverage acceptance → safe promotion → highest-impact HD art → Pixel QA → 10/10 regression → gated ZIP",
         ).pack(anchor="w", pady=(2, 12))
 
         paths = ttk.LabelFrame(root, text="Local production inputs", padding=10)
         paths.pack(fill="x")
         ttk.Button(paths, text="F1  Select workspace", command=self.select_workspace).grid(row=0, column=0, padx=4, pady=4, sticky="ew")
-        ttk.Button(paths, text="F2  Select accepted capture", command=self.select_capture).grid(row=0, column=1, padx=4, pady=4, sticky="ew")
+        ttk.Button(paths, text="F2  Select current capture", command=self.select_capture).grid(row=0, column=1, padx=4, pady=4, sticky="ew")
         ttk.Button(paths, text="F3  Select current HD pack", command=self.select_pack).grid(row=0, column=2, padx=4, pady=4, sticky="ew")
         self.workspace_label = ttk.Label(paths, text="Workspace: —")
         self.capture_label = ttk.Label(paths, text="Capture: —")
@@ -65,13 +66,13 @@ class AuthoritativeRemasterStudio(tk.Tk):
         for col in range(3):
             paths.columnconfigure(col, weight=1)
 
-        capture = ttk.LabelFrame(root, text="1 — Capture / safe handoff / promotion", padding=10)
+        capture = ttk.LabelFrame(root, text="1 — Capture / safe handoff / acceptance / promotion", padding=10)
         capture.pack(fill="x", pady=(10, 0))
         self._buttons(capture, [
             ("GUIDED CAPTURE MARATHON", lambda: self.run_windows("Guided_Capture_Marathon.bat")),
             ("F4  Local Capture Bridge", lambda: self.run_windows("Local_Capture_Bridge.bat")),
+            ("CHECK CAPTURE ACCEPTANCE", self.capture_acceptance),
             ("F5  Promote capture safely", lambda: self.run_windows("Promote_Capture_To_HD.bat")),
-            ("Capture Gap Planner", lambda: self.run_windows("Capture_Gap_Planner.bat")),
         ])
 
         art = ttk.LabelFrame(root, text="2 — Highest-impact HD art", padding=10)
@@ -97,6 +98,7 @@ class AuthoritativeRemasterStudio(tk.Tk):
         info.pack(fill="x", pady=(10, 0))
         ttk.Label(info, text="Gameplay: original local ROM in MesenCE. Guided capture and final playtest use verified fullscreen.").pack(anchor="w")
         ttk.Label(info, text="Guided Capture Marathon records a mission only after explicit in-game verification; no tile-count heuristic can complete it.").pack(anchor="w")
+        ttk.Label(info, text="Coverage Acceptance binds mission provenance, integrity and production-group signals to the exact capture fingerprint before promotion.").pack(anchor="w")
         ttk.Label(info, text="F4 may send only validator-approved metadata JSON to GitHub; capture pixels and local paths stay on this PC.").pack(anchor="w")
         ttk.Label(info, text="Recommended keyboard: arrows = D-pad · Z = A · X = B · Enter = Start · Right Shift = Select. Gamepad is configured in MesenCE.").pack(anchor="w")
         ttk.Label(info, text="Never commit ROMs, save states, emulator binaries, capture PNGs, ripped art/audio or local sprint boards.").pack(anchor="w")
@@ -107,7 +109,7 @@ class AuthoritativeRemasterStudio(tk.Tk):
         self._write(
             "AUTHORITATIVE REMASTER STUDIO READY\n\n"
             "Start with GUIDED CAPTURE MARATHON when Gate A gameplay coverage is still incomplete.\n"
-            "F4 bridges local MesenCE evidence to GitHub as validated metadata only; it never uploads the ROM or capture images.\n"
+            "F4 bridges local MesenCE evidence to GitHub as validated metadata only; CHECK CAPTURE ACCEPTANCE shows exact hard blockers before promotion.\n"
             "Tooling milestones do not count as release completion. ROADMAP progress remains evidence-based Gate A–D progress.\n"
         )
 
@@ -120,6 +122,7 @@ class AuthoritativeRemasterStudio(tk.Tk):
     def _bind_shortcuts(self) -> None:
         binds = {
             "<Control-F4>": lambda: self.run_windows("Guided_Capture_Marathon.bat"),
+            "<Control-F5>": self.capture_acceptance,
             "<F1>": self.select_workspace,
             "<F2>": self.select_capture,
             "<F3>": self.select_pack,
@@ -147,7 +150,7 @@ class AuthoritativeRemasterStudio(tk.Tk):
             self.status.set("Workspace selected.")
 
     def select_capture(self) -> None:
-        value = filedialog.askdirectory(title="Select accepted MesenCE HD Pack capture")
+        value = filedialog.askdirectory(title="Select current MesenCE HD Pack capture")
         if not value:
             return
         path = Path(value)
@@ -159,7 +162,7 @@ class AuthoritativeRemasterStudio(tk.Tk):
         if self.pack is None:
             self.pack = path
             self.pack_label.configure(text=f"HD pack: {self.pack}")
-        self.status.set("Accepted capture selected.")
+        self.status.set("Current capture selected.")
 
     def select_pack(self) -> None:
         value = filedialog.askdirectory(title="Select current candidate/final HD pack")
@@ -172,6 +175,36 @@ class AuthoritativeRemasterStudio(tk.Tk):
         self.pack = path
         self.pack_label.configure(text=f"HD pack: {self.pack}")
         self.status.set("Current HD pack selected.")
+
+    def capture_acceptance(self) -> None:
+        if not self.workspace:
+            messagebox.showinfo("Workspace required", "Select your local Project #002 workspace first.")
+            return
+        if not self.capture:
+            self.select_capture()
+        if not self.capture:
+            return
+        try:
+            result = build_acceptance_manifest(self.workspace, self.capture)
+            outputs = write_capture_acceptance(result, self.workspace / "Reports" / "CaptureCoverageAcceptance")
+        except Exception as exc:
+            messagebox.showerror("Capture Coverage Acceptance failed", str(exc))
+            return
+        dashboard = Path(outputs["dashboard"])
+        webbrowser.open(dashboard.as_uri())
+        summary = result.get("mission_summary", {})
+        blockers = result.get("hard_blockers", [])
+        self.status.set(f"Capture acceptance: {result['acceptance_gate']} · blockers {len(blockers)}")
+        self._write(
+            "CAPTURE COVERAGE ACCEPTANCE\n\n"
+            f"Gate: {result['acceptance_gate']}\n"
+            f"Fingerprint: {result['capture_fingerprint_sha256']}\n"
+            f"Verified missions: {summary.get('verified', 0)}/{summary.get('total', 0)}\n"
+            f"Hard blockers: {len(blockers)}\n\n"
+            f"DO THIS NEXT\n{result.get('next_action', {}).get('action', 'Review the dashboard.')}\n\n"
+            f"Dashboard: {dashboard}\n\n"
+            "This check never changes ROADMAP Gate A–D. READY_FOR_GATE_A_REVIEW still requires real local gameplay review."
+        )
 
     def _require_workspace_pack(self) -> tuple[Path, Path] | None:
         if not self.workspace:
