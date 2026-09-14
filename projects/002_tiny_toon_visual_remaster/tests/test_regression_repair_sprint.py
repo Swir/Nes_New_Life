@@ -162,7 +162,7 @@ class RegressionRepairSprintTests(unittest.TestCase):
             recorder.assert_called_once()
             self.assertEqual("REPAIR_RETEST_PASS", result["status"])
             self.assertEqual("BLOCKED", result["cockpit_gate"])
-            self.assertIn("all 10", result["roadmap_policy"])
+            self.assertIn("10/10", result["roadmap_policy"])
 
     def test_windows_loop_runs_transactional_finish_and_same_case_retest(self):
         source = (WINDOWS / "Regression_Repair_Loop.ps1").read_text(encoding="utf-8")
