@@ -12,6 +12,7 @@ if (-not $ProjectRoot) { $ProjectRoot = Split-Path -Parent $Here }
 $Tool = Join-Path $ProjectRoot 'tools\guided_regression_playtest.py'
 $Locator = Join-Path $ProjectRoot 'tools\regression_defect_locator.py'
 $VisualPicker = Join-Path $ProjectRoot 'tools\regression_visual_picker.py'
+$RepairTool = Join-Path $ProjectRoot 'tools\regression_repair_sprint.py'
 $Launcher = Join-Path $Here 'launch_remaster.ps1'
 $Manifest = Join-Path $ProjectRoot 'FINAL_REGRESSION.json'
 $Output = Join-Path $ProjectRoot 'Reports\GuidedRegressionPlaytest'
@@ -20,6 +21,8 @@ $Dashboard = Join-Path $Output 'GUIDED_REGRESSION_PLAYTEST.html'
 $LocatorOutput = Join-Path $ProjectRoot 'Reports\RegressionDefectLocator'
 $LocatorPlanJson = Join-Path $LocatorOutput 'REGRESSION_DEFECT_TARGETS.json'
 $VisualPickerHtml = Join-Path $LocatorOutput 'REGRESSION_VISUAL_PICKER_LOCAL_ONLY.html'
+$RepairKit = Join-Path $ProjectRoot 'Artwork\CurrentRepairSprint'
+$RepairDashboard = Join-Path $ProjectRoot 'Reports\RegressionRepairSprint\REGRESSION_REPAIR_SPRINT.html'
 $StatePath = Join-Path $env:LOCALAPPDATA 'Swir\TinyToonVisualRemaster\capture-session.json'
 $FullscreenEvidence = Join-Path $ProjectRoot 'Reports\FullscreenPlaytest\FULLSCREEN_PLAYTEST.json'
 
@@ -97,6 +100,58 @@ function Select-DefectTarget($Case, [string]$Category) {
         return $null
     }
 }
+function Start-RepairHandoff($Case, [string]$Category, $Target) {
+    $artCategories = @('MISSING_HD','WRONG_PALETTE','ANIMATION_SEAM','TRANSPARENCY','OTHER')
+    if ($Category -notin $artCategories) { return $null }
+    try {
+        $prepared = Invoke-PythonJson @($RepairTool, 'prepare', $ProjectRoot, $RuntimePack)
+        if ($prepared.status -ne 'REPAIR_SPRINT_READY') {
+            Write-Host ('Automatic repair handoff did not create a sprint: {0}' -f $prepared.status) -ForegroundColor Yellow
+            if ($prepared.next_action) { Write-Host $prepared.next_action -ForegroundColor Yellow }
+            return $prepared
+        }
+
+        $editable = Join-Path $RepairKit 'editable'
+        $generalBoard = $null
+        if ($prepared.local_board) { $generalBoard = Join-Path $RepairKit ([string]$prepared.local_board) }
+        $familyBoard = $null
+        $familyManifestPath = Join-Path $RepairKit 'FAMILY_CONTACT_BOARDS.json'
+        if (Test-Path $familyManifestPath) {
+            try {
+                $familyManifest = Get-Content -Raw $familyManifestPath | ConvertFrom-Json
+                $families = @($familyManifest.families)
+                if ($families.Count -gt 0) {
+                    $match = $null
+                    if ($Target -and $Target.family) {
+                        $wantedFamily = [string]$Target.family
+                        $match = $families | Where-Object { [string]$_.family -eq $wantedFamily } | Select-Object -First 1
+                    }
+                    if (-not $match) { $match = $families[0] }
+                    if ($match.file) { $familyBoard = Join-Path $RepairKit ([string]$match.file) }
+                }
+            } catch {
+                Write-Host ('Family board lookup skipped: {0}' -f $_.Exception.Message) -ForegroundColor DarkYellow
+            }
+        }
+
+        Write-Host ''
+        Write-Host 'AUTOMATIC REPAIR HANDOFF READY.' -ForegroundColor Green
+        Write-Host ('Prepared {0} minimal repair item(s) for {1}.' -f $prepared.repair_items, $Case.label) -ForegroundColor Cyan
+        if ($Target) { Write-Host ('Locked target: {0}' -f $Target.target_tag) -ForegroundColor Magenta }
+        Write-Host 'Edit only CurrentRepairSprint\editable, then run Regression_Repair_Loop.bat to finish transactional QA + same-case retest.' -ForegroundColor Yellow
+        if (-not $NoOpen) {
+            if ($familyBoard -and (Test-Path $familyBoard)) { Start-Process $familyBoard }
+            elseif ($generalBoard -and (Test-Path $generalBoard)) { Start-Process $generalBoard }
+            if (Test-Path $editable) { Start-Process explorer.exe $editable }
+        }
+        return $prepared
+    } catch {
+        Write-Host ('Automatic repair handoff could not prepare CurrentRepairSprint: {0}' -f $_.Exception.Message) -ForegroundColor Yellow
+        Write-Host 'The authoritative FAIL is safely recorded. Run Regression_Repair_Loop.bat after resolving any existing repair sprint/blocker.' -ForegroundColor Yellow
+        if (-not $NoOpen -and (Test-Path $RepairDashboard)) { Start-Process $RepairDashboard }
+        return $null
+    }
+}
 
 if (-not $RuntimePack) {
     $candidate = Join-Path $ProjectRoot 'Build\HighImpactCandidate'
@@ -124,7 +179,7 @@ Write-Host ''
 Write-Host '=== PROJECT #002 — GUIDED EXACT-BUILD REGRESSION PLAYTEST ===' -ForegroundColor Cyan
 Write-Host 'Every PASS/FAIL is manual evidence from the exact current runtime fingerprint.' -ForegroundColor Yellow
 Write-Host 'No case can auto-PASS. FAIL is routed before any pending/stale case.'
-Write-Host 'Art-related FAILs now open a local visual tile/palette picker before repair.' -ForegroundColor DarkGray
+Write-Host 'Art-related FAILs now open the visual picker and auto-prepare the minimal repair sprint.' -ForegroundColor DarkGray
 
 while ($true) {
     $plan = Invoke-PythonJson @($Tool, 'plan', $Manifest, $RuntimePack, '--output', $Output)
@@ -182,6 +237,7 @@ while ($true) {
         Write-Host ('RECORDED FAIL: {0} / {1}' -f $case.key, $category) -ForegroundColor Red
         if ($target) { Write-Host ('Repair target: {0}' -f $target.target_tag) -ForegroundColor Magenta }
         Write-Host $record.session.next_action -ForegroundColor Yellow
+        [void](Start-RepairHandoff $case $category $target)
         break
     }
 
