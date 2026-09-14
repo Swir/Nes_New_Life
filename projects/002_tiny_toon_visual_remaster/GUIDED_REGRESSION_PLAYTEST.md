@@ -97,6 +97,26 @@ Reports/RegressionDefectLocator/REGRESSION_VISUAL_PICKER_LOCAL_ONLY.html
 
 Unlike the locator JSON/CSV, this HTML intentionally embeds ROM-derived HD-pack pixels so the operator can visually identify the real defect. `projects/**/Reports/` is gitignored; this local board must never be committed, uploaded or treated as gameplay-completion evidence.
 
+## Automatic FAIL → CurrentRepairSprint handoff
+
+After the operator records a real art-related FAIL, the guided runner now calls the existing authoritative `regression_repair_sprint.py prepare` path immediately. This happens **after** the FAIL is written to Final Regression Cockpit, never before.
+
+If the selected `SWIR_TARGET` can be resolved safely, the handoff:
+
+1. reads the authoritative current-build FAIL;
+2. reuses the exact current runtime fingerprint;
+3. resolves the selected tile/palette and expands only to the appropriate family peers;
+4. re-exports those files from the current `MasterWorkspace` into `Artwork/CurrentRepairSprint`;
+5. generates the local repair board and family contact boards;
+6. opens the exact PLAYER/ENEMY/BOSS family board when one exists, otherwise the general repair board;
+7. opens `CurrentRepairSprint/editable` ready for the artist.
+
+The handoff never passes `--overwrite`. If an unfinished `CurrentRepairSprint` already exists, preparation fails closed and the already-recorded authoritative FAIL remains intact. The user can finish/archive the existing repair first, then run `Regression_Repair_Loop.bat` manually.
+
+`MAPPING`, `SCALE_OR_FILTER` and `CAPTURE_GAP` are not forced into pixel repair and continue to use their dedicated routes.
+
+This removes the previous manual gap between "record FAIL" and "prepare repair sprint" while keeping transactional QA and same-case re-test as mandatory next steps.
+
 ## Exact-build safety
 
 The Python director plans against the current `hires.txt + referenced runtime PNG` fingerprint. Recording refuses if the runtime fingerprint changed between planning and result recording. It also refuses out-of-order evidence: only the cockpit's exact current `next_case` may be recorded.
@@ -121,13 +141,15 @@ Authoritative Production Studio exposes the workflow as:
 CTRL+SHIFT+F10  GUIDED EXACT-BUILD REGRESSION
 ```
 
-The ranked defect locator and local visual picker are part of that same path automatically; no extra Studio button is required.
+The ranked defect locator, local visual picker and automatic repair-sprint handoff are part of that same path automatically; no extra Studio button is required.
 
 ## Privacy / repository policy
 
 The authoritative locator plan, selection JSON, regression evidence and normal dashboards remain metadata-only and contain no capture pixels or absolute local paths.
 
 The one deliberate exception is `REGRESSION_VISUAL_PICKER_LOCAL_ONLY.html`: it embeds local ROM-derived HD-pack preview pixels solely for operator-side defect identification and is written under the already gitignored `Reports/` tree. It must never be committed or uploaded.
+
+`CurrentRepairSprint` artwork, repair boards and family contact boards are also local ROM-derived production material under the gitignored `Artwork/` tree.
 
 The workflow does not commit ROMs, save states, gameplay screenshots, capture PNG/JPG, ripped commercial art/audio, emulator binaries or local derivative HD packs.
 
