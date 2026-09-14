@@ -48,9 +48,9 @@ A known FAIL is never silently skipped to reach later cases.
 
 ## Ranked Defect Target Locator
 
-For art-repair categories (`MISSING_HD`, `WRONG_PALETTE`, `ANIMATION_SEAM`, `TRANSPARENCY`, `OTHER`), the Windows guided runner now invokes `tools/regression_defect_locator.py` immediately after classification and before recording the FAIL.
+For art-repair categories (`MISSING_HD`, `WRONG_PALETTE`, `ANIMATION_SEAM`, `TRANSPARENCY`, `OTHER`), the Windows guided runner invokes `tools/regression_defect_locator.py` immediately after classification and before recording the FAIL.
 
-The locator scans the **current exact HD runtime**, uses `Artwork/ART_QUEUE.csv` when available, and cross-references `Artwork/CurrentImpactSprint/ART_SPRINT_KIT.json`. It ranks metadata-only tile/palette candidates using:
+The locator scans the **current exact HD runtime**, uses `Artwork/ART_QUEUE.csv` when available, and cross-references `Artwork/CurrentImpactSprint/ART_SPRINT_KIT.json`. It ranks tile/palette candidates using:
 
 - the expected production group for the current regression case,
 - actual tile reuse count in the supplied runtime,
@@ -59,7 +59,7 @@ The locator scans the **current exact HD runtime**, uses `Artwork/ART_QUEUE.csv`
 - PLAYER/ENEMY/BOSS animation-family relevance,
 - current family-aware sprint membership and priority.
 
-The operator sees up to twelve candidates with group, tile, palette, score, reuse, family and condition contexts. Selecting one writes:
+The metadata plan contains up to twelve candidates with group, tile, palette, score, reuse, family and condition contexts. Selecting one writes:
 
 ```text
 [SWIR_TARGET tile=<tile> palette=<palette>]
@@ -69,7 +69,33 @@ plus a human-readable `SWIR_CONTEXT` note into the real FAIL description. The ex
 
 Choosing `0 = unknown` is always allowed. Candidate ranking is an accelerator only; it never auto-selects a defect and never proves gameplay coverage.
 
-Reports are written under `Reports/RegressionDefectLocator/` as JSON/CSV/HTML and contain metadata only—no capture pixels or absolute local paths.
+The JSON/CSV locator plan and its metadata dashboard remain metadata-only.
+
+## Local Visual Defect Picker
+
+`tools/regression_visual_picker.py` turns the ranked locator plan into a **local-only visual board** before the operator chooses the target number.
+
+For every ranked tile/palette candidate it finds the matching graphics in the exact same HD runtime and renders up to four distinct visual variants on transparency checkerboards. The board shows:
+
+- candidate number,
+- actual HD-pack tile preview(s),
+- group / tile / palette,
+- family,
+- Mesen condition contexts,
+- ranking reasons,
+- repair-compatible `SWIR_TARGET`.
+
+The candidate card is clickable. Clicking highlights it and attempts to copy the candidate number to the clipboard so it can be pasted back into the PowerShell prompt.
+
+The visual board is **fingerprint-bound**. If the runtime pack changes after ranking, generation fails closed and the candidate plan must be rebuilt.
+
+The file is generated as:
+
+```text
+Reports/RegressionDefectLocator/REGRESSION_VISUAL_PICKER_LOCAL_ONLY.html
+```
+
+Unlike the locator JSON/CSV, this HTML intentionally embeds ROM-derived HD-pack pixels so the operator can visually identify the real defect. `projects/**/Reports/` is gitignored; this local board must never be committed, uploaded or treated as gameplay-completion evidence.
 
 ## Exact-build safety
 
@@ -95,10 +121,14 @@ Authoritative Production Studio exposes the workflow as:
 CTRL+SHIFT+F10  GUIDED EXACT-BUILD REGRESSION
 ```
 
-The ranked defect locator is part of that same path automatically; no extra Studio button is required.
+The ranked defect locator and local visual picker are part of that same path automatically; no extra Studio button is required.
 
 ## Privacy / repository policy
 
-Generated JSON/CSV/HTML reports are metadata-only. The workflow does not commit ROMs, save states, gameplay screenshots, capture PNG/JPG, ripped commercial art/audio, emulator binaries or local derivative HD packs.
+The authoritative locator plan, selection JSON, regression evidence and normal dashboards remain metadata-only and contain no capture pixels or absolute local paths.
+
+The one deliberate exception is `REGRESSION_VISUAL_PICKER_LOCAL_ONLY.html`: it embeds local ROM-derived HD-pack preview pixels solely for operator-side defect identification and is written under the already gitignored `Reports/` tree. It must never be committed or uploaded.
+
+The workflow does not commit ROMs, save states, gameplay screenshots, capture PNG/JPG, ripped commercial art/audio, emulator binaries or local derivative HD packs.
 
 This tooling milestone does not change Gate A-D checkboxes. Real MesenCE gameplay evidence remains mandatory.

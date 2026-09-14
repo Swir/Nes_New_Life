@@ -10,6 +10,8 @@ It does not auto-fix graphics and it never auto-passes gameplay. Instead it conv
 current-build Final Regression FAIL
 → classify defect
 → ranked tile/palette/family locator during Guided Regression
+→ local visual candidate board from the exact HD runtime
+→ human-select the matching visible tile/palette
 → resolve exact active family / affected production group
 → re-export minimal repair files from current MasterWorkspace
 → edit CurrentRepairSprint/editable
@@ -48,7 +50,9 @@ Character failures prefer the current PLAYER/ENEMY/BOSS Active Family Workbench 
 
 ## Automatic target handoff from Guided Regression
 
-The Guided Exact-Build Regression runner now invokes the metadata-only Regression Defect Locator for art-related FAILs. The locator ranks candidates from the **whole current HD runtime**, not merely the files already present in the current sprint. It cross-references art groups and the family-aware sprint, then asks the operator to select the visible target if a candidate matches what was observed in MesenCE.
+The Guided Exact-Build Regression runner invokes the metadata-only Regression Defect Locator for art-related FAILs. The locator ranks candidates from the **whole current HD runtime**, not merely the files already present in the current sprint. It cross-references art groups and the family-aware sprint.
+
+Before asking for the target number, `regression_visual_picker.py` renders those ranked candidates from the same fingerprint-bound runtime into a local visual board. Each card can contain several distinct variants for the same tile/palette, which is important for animation/palette/context defects that would be difficult to identify from hexadecimal IDs alone.
 
 A selected target is stored in the FAIL notes as:
 
@@ -58,7 +62,7 @@ A selected target is stored in the FAIL notes as:
 
 with an additional `SWIR_CONTEXT` note containing the selected group/family/condition context. The repair director parses the `SWIR_TARGET` marker, locks onto that exact tile/palette and expands only to family peers when appropriate.
 
-This removes manual tile/palette transcription from the normal workflow while preserving human authority: selecting `0 = unknown` leaves the FAIL descriptive and the existing family/group fallback remains available.
+This removes manual tile/palette transcription and most target guessing from the normal workflow while preserving human authority: selecting `0 = unknown` leaves the FAIL descriptive and the existing family/group fallback remains available.
 
 ## Fingerprint-bound same-case retest
 
@@ -87,7 +91,15 @@ Run:
 windows/Regression_Repair_Loop.bat
 ```
 
-The launcher:
+The upstream Guided Regression launcher now:
+
+1. records the real observed failure category;
+2. ranks likely tile/palette/family/context targets;
+3. opens the local visual candidate board;
+4. lets the operator choose the matching visible target or `0 = unknown`;
+5. writes the chosen `SWIR_TARGET` into the authoritative FAIL.
+
+Then the Regression Repair Loop:
 
 1. identifies the authoritative current FAIL;
 2. consumes `SWIR_TARGET` automatically when Guided Regression captured a concrete target;
@@ -101,6 +113,10 @@ The launcher:
 
 ## Privacy / repository policy
 
-Repair PNGs, references and contact boards are local ROM-derived production material and remain gitignored. Defect-locator reports and repair-controller reports are metadata-only by contract; the workflow never commits ROMs, save states, capture pixels, gameplay screenshots, ripped commercial art/audio, emulator binaries or derivative local HD packs.
+Repair PNGs, references and contact boards are local ROM-derived production material and remain gitignored. Defect-locator JSON/CSV/normal HTML and repair-controller reports remain metadata-only by contract.
+
+`Reports/RegressionDefectLocator/REGRESSION_VISUAL_PICKER_LOCAL_ONLY.html` is deliberately different: it embeds local HD-pack pixels so the operator can visually identify the defect. The entire `projects/**/Reports/` tree is gitignored; this picker must never be committed or uploaded.
+
+The workflow never commits ROMs, save states, capture pixels, gameplay screenshots, ripped commercial art/audio, emulator binaries or derivative local HD packs.
 
 This milestone improves Gate B/C execution but does not itself check any Gate A-D ROADMAP item.
