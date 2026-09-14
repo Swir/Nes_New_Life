@@ -48,6 +48,22 @@ function Pick-Rom {
     if ($d.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { return $d.FileName }
     return $null
 }
+function Resolve-PreferredRepairBoard {
+    $familyManifestPath = Join-Path $RepairKit 'FAMILY_CONTACT_BOARDS.json'
+    if (Test-Path $familyManifestPath) {
+        try {
+            $manifest = Get-Content -Raw $familyManifestPath | ConvertFrom-Json
+            $families = @($manifest.families)
+            if ($families.Count -gt 0 -and $families[0].file) {
+                $candidate = Join-Path $RepairKit ([string]$families[0].file)
+                if (Test-Path $candidate) { return $candidate }
+            }
+        } catch {
+            Write-Host ('Family board lookup skipped: {0}' -f $_.Exception.Message) -ForegroundColor DarkYellow
+        }
+    }
+    return $null
+}
 
 if (-not $RuntimePack) {
     $candidate = Join-Path $ProjectRoot 'Build\HighImpactCandidate'
@@ -76,9 +92,11 @@ if ($prepared.status -ne 'REPAIR_SPRINT_READY') {
 Write-Host ('Failed case: {0} / {1}' -f $prepared.failed_case.key, $prepared.failed_case.category) -ForegroundColor Red
 Write-Host ('Minimal repair items: {0}' -f $prepared.repair_items) -ForegroundColor Cyan
 $board = Join-Path $RepairKit $prepared.local_board
+$familyBoard = Resolve-PreferredRepairBoard
 $editable = Join-Path $RepairKit 'editable'
 if (-not $NoOpen) {
-    if (Test-Path $board) { Start-Process $board }
+    if ($familyBoard -and (Test-Path $familyBoard)) { Start-Process $familyBoard }
+    elseif (Test-Path $board) { Start-Process $board }
     if (Test-Path $editable) { Start-Process explorer.exe $editable }
 }
 if ($PrepareOnly) {

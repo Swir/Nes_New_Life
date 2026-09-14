@@ -97,6 +97,52 @@ class RegressionRepairSprintTests(unittest.TestCase):
         ]
         selected = repair.select_repair_items(case, {"items": items}, None)
         self.assertEqual({"a", "b"}, {row["kit_file"] for row in selected})
+        self.assertEqual({"current-impact-sprint"}, {row["repair_source"] for row in selected})
+
+    def test_explicit_target_outside_current_sprint_resolves_directly_from_masterworkspace(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            self._write_workspace_and_sprint(root)
+            workspace = root / "Artwork" / "MasterWorkspace"
+            boss = Image.new("RGBA", (32, 32), (0, 0, 0, 0))
+            for y in range(6, 27):
+                for x in range(7, 26):
+                    boss.putpixel((x, y), (230, 80, 120, 255))
+            boss.save(workspace / "editable" / "boss.png")
+            boss.save(workspace / "original" / "boss.png")
+            (workspace / "MASTER_TILES.json").write_text(json.dumps({
+                "masters": [{
+                    "file": "boss.png",
+                    "group": "BOSS",
+                    "tile_id": "CC",
+                    "palette": "DD",
+                    "uses": 2,
+                    "targets": [
+                        {"tile_id": "AA", "palette": "BB", "condition": "boss_phase_1", "image_index": "0", "x": 0, "y": 0},
+                        {"tile_id": "AA", "palette": "BB", "condition": "boss_phase_2", "image_index": "0", "x": 32, "y": 0},
+                    ],
+                }]
+            }), encoding="utf-8")
+            status, case = self._status(category="WRONG_PALETTE", key="bosses")
+            case["label"] = "Bosses"
+            case["failure_notes"] = "phase two wrong [SWIR_TARGET tile=AA palette=BB]"
+            with patch.object(repair, "_current_failure", return_value=(status, case)), patch.object(repair, "resolve_active_family_workbench", return_value=None):
+                result = repair.prepare_repair_sprint(root, root / "runtime")
+            self.assertEqual("REPAIR_SPRINT_READY", result["status"])
+            self.assertTrue(result["target_from_masterworkspace"])
+            self.assertEqual({"tile_id": "AA", "palette": "BB"}, result["explicit_target"])
+            self.assertEqual(["masterworkspace-explicit-target"], result["selection_sources"])
+            kit = root / "Artwork" / "CurrentRepairSprint"
+            manifest = json.loads((kit / repair.MANIFEST_NAME).read_text(encoding="utf-8"))
+            self.assertEqual(6, manifest["schema"])
+            self.assertEqual(1, manifest["exported"])
+            item = manifest["items"][0]
+            self.assertEqual("boss.png", item["master_file"])
+            self.assertEqual("BOSS", item["group"])
+            self.assertEqual("AA", item["tile_id"])
+            self.assertEqual("BB", item["palette"])
+            self.assertEqual("masterworkspace-explicit-target", item["repair_source"])
+            self.assertTrue((kit / "family_boards" / "FAMILY_001.png").is_file())
 
     def test_finish_refuses_case_or_fingerprint_drift_before_transaction(self):
         with tempfile.TemporaryDirectory() as td:
@@ -172,6 +218,7 @@ class RegressionRepairSprintTests(unittest.TestCase):
         self.assertIn("Perform ONLY the SAME failed case", source)
         self.assertIn("'retest'", source)
         self.assertIn("verified-fullscreen", source)
+        self.assertIn("Resolve-PreferredRepairBoard", source)
 
 
 if __name__ == "__main__":

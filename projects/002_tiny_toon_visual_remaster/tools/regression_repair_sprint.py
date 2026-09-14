@@ -84,10 +84,74 @@ def _family_key(item: dict) -> tuple[str, str, str]:
     )
 
 
-def select_repair_items(case: dict, source_manifest: dict, active_family: dict | None) -> list[dict]:
+def _workspace_target_items(workspace: Path, tile: str, palette: str) -> list[dict]:
+    """Resolve an explicit SWIR_TARGET against the authoritative MasterWorkspace.
+
+    The ranked regression locator scans the whole runtime, while CurrentImpactSprint is
+    intentionally only a bounded high-impact subset. An explicit target therefore must
+    be able to bypass that subset without weakening stale-workspace or transactional QA.
+    MASTER_TILES.json is the authoritative mapping from captured tile/palette uses to
+    editable master files, including exact-deduplicated masters whose representative
+    tile/palette may differ from another target in their `targets` list.
+    """
+    manifest = _load_json(Path(workspace) / "MASTER_TILES.json")
+    wanted_tile = str(tile or "").upper()
+    wanted_palette = str(palette or "").upper()
+    selected: list[dict] = []
+    seen_files: set[str] = set()
+
+    def matches(target_tile: str, target_palette: str) -> bool:
+        return str(target_tile or "").upper() == wanted_tile and (
+            not wanted_palette or str(target_palette or "").upper() == wanted_palette
+        )
+
+    for master in manifest.get("masters") or []:
+        if not isinstance(master, dict):
+            continue
+        targets = [row for row in (master.get("targets") or []) if isinstance(row, dict)]
+        representative_match = matches(master.get("tile_id", ""), master.get("palette", ""))
+        matching_targets = [
+            row for row in targets
+            if matches(row.get("tile_id", ""), row.get("palette", ""))
+        ]
+        if not representative_match and not matching_targets:
+            continue
+        master_file = str(master.get("file") or "")
+        if not master_file or master_file in seen_files:
+            continue
+        seen_files.add(master_file)
+        effective_palette = wanted_palette or str(master.get("palette") or "").upper()
+        if not effective_palette and matching_targets:
+            effective_palette = str(matching_targets[0].get("palette") or "").upper()
+        conditions = sorted({
+            str(row.get("condition") or "")
+            for row in (matching_targets or targets)
+            if str(row.get("condition") or "")
+        })
+        priority = len(selected) + 1
+        selected.append({
+            "priority": priority,
+            "priority_score": 100000 - priority,
+            "impact_score": 100000 - priority,
+            "group": str(master.get("group") or "UNASSIGNED").upper(),
+            "tile_id": wanted_tile,
+            "palette": effective_palette,
+            "seed_tile_id": wanted_tile,
+            "seed_palette": effective_palette,
+            "uses": int(master.get("uses", len(targets)) or 0),
+            "condition_count": len(conditions),
+            "visual_variants": max(1, len(matching_targets) or len(targets)),
+            "conditions": conditions,
+            "reasons": ["explicit-regression-target", "masterworkspace-direct"],
+            "master_file": master_file,
+            "kit_file": "",
+            "repair_source": "masterworkspace-explicit-target",
+        })
+    return selected
+
+
+def select_repair_items(case: dict, source_manifest: dict, active_family: dict | None, workspace: Path | None = None) -> list[dict]:
     items = list(source_manifest.get("items") or [])
-    if not items:
-        raise RepairSprintError("CurrentImpactSprint contains no editable items to target.")
 
     explicit = _failure_target(str(case.get("failure_notes") or ""))
     if explicit:
@@ -100,21 +164,30 @@ def select_repair_items(case: dict, source_manifest: dict, active_family: dict |
         if exact:
             family_keys = {_family_key(row) for row in exact}
             expanded = [row for row in items if _family_key(row) in family_keys]
-            return expanded or exact
+            return [dict(row, repair_source="current-impact-sprint") for row in (expanded or exact)]
+        if workspace is not None:
+            direct = _workspace_target_items(Path(workspace), tile, palette)
+            if direct:
+                return direct
+
+    if not items:
+        raise RepairSprintError(
+            "CurrentImpactSprint contains no matching editable items and the explicit SWIR_TARGET could not be resolved in MasterWorkspace."
+        )
 
     if active_family:
         files = {str(value) for value in active_family.get("editable_files", [])}
         family_items = [row for row in items if str(row.get("kit_file")) in files]
         if family_items:
-            return family_items
+            return [dict(row, repair_source="active-family-fallback") for row in family_items]
 
     groups = set(CASE_GROUPS.get(str(case.get("key", "")), ()))
     grouped = [row for row in items if str(row.get("group", "")).upper() in groups]
     if grouped:
         first_key = _family_key(grouped[0])
         family = [row for row in grouped if _family_key(row) == first_key]
-        return family or grouped[:12]
-    raise RepairSprintError("No repair target for this failed case exists in CurrentImpactSprint. Refresh the evidence-bound art handoff/high-impact sprint first.")
+        return [dict(row, repair_source="case-group-fallback") for row in (family or grouped[:12])]
+    raise RepairSprintError("No repair target for this failed case exists in CurrentImpactSprint or MasterWorkspace. Refresh the evidence-bound art handoff/high-impact sprint first.")
 
 
 def _route_only(status: dict, case: dict, category: str) -> dict:
@@ -146,17 +219,21 @@ def prepare_repair_sprint(project_root: Path, runtime_pack: Path, *, overwrite: 
     if category not in ART_REPAIR_CATEGORIES:
         raise RepairSprintError(f"Unsupported repair category: {category}")
 
-    source_kit = root / "Artwork" / "CurrentImpactSprint"
-    source_manifest = _load_json(source_kit / MANIFEST_NAME)
-    try:
-        active = resolve_active_family_workbench(source_kit)
-    except WorkbenchError:
-        active = None
-    selected = select_repair_items(case, source_manifest, active)
-
     workspace = root / "Artwork" / "MasterWorkspace"
     if not (workspace / "MASTER_TILES.json").is_file():
         raise RepairSprintError("MasterWorkspace is missing MASTER_TILES.json.")
+
+    source_kit = root / "Artwork" / "CurrentImpactSprint"
+    source_manifest_path = source_kit / MANIFEST_NAME
+    source_manifest = _load_json(source_manifest_path) if source_manifest_path.is_file() else {"schema": None, "items": []}
+    active = None
+    if source_manifest_path.is_file():
+        try:
+            active = resolve_active_family_workbench(source_kit)
+        except WorkbenchError:
+            active = None
+    selected = select_repair_items(case, source_manifest, active, workspace)
+
     repair_kit = root / "Artwork" / "CurrentRepairSprint"
     if repair_kit.exists() and any(repair_kit.iterdir()):
         if not overwrite:
@@ -193,12 +270,15 @@ def prepare_repair_sprint(project_root: Path, runtime_pack: Path, *, overwrite: 
 
     board = _make_board(fresh_items, repair_kit)
     family_boards = generate_family_contact_boards(fresh_items, repair_kit)
+    target = _failure_target(str(case.get("failure_notes") or ""))
     manifest = {
-        "schema": 5,
+        "schema": 6,
         "generated_utc": _now(),
         "selection_mode": "failed-regression-minimal-repair",
         "expected_runtime_fingerprint": status["pack_fingerprint"],
         "failed_case": {"key": case.get("key"), "label": case.get("label"), "failure_category": category, "failure_notes": case.get("failure_notes", "")},
+        "explicit_target": None if target is None else {"tile_id": target[0], "palette": target[1]},
+        "selection_sources": sorted({str(row.get("repair_source") or "unknown") for row in fresh_items}),
         "source_sprint_schema": source_manifest.get("schema"),
         "exported": len(fresh_items),
         "local_board": board,
@@ -206,6 +286,7 @@ def prepare_repair_sprint(project_root: Path, runtime_pack: Path, *, overwrite: 
         "family_contact_board_count": family_boards.get("family_count", 0),
         "instructions": [
             "This is a minimal repair sprint for one authoritative failed regression case.",
+            "An explicit SWIR_TARGET may resolve directly from MasterWorkspace even when it is outside CurrentImpactSprint.",
             "It was re-exported from the current MasterWorkspace, not copied from stale sprint pixels/hashes.",
             "Edit only editable/*.png; preserve filenames, dimensions and alpha canvas.",
             "Finish through regression_repair_sprint.py finish so master visual QA, animation-family QA, hires.txt preservation and Pixel QA remain transactional.",
@@ -216,12 +297,16 @@ def prepare_repair_sprint(project_root: Path, runtime_pack: Path, *, overwrite: 
     (repair_kit / MANIFEST_NAME).write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
     guide = CASE_GUIDANCE.get(str(case.get("key")), {})
+    selection_sources = manifest["selection_sources"]
     result = {
         "schema": SCHEMA,
         "generated_utc": _now(),
         "status": "REPAIR_SPRINT_READY",
         "runtime_fingerprint": status["pack_fingerprint"],
         "failed_case": {"key": case.get("key"), "label": case.get("label"), "category": category},
+        "explicit_target": manifest["explicit_target"],
+        "selection_sources": selection_sources,
+        "target_from_masterworkspace": "masterworkspace-explicit-target" in selection_sources,
         "repair_sprint_created": True,
         "repair_items": len(fresh_items),
         "active_family": None if active is None else {"family": active.get("family"), "members": active.get("members"), "priority": active.get("priority")},
