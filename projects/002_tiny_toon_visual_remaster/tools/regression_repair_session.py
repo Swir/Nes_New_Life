@@ -103,11 +103,64 @@ def inspect_repair_session(project_root: Path, runtime_pack: Path, *, repaired_p
             failed_case=failed_case,
         )
 
-    workspace = root / "Artwork" / "MasterWorkspace"
     items = list(manifest.get("items") or [])
     if not items:
         return _blocked("INVALID_PREPARED_REPAIR", "CurrentRepairSprint contains no repair items.", failed_case=failed_case)
 
+    guide = CASE_GUIDANCE.get(manifest_case, {})
+    common = {
+        "blocked": False,
+        "runtime_fingerprint": current_fp,
+        "failed_case": failed_case,
+        "repair_items": len(items),
+        "local_board": manifest.get("local_board"),
+        "family_board_count": int(manifest.get("family_contact_board_count", 0) or 0),
+        "explicit_target": manifest.get("explicit_target"),
+        "selection_sources": list(manifest.get("selection_sources") or []),
+        "retest_route": guide.get("route", ""),
+        "retest_cues": guide.get("cues", []),
+    }
+
+    # A valid retest token means transactional finish already committed the edited
+    # MasterWorkspace. At this stage workspace SHA drift from export is expected,
+    # so verify the candidate/token before applying pre-finish freshness checks.
+    token_path = kit / "REPAIR_RETEST_TOKEN.json"
+    if token_path.is_file():
+        try:
+            token = repair._load_json(token_path)
+        except repair.RepairSprintError as exc:
+            return _blocked("INVALID_RETEST_TOKEN", str(exc), failed_case=failed_case)
+        if str(token.get("case_key") or "") != manifest_case or str(token.get("source_runtime_fingerprint") or "") != expected_fp:
+            return _blocked(
+                "INVALID_RETEST_TOKEN",
+                "Repair retest token does not belong to this prepared case/source fingerprint.",
+                failed_case=failed_case,
+            )
+        candidate = Path(repaired_pack) if repaired_pack else root / "Build" / "RegressionRepairCandidate"
+        if not (candidate / "hires.txt").is_file():
+            return _blocked(
+                "RETEST_CANDIDATE_MISSING",
+                "Repair retest token exists but the repaired candidate pack is missing. Re-run transactional finish or restore the exact candidate.",
+                failed_case=failed_case,
+            )
+        try:
+            repair._validate_retest_token(root, candidate, token)
+        except repair.RepairSprintError as exc:
+            return _blocked("RETEST_TOKEN_STALE", str(exc), failed_case=failed_case)
+        result = _base(
+            "RETEST_READY",
+            next_action="Resume directly at verified-fullscreen SAME-CASE retest; do not rebuild or re-finish the repair.",
+        )
+        result.update(common)
+        result.update({
+            "edited_items": None,
+            "edited_files": [],
+            "repaired_runtime_fingerprint": token.get("repaired_runtime_fingerprint"),
+            "retest_token": "Artwork/CurrentRepairSprint/REPAIR_RETEST_TOKEN.json",
+        })
+        return result
+
+    workspace = root / "Artwork" / "MasterWorkspace"
     invalid: list[str] = []
     workspace_conflicts: list[str] = []
     changed_files: list[str] = []
@@ -153,56 +206,6 @@ def inspect_repair_session(project_root: Path, runtime_pack: Path, *, repaired_p
             failed_case=failed_case,
         )
 
-    guide = CASE_GUIDANCE.get(manifest_case, {})
-    common = {
-        "blocked": False,
-        "runtime_fingerprint": current_fp,
-        "failed_case": failed_case,
-        "repair_items": len(items),
-        "edited_items": len(changed_files),
-        "edited_files": changed_files,
-        "local_board": manifest.get("local_board"),
-        "family_board_count": int(manifest.get("family_contact_board_count", 0) or 0),
-        "explicit_target": manifest.get("explicit_target"),
-        "selection_sources": list(manifest.get("selection_sources") or []),
-        "retest_route": guide.get("route", ""),
-        "retest_cues": guide.get("cues", []),
-    }
-
-    token_path = kit / "REPAIR_RETEST_TOKEN.json"
-    if token_path.is_file():
-        try:
-            token = repair._load_json(token_path)
-        except repair.RepairSprintError as exc:
-            return _blocked("INVALID_RETEST_TOKEN", str(exc), failed_case=failed_case)
-        if str(token.get("case_key") or "") != manifest_case or str(token.get("source_runtime_fingerprint") or "") != expected_fp:
-            return _blocked(
-                "INVALID_RETEST_TOKEN",
-                "Repair retest token does not belong to this prepared case/source fingerprint.",
-                failed_case=failed_case,
-            )
-        candidate = Path(repaired_pack) if repaired_pack else root / "Build" / "RegressionRepairCandidate"
-        if not (candidate / "hires.txt").is_file():
-            return _blocked(
-                "RETEST_CANDIDATE_MISSING",
-                "Repair retest token exists but the repaired candidate pack is missing. Re-run transactional finish or restore the exact candidate.",
-                failed_case=failed_case,
-            )
-        try:
-            repair._validate_retest_token(root, candidate, token)
-        except repair.RepairSprintError as exc:
-            return _blocked("RETEST_TOKEN_STALE", str(exc), failed_case=failed_case)
-        result = _base(
-            "RETEST_READY",
-            next_action="Resume directly at verified-fullscreen SAME-CASE retest; do not rebuild or re-finish the repair.",
-        )
-        result.update(common)
-        result.update({
-            "repaired_runtime_fingerprint": token.get("repaired_runtime_fingerprint"),
-            "retest_token": "Artwork/CurrentRepairSprint/REPAIR_RETEST_TOKEN.json",
-        })
-        return result
-
     status = "READY_TO_FINISH" if changed_files else "READY_TO_EDIT"
     action = (
         "Resume this exact prepared sprint and run transactional QA; do not call prepare again."
@@ -211,6 +214,7 @@ def inspect_repair_session(project_root: Path, runtime_pack: Path, *, repaired_p
     )
     result = _base(status, next_action=action)
     result.update(common)
+    result.update({"edited_items": len(changed_files), "edited_files": changed_files})
     return result
 
 
