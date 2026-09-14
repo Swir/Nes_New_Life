@@ -11,6 +11,7 @@ $Here = Split-Path -Parent $MyInvocation.MyCommand.Path
 if (-not $ProjectRoot) { $ProjectRoot = Split-Path -Parent $Here }
 $Tool = Join-Path $ProjectRoot 'tools\guided_regression_playtest.py'
 $Locator = Join-Path $ProjectRoot 'tools\regression_defect_locator.py'
+$VisualPicker = Join-Path $ProjectRoot 'tools\regression_visual_picker.py'
 $Launcher = Join-Path $Here 'launch_remaster.ps1'
 $Manifest = Join-Path $ProjectRoot 'FINAL_REGRESSION.json'
 $Output = Join-Path $ProjectRoot 'Reports\GuidedRegressionPlaytest'
@@ -18,6 +19,7 @@ $PlanJson = Join-Path $Output 'GUIDED_REGRESSION_PLAYTEST.json'
 $Dashboard = Join-Path $Output 'GUIDED_REGRESSION_PLAYTEST.html'
 $LocatorOutput = Join-Path $ProjectRoot 'Reports\RegressionDefectLocator'
 $LocatorPlanJson = Join-Path $LocatorOutput 'REGRESSION_DEFECT_TARGETS.json'
+$VisualPickerHtml = Join-Path $LocatorOutput 'REGRESSION_VISUAL_PICKER_LOCAL_ONLY.html'
 $StatePath = Join-Path $env:LOCALAPPDATA 'Swir\TinyToonVisualRemaster\capture-session.json'
 $FullscreenEvidence = Join-Path $ProjectRoot 'Reports\FullscreenPlaytest\FULLSCREEN_PLAYTEST.json'
 
@@ -62,6 +64,15 @@ function Select-DefectTarget($Case, [string]$Category) {
             Write-Host 'Defect locator found no safe metadata candidates; continue with descriptive failure notes.' -ForegroundColor Yellow
             return $null
         }
+
+        $visual = Invoke-PythonJson @($VisualPicker, $LocatorPlanJson, $RuntimePack, '--output', $LocatorOutput, '--variants', '4')
+        if ($visual.contains_rom_derived_pixels -ne $true) { throw 'Visual picker did not declare its local ROM-derived pixel policy.' }
+        Write-Host ''
+        Write-Host 'VISUAL DEFECT PICKER READY — inspect the numbered local tile previews.' -ForegroundColor Magenta
+        Write-Host ('Local-only board: {0}' -f $VisualPickerHtml) -ForegroundColor DarkGray
+        Write-Host 'The board is under gitignored Reports/ and must never be committed or uploaded.' -ForegroundColor Yellow
+        if (-not $NoOpen -and (Test-Path $VisualPickerHtml)) { Start-Process $VisualPickerHtml }
+
         Write-Host ''
         Write-Host 'DEFECT TARGET LOCATOR — choose the visible tile/palette if one matches what you saw:' -ForegroundColor Magenta
         foreach ($candidate in $candidates) {
@@ -74,7 +85,7 @@ function Select-DefectTarget($Case, [string]$Category) {
         Write-Host '  0. Unknown / none of these — keep descriptive FAIL only' -ForegroundColor DarkGray
         $targetNumber = -1
         while ($targetNumber -lt 0 -or $targetNumber -gt $candidates.Count) {
-            [void][int]::TryParse((Read-Host 'Choose target number'), [ref]$targetNumber)
+            [void][int]::TryParse((Read-Host 'Choose target number shown on the visual board'), [ref]$targetNumber)
         }
         if ($targetNumber -eq 0) { return $null }
         $chosen = Invoke-PythonJson @($Locator, 'choose', $LocatorPlanJson, [string]$targetNumber, '--output', $LocatorOutput)
@@ -113,7 +124,7 @@ Write-Host ''
 Write-Host '=== PROJECT #002 — GUIDED EXACT-BUILD REGRESSION PLAYTEST ===' -ForegroundColor Cyan
 Write-Host 'Every PASS/FAIL is manual evidence from the exact current runtime fingerprint.' -ForegroundColor Yellow
 Write-Host 'No case can auto-PASS. FAIL is routed before any pending/stale case.'
-Write-Host 'Art-related FAILs can now be narrowed to ranked tile/palette/family candidates before repair.' -ForegroundColor DarkGray
+Write-Host 'Art-related FAILs now open a local visual tile/palette picker before repair.' -ForegroundColor DarkGray
 
 while ($true) {
     $plan = Invoke-PythonJson @($Tool, 'plan', $Manifest, $RuntimePack, '--output', $Output)
