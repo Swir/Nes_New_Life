@@ -11,6 +11,7 @@ $ErrorActionPreference = 'Stop'
 $Here = Split-Path -Parent $MyInvocation.MyCommand.Path
 if (-not $ProjectRoot) { $ProjectRoot = Split-Path -Parent $Here }
 $Tool = Join-Path $ProjectRoot 'tools\regression_repair_sprint.py'
+$SessionTool = Join-Path $ProjectRoot 'tools\regression_repair_session.py'
 $Launcher = Join-Path $Here 'launch_remaster.ps1'
 $RepairKit = Join-Path $ProjectRoot 'Artwork\CurrentRepairSprint'
 $RepairPack = Join-Path $ProjectRoot 'Build\RegressionRepairCandidate'
@@ -64,6 +65,17 @@ function Resolve-PreferredRepairBoard {
     }
     return $null
 }
+function Open-RepairWorkspace($Session) {
+    $board = $null
+    if ($Session.local_board) { $board = Join-Path $RepairKit ([string]$Session.local_board) }
+    $familyBoard = Resolve-PreferredRepairBoard
+    $editable = Join-Path $RepairKit 'editable'
+    if (-not $NoOpen) {
+        if ($familyBoard -and (Test-Path $familyBoard)) { Start-Process $familyBoard }
+        elseif ($board -and (Test-Path $board)) { Start-Process $board }
+        if (Test-Path $editable) { Start-Process explorer.exe $editable }
+    }
+}
 
 if (-not $RuntimePack) {
     $candidate = Join-Path $ProjectRoot 'Build\HighImpactCandidate'
@@ -76,45 +88,88 @@ if (-not $RuntimePack) { exit 2 }
 $RuntimePack = (Resolve-Path $RuntimePack).Path
 if (-not (Test-Path (Join-Path $RuntimePack 'hires.txt'))) { throw 'Runtime pack must contain hires.txt.' }
 
-$prepareArgs = @($Tool, 'prepare', $ProjectRoot, $RuntimePack)
-if ($Overwrite) { $prepareArgs += '--overwrite' }
 Write-Host ''
-Write-Host '=== PROJECT #002 — FAILED REGRESSION → MINIMAL REPAIR → SAME-CASE RETEST ===' -ForegroundColor Cyan
-$prepared = Invoke-PythonJson $prepareArgs
-if ($prepared.status -ne 'REPAIR_SPRINT_READY') {
-    Write-Host ('Repair sprint not created: {0}' -f $prepared.status) -ForegroundColor Yellow
-    Write-Host $prepared.next_action -ForegroundColor Yellow
-    Write-Host ('Recommended launcher: {0}' -f $prepared.launcher)
-    if (-not $NoOpen -and (Test-Path $Dashboard)) { Start-Process $Dashboard }
-    exit 4
+Write-Host '=== PROJECT #002 — RESUMABLE FAIL → REPAIR → QA → SAME-CASE RETEST ===' -ForegroundColor Cyan
+$prepared = $null
+$finished = $null
+$resume = $null
+
+if (-not $Overwrite) {
+    $resume = Invoke-PythonJson @($SessionTool, $ProjectRoot, $RuntimePack, '--repaired-pack', $RepairPack)
+    switch ([string]$resume.status) {
+        'NO_PREPARED_REPAIR' {
+            Write-Host 'No prepared repair session exists; creating one from the authoritative FAIL.' -ForegroundColor DarkGray
+        }
+        'READY_TO_EDIT' {
+            $prepared = $resume
+            Write-Host 'RESUME: existing exact repair sprint is valid and unchanged.' -ForegroundColor Green
+        }
+        'READY_TO_FINISH' {
+            $prepared = $resume
+            Write-Host ('RESUME: {0} edited repair item(s) are ready for transactional QA.' -f $resume.edited_items) -ForegroundColor Green
+        }
+        'RETEST_READY' {
+            $finished = $resume
+            Write-Host 'RESUME: transactional repair is already committed; skipping prepare/finish and returning directly to SAME-CASE retest.' -ForegroundColor Green
+        }
+        default {
+            Write-Host ('Repair session is blocked: {0}' -f $resume.status) -ForegroundColor Red
+            Write-Host $resume.next_action -ForegroundColor Yellow
+            if (-not $NoOpen -and (Test-Path $Dashboard)) { Start-Process $Dashboard }
+            exit 4
+        }
+    }
 }
 
-Write-Host ('Failed case: {0} / {1}' -f $prepared.failed_case.key, $prepared.failed_case.category) -ForegroundColor Red
-Write-Host ('Minimal repair items: {0}' -f $prepared.repair_items) -ForegroundColor Cyan
-$board = Join-Path $RepairKit $prepared.local_board
-$familyBoard = Resolve-PreferredRepairBoard
-$editable = Join-Path $RepairKit 'editable'
-if (-not $NoOpen) {
-    if ($familyBoard -and (Test-Path $familyBoard)) { Start-Process $familyBoard }
-    elseif (Test-Path $board) { Start-Process $board }
-    if (Test-Path $editable) { Start-Process explorer.exe $editable }
+if (-not $prepared -and -not $finished) {
+    $prepareArgs = @($Tool, 'prepare', $ProjectRoot, $RuntimePack)
+    if ($Overwrite) { $prepareArgs += '--overwrite' }
+    $prepared = Invoke-PythonJson $prepareArgs
+    if ($prepared.status -ne 'REPAIR_SPRINT_READY') {
+        Write-Host ('Repair sprint not created: {0}' -f $prepared.status) -ForegroundColor Yellow
+        Write-Host $prepared.next_action -ForegroundColor Yellow
+        Write-Host ('Recommended launcher: {0}' -f $prepared.launcher)
+        if (-not $NoOpen -and (Test-Path $Dashboard)) { Start-Process $Dashboard }
+        exit 4
+    }
+    Write-Host 'NEW REPAIR SESSION PREPARED.' -ForegroundColor Green
 }
-if ($PrepareOnly) {
-    Write-Host 'Repair sprint prepared. Finish later by rerunning without -PrepareOnly.' -ForegroundColor Green
+
+if ($prepared) {
+    Write-Host ('Failed case: {0} / {1}' -f $prepared.failed_case.key, $prepared.failed_case.category) -ForegroundColor Red
+    Write-Host ('Minimal repair items: {0}' -f $prepared.repair_items) -ForegroundColor Cyan
+    Open-RepairWorkspace $prepared
+    if ($PrepareOnly) {
+        Write-Host 'Repair session is prepared/resumed. Finish later by rerunning without -PrepareOnly.' -ForegroundColor Green
+        exit 0
+    }
+
+    if ($prepared.status -eq 'READY_TO_FINISH') {
+        $prompt = 'Existing edits are detected. Press ENTER to run transactional QA, or Q to stop'
+    } else {
+        $prompt = 'Edit ONLY CurrentRepairSprint\editable. Press ENTER when the repair is ready for transactional QA, or Q to stop'
+    }
+    $answer = (Read-Host $prompt).Trim().ToUpperInvariant()
+    if ($answer -eq 'Q') { exit 0 }
+
+    $finished = Invoke-PythonJson @($Tool, 'finish', $ProjectRoot, $RuntimePack, '--output-pack', $RepairPack)
+    if ($finished.status -ne 'REPAIR_COMMITTED_RETEST_REQUIRED') {
+        Write-Host ('Repair QA blocked: {0}' -f $finished.status) -ForegroundColor Red
+        Write-Host $finished.next_action -ForegroundColor Yellow
+        if (-not $NoOpen -and (Test-Path $Dashboard)) { Start-Process $Dashboard }
+        exit 5
+    }
+    Write-Host 'TRANSACTIONAL REPAIR COMMITTED.' -ForegroundColor Green
+}
+
+if ($PrepareOnly -and $finished) {
+    Write-Host 'Repair is already committed and SAME-CASE retest is pending. Rerun without -PrepareOnly.' -ForegroundColor Green
     exit 0
 }
 
-$answer = (Read-Host 'Edit ONLY CurrentRepairSprint\editable. Press ENTER when the repair is ready for transactional QA, or Q to stop').Trim().ToUpperInvariant()
-if ($answer -eq 'Q') { exit 0 }
-
-$finished = Invoke-PythonJson @($Tool, 'finish', $ProjectRoot, $RuntimePack, '--output-pack', $RepairPack)
-if ($finished.status -ne 'REPAIR_COMMITTED_RETEST_REQUIRED') {
-    Write-Host ('Repair QA blocked: {0}' -f $finished.status) -ForegroundColor Red
-    Write-Host $finished.next_action -ForegroundColor Yellow
-    if (-not $NoOpen -and (Test-Path $Dashboard)) { Start-Process $Dashboard }
-    exit 5
+if ($finished.status -notin @('REPAIR_COMMITTED_RETEST_REQUIRED','RETEST_READY')) {
+    throw ('Unexpected repair session state before retest: {0}' -f $finished.status)
 }
-Write-Host 'TRANSACTIONAL REPAIR COMMITTED.' -ForegroundColor Green
 Write-Host ('Repaired fingerprint: {0}' -f $finished.repaired_runtime_fingerprint) -ForegroundColor DarkGray
 Write-Host ('RETEST SAME CASE: {0}' -f $finished.failed_case.label) -ForegroundColor Cyan
 Write-Host ('ROUTE: {0}' -f $finished.retest_route)
