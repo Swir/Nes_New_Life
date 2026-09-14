@@ -9,6 +9,7 @@ It does not auto-fix graphics and it never auto-passes gameplay. Instead it conv
 ```text
 current-build Final Regression FAIL
 → classify defect
+→ ranked tile/palette/family locator during Guided Regression
 → resolve exact active family / affected production group
 → re-export minimal repair files from current MasterWorkspace
 → edit CurrentRepairSprint/editable
@@ -45,13 +46,19 @@ Categories that must not be papered over with pixels are routed away before any 
 
 Character failures prefer the current PLAYER/ENEMY/BOSS Active Family Workbench so related animation/palette frames stay together. For WORLD/UI/EFFECTS the director falls back to the failed regression case's production group in the current high-impact sprint.
 
-If failure notes contain an optional structured hint such as:
+## Automatic target handoff from Guided Regression
+
+The Guided Exact-Build Regression runner now invokes the metadata-only Regression Defect Locator for art-related FAILs. The locator ranks candidates from the **whole current HD runtime**, not merely the files already present in the current sprint. It cross-references art groups and the family-aware sprint, then asks the operator to select the visible target if a candidate matches what was observed in MesenCE.
+
+A selected target is stored in the FAIL notes as:
 
 ```text
 [SWIR_TARGET tile=2E palette=FF16360F]
 ```
 
-the director targets that tile/palette and expands to its selected family peers. The hint is advisory targeting metadata only; it never proves gameplay coverage.
+with an additional `SWIR_CONTEXT` note containing the selected group/family/condition context. The repair director parses the `SWIR_TARGET` marker, locks onto that exact tile/palette and expands only to family peers when appropriate.
+
+This removes manual tile/palette transcription from the normal workflow while preserving human authority: selecting `0 = unknown` leaves the FAIL descriptive and the existing family/group fallback remains available.
 
 ## Fingerprint-bound same-case retest
 
@@ -83,16 +90,17 @@ windows/Regression_Repair_Loop.bat
 The launcher:
 
 1. identifies the authoritative current FAIL;
-2. creates/opens `Artwork/CurrentRepairSprint`;
-3. waits for the local edit;
-4. runs transactional QA and commits only an all-green repair;
-5. launches the repaired build through verified-fullscreen MesenCE;
-6. shows the original case route/cues;
-7. requires explicit local PASS/FAIL for that same case;
-8. returns to the authoritative Final Regression Cockpit order afterward.
+2. consumes `SWIR_TARGET` automatically when Guided Regression captured a concrete target;
+3. creates/opens `Artwork/CurrentRepairSprint`;
+4. waits for the local edit;
+5. runs transactional QA and commits only an all-green repair;
+6. launches the repaired build through verified-fullscreen MesenCE;
+7. shows the original case route/cues;
+8. requires explicit local PASS/FAIL for that same case;
+9. returns to the authoritative Final Regression Cockpit order afterward.
 
 ## Privacy / repository policy
 
-Repair PNGs, references and contact boards are local ROM-derived production material and remain gitignored. Reports committed by the project code are metadata-only by contract; the workflow never commits ROMs, save states, capture pixels, gameplay screenshots, ripped commercial art/audio, emulator binaries or derivative local HD packs.
+Repair PNGs, references and contact boards are local ROM-derived production material and remain gitignored. Defect-locator reports and repair-controller reports are metadata-only by contract; the workflow never commits ROMs, save states, capture pixels, gameplay screenshots, ripped commercial art/audio, emulator binaries or derivative local HD packs.
 
 This milestone improves Gate B/C execution but does not itself check any Gate A-D ROADMAP item.

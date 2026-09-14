@@ -10,11 +10,14 @@ $ErrorActionPreference = 'Stop'
 $Here = Split-Path -Parent $MyInvocation.MyCommand.Path
 if (-not $ProjectRoot) { $ProjectRoot = Split-Path -Parent $Here }
 $Tool = Join-Path $ProjectRoot 'tools\guided_regression_playtest.py'
+$Locator = Join-Path $ProjectRoot 'tools\regression_defect_locator.py'
 $Launcher = Join-Path $Here 'launch_remaster.ps1'
 $Manifest = Join-Path $ProjectRoot 'FINAL_REGRESSION.json'
 $Output = Join-Path $ProjectRoot 'Reports\GuidedRegressionPlaytest'
 $PlanJson = Join-Path $Output 'GUIDED_REGRESSION_PLAYTEST.json'
 $Dashboard = Join-Path $Output 'GUIDED_REGRESSION_PLAYTEST.html'
+$LocatorOutput = Join-Path $ProjectRoot 'Reports\RegressionDefectLocator'
+$LocatorPlanJson = Join-Path $LocatorOutput 'REGRESSION_DEFECT_TARGETS.json'
 $StatePath = Join-Path $env:LOCALAPPDATA 'Swir\TinyToonVisualRemaster\capture-session.json'
 $FullscreenEvidence = Join-Path $ProjectRoot 'Reports\FullscreenPlaytest\FULLSCREEN_PLAYTEST.json'
 
@@ -48,6 +51,41 @@ function Invoke-PythonJson([string[]]$Arguments) {
     if ($LASTEXITCODE -ne 0) { throw "Python command failed with exit code $LASTEXITCODE" }
     return (($raw -join "`n") | ConvertFrom-Json)
 }
+function Select-DefectTarget($Case, [string]$Category) {
+    $artCategories = @('MISSING_HD','WRONG_PALETTE','ANIMATION_SEAM','TRANSPARENCY','OTHER')
+    if ($Category -notin $artCategories) { return $null }
+    try {
+        New-Item -ItemType Directory -Force -Path $LocatorOutput | Out-Null
+        $planned = Invoke-PythonJson @($Locator, 'plan', $ProjectRoot, $RuntimePack, $Case.key, $Category, '--output', $LocatorOutput, '--top', '12')
+        $candidates = @($planned.plan.candidates)
+        if ($candidates.Count -eq 0) {
+            Write-Host 'Defect locator found no safe metadata candidates; continue with descriptive failure notes.' -ForegroundColor Yellow
+            return $null
+        }
+        Write-Host ''
+        Write-Host 'DEFECT TARGET LOCATOR — choose the visible tile/palette if one matches what you saw:' -ForegroundColor Magenta
+        foreach ($candidate in $candidates) {
+            $family = if ($candidate.family) { $candidate.family } else { '—' }
+            $conditions = (@($candidate.conditions) -join ', ')
+            if (-not $conditions) { $conditions = '—' }
+            Write-Host ('  {0}. [{1}] tile={2} palette={3} score={4} uses={5} family={6}' -f $candidate.rank, $candidate.group, $candidate.tile_id, $candidate.palette, $candidate.score, $candidate.uses, $family)
+            Write-Host ('     contexts: {0}' -f $conditions) -ForegroundColor DarkGray
+        }
+        Write-Host '  0. Unknown / none of these — keep descriptive FAIL only' -ForegroundColor DarkGray
+        $targetNumber = -1
+        while ($targetNumber -lt 0 -or $targetNumber -gt $candidates.Count) {
+            [void][int]::TryParse((Read-Host 'Choose target number'), [ref]$targetNumber)
+        }
+        if ($targetNumber -eq 0) { return $null }
+        $chosen = Invoke-PythonJson @($Locator, 'choose', $LocatorPlanJson, [string]$targetNumber, '--output', $LocatorOutput)
+        Write-Host ('TARGET LOCKED: {0} / {1}' -f $chosen.selection.target_tag, $chosen.selection.context_note) -ForegroundColor Green
+        return $chosen.selection
+    } catch {
+        Write-Host ('Defect locator could not narrow the target: {0}' -f $_.Exception.Message) -ForegroundColor Yellow
+        Write-Host 'The FAIL can still be recorded safely with descriptive notes.' -ForegroundColor Yellow
+        return $null
+    }
+}
 
 if (-not $RuntimePack) {
     $candidate = Join-Path $ProjectRoot 'Build\HighImpactCandidate'
@@ -75,6 +113,7 @@ Write-Host ''
 Write-Host '=== PROJECT #002 — GUIDED EXACT-BUILD REGRESSION PLAYTEST ===' -ForegroundColor Cyan
 Write-Host 'Every PASS/FAIL is manual evidence from the exact current runtime fingerprint.' -ForegroundColor Yellow
 Write-Host 'No case can auto-PASS. FAIL is routed before any pending/stale case.'
+Write-Host 'Art-related FAILs can now be narrowed to ranked tile/palette/family candidates before repair.' -ForegroundColor DarkGray
 
 while ($true) {
     $plan = Invoke-PythonJson @($Tool, 'plan', $Manifest, $RuntimePack, '--output', $Output)
@@ -122,10 +161,15 @@ while ($true) {
             [void][int]::TryParse((Read-Host 'Choose failure category number'), [ref]$number)
         }
         $category = $categories[$number-1]
+        $target = Select-DefectTarget $case $category
         $failure = Read-Host 'Describe the visible defect / exact location or state'
+        if ($target) {
+            $failure = (($failure.Trim() + ' ' + $target.target_tag + ' | ' + $target.context_note).Trim())
+        }
         $notes = Read-Host 'Optional additional notes (ENTER for none)'
         $record = Invoke-PythonJson @($Tool, 'record', $Manifest, $RuntimePack, $case.key, 'FAIL', '--category', $category, '--failure-notes', $failure, '--notes', $notes, '--output', $Output)
         Write-Host ('RECORDED FAIL: {0} / {1}' -f $case.key, $category) -ForegroundColor Red
+        if ($target) { Write-Host ('Repair target: {0}' -f $target.target_tag) -ForegroundColor Magenta }
         Write-Host $record.session.next_action -ForegroundColor Yellow
         break
     }
