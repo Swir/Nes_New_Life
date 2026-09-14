@@ -1,30 +1,95 @@
-# Evidence-bound Art Handoff
+# Evidence-bound Art Handoff v2
 
 `windows/Evidence_Bound_Art_Handoff.bat` is the guarded bridge from current local capture review into real 4x production.
 
-It deliberately does **not** treat tooling as Gate A completion. It first rebuilds Capture Coverage Acceptance for the selected local capture, then requires the exact SHA-256 capture fingerprint to match `CAPTURE_REVIEW_DIRECTOR.json`. A stale review from an older capture is rejected before production state is touched.
+Version 2 hardens the first handoff by validating the **actual Gate A attestation ledger**, not only the Capture Review Director summary. A `FULL_GATE_A_HANDOFF` is accepted only when all 12 criteria have current-fingerprint `VERIFIED_GATE_A` evidence in both the review handoff and the attestation ledger.
+
+The tool still never edits ROADMAP itself.
+
+## One-click local flow
+
+The Windows launcher now reuses the local-only capture state saved by the single-session capture workflow:
+
+```text
+%LOCALAPPDATA%\Swir\TinyToonVisualRemaster\capture-session.json
+```
+
+The file is never committed. If a current capture is not remembered, the launcher asks for the folder.
+
+By default it refreshes `Capture_Review_Director.ps1` in `-SkipCapture` mode before the art handoff. This consumes the newest real gameplay evidence without unexpectedly launching another play session. Human review still requires the exact `VERIFIED_GATE_A` confirmation.
 
 ## Admission rules
 
-The handoff blocks when the current acceptance evidence contains unsafe integrity, structural capture, capture-regression, at-risk mission or mission-provenance blockers. A safe but incomplete capture may still enter `SAFE_INCREMENTAL_ART_HANDOFF`, matching the existing Capture Promotion Director policy; Gate A stays incomplete until real gameplay review is complete.
+The handoff blocks before production when any of the following is true:
 
-A fully reviewed capture enters `FULL_GATE_A_HANDOFF`, but ROADMAP still changes only through the separate attestation/patch process.
+- Capture Review Director fingerprint differs from current Capture Coverage Acceptance,
+- Gate A review handoff or attestation ledger belongs to another capture fingerprint,
+- a `VERIFIED_GATE_A` criterion has no matching ledger attestation,
+- a ledger attestation has stale source fingerprint or lacks exact `VERIFIED_GATE_A`,
+- Capture Review Director verified count disagrees with the ledger-backed review,
+- Capture Review Director claims `GATE_A_REVIEW_COMPLETE` without all 12 ledger-backed criteria,
+- capture integrity / structural / regression / at-risk mission / mission-provenance evidence is unsafe,
+- Capture Production Director refuses production,
+- guarded promotion is not `PROMOTED`,
+- HD Art Autopilot detects stale/unsafe production state.
 
-## What happens after admission
+`-RequireFullGateA` provides an optional strict mode that refuses all art handoff until 12/12 Gate A criteria are explicitly verified.
 
-1. rebuild fingerprint-bound Capture Coverage Acceptance;
-2. verify Capture Review Director fingerprint equality;
-3. run acceptance-gated Capture Promotion Director;
-4. verify the promotion fingerprint still matches the same capture;
-5. refresh MasterWorkspace / Visual Context / Animation Family / production priority through promotion;
-6. build Visual Completion Matrix;
-7. export the exact family-aware highest-impact batch into `Artwork/CurrentImpactSprint`;
-8. write metadata-only `Reports/EvidenceBoundArtHandoff/EVIDENCE_BOUND_ART_HANDOFF.{json,html}`.
+Without strict mode, an incomplete but safe capture can still use the established `SAFE_INCREMENTAL_ART` path. This accelerates visible HD work without pretending the game has complete Gate A coverage.
 
-The exported editable/reference PNGs and family contact boards are local ROM-derived production material and remain outside git. `hires.txt` is not rewritten by this handoff.
+## Canonical production chain
+
+After evidence admission, v2 uses the existing authoritative orchestration instead of creating a parallel art path:
+
+```text
+Capture Production Director
+→ acceptance-gated Capture Promotion
+→ resume-safe production sync
+→ Visual Context Audit
+→ Animation Family Workbench
+→ Visual Completion Matrix
+→ HD Art Autopilot
+→ exact family-aware CurrentImpactSprint
+→ Active Family Workbench
+```
+
+The HD Art Autopilot preserves an existing sprint instead of blindly replacing artist work and re-checks the current capture fingerprint before preparing a new exact high-impact batch.
+
+When a usable PLAYER / ENEMY / BOSS family exists, the handoff writes `ACTIVE_FAMILY_WORKBENCH.json` and the Windows launcher opens the exact local contact board plus `CurrentImpactSprint/editable`.
 
 ## Finish path
 
-Edit only `Artwork/CurrentImpactSprint/editable/*.png`, preserving filenames, dimensions and alpha canvas. Finish with `windows/Finish_High_Impact_Art_Sprint.bat`; the existing transactional path blocks stale workspace conflicts, visual/animation QA failures, mapping changes and Pixel QA failures before committing local production state.
+Edit only the active family in the sprint while preserving filenames, dimensions, alpha canvas and mapping assumptions.
 
-This reduces the capture → art transition to one fingerprint-bound operation while preserving all existing safety gates.
+Finish through the existing transactional path:
+
+```text
+master visual quality gate
+→ animation-family consistency gate
+→ candidate pack
+→ hires.txt preservation
+→ Pixel QA
+→ stale-workspace re-check
+→ atomic commit/rollback
+→ verified-fullscreen MesenCE playtest
+```
+
+## Reports and privacy
+
+The handoff writes:
+
+```text
+Reports/EvidenceBoundArtHandoff/
+  EVIDENCE_BOUND_ART_HANDOFF.json
+  EVIDENCE_BOUND_ART_HANDOFF.html
+```
+
+The v2 report contains only the capture fingerprint, Gate A review counts, production/promotion state, art-autopilot summary and relative Active Family Workbench metadata. It does not embed ROM bytes, save states, capture pixels, emulator binaries or absolute local paths.
+
+The underlying `Artwork/` and `Reports/` directories remain gitignored because local sprint/reference/contact-board files can contain ROM-derived graphics.
+
+## ROADMAP policy
+
+A successful handoff is a production milestone, **not** a Gate A–D completion event.
+
+`projects/002_tiny_toon_visual_remaster/ROADMAP.md` remains authoritative. Gate A–D progress changes only after real local capture/art/QA evidence has been reviewed under the existing rules, and `docs/ROADMAP.md` must mirror any real percentage change.
