@@ -12,8 +12,9 @@ current-build Final Regression FAIL
 → ranked tile/palette/family locator during Guided Regression
 → local visual candidate board from the exact HD runtime
 → human-select the matching visible tile/palette
-→ resolve exact active family / affected production group
-→ re-export minimal repair files from current MasterWorkspace
+→ record authoritative FAIL with SWIR_TARGET
+→ automatically prepare CurrentRepairSprint from current MasterWorkspace
+→ open exact family board / editable repair files
 → edit CurrentRepairSprint/editable
 → master visual quality gate
 → animation-family consistency gate
@@ -48,7 +49,7 @@ Categories that must not be papered over with pixels are routed away before any 
 
 Character failures prefer the current PLAYER/ENEMY/BOSS Active Family Workbench so related animation/palette frames stay together. For WORLD/UI/EFFECTS the director falls back to the failed regression case's production group in the current high-impact sprint.
 
-## Automatic target handoff from Guided Regression
+## Automatic target + repair-sprint handoff from Guided Regression
 
 The Guided Exact-Build Regression runner invokes the metadata-only Regression Defect Locator for art-related FAILs. The locator ranks candidates from the **whole current HD runtime**, not merely the files already present in the current sprint. It cross-references art groups and the family-aware sprint.
 
@@ -62,7 +63,11 @@ A selected target is stored in the FAIL notes as:
 
 with an additional `SWIR_CONTEXT` note containing the selected group/family/condition context. The repair director parses the `SWIR_TARGET` marker, locks onto that exact tile/palette and expands only to family peers when appropriate.
 
-This removes manual tile/palette transcription and most target guessing from the normal workflow while preserving human authority: selecting `0 = unknown` leaves the FAIL descriptive and the existing family/group fallback remains available.
+After the authoritative FAIL has been recorded, Guided Regression now immediately calls `regression_repair_sprint.py prepare` against that same exact runtime. When safe, it creates `Artwork/CurrentRepairSprint`, opens the exact family contact board for PLAYER/ENEMY/BOSS repairs when one exists, and opens the editable repair directory. For WORLD/UI/EFFECTS it opens the general repair board.
+
+This handoff is deliberately fail-closed. It never passes `--overwrite`; an unfinished repair sprint is preserved and must be finished or archived before a new one can be prepared. The recorded FAIL remains valid even if automatic preparation is blocked.
+
+This removes manual tile/palette transcription, most target guessing and the extra manual "prepare repair" step while preserving human authority: selecting `0 = unknown` leaves the FAIL descriptive and the existing family/group fallback remains available.
 
 ## Fingerprint-bound same-case retest
 
@@ -97,19 +102,24 @@ The upstream Guided Regression launcher now:
 2. ranks likely tile/palette/family/context targets;
 3. opens the local visual candidate board;
 4. lets the operator choose the matching visible target or `0 = unknown`;
-5. writes the chosen `SWIR_TARGET` into the authoritative FAIL.
+5. writes the chosen `SWIR_TARGET` into the authoritative FAIL;
+6. automatically prepares the minimal repair sprint with the authoritative repair engine;
+7. opens the exact family board when available plus `CurrentRepairSprint/editable`.
 
 Then the Regression Repair Loop:
 
 1. identifies the authoritative current FAIL;
 2. consumes `SWIR_TARGET` automatically when Guided Regression captured a concrete target;
-3. creates/opens `Artwork/CurrentRepairSprint`;
-4. waits for the local edit;
-5. runs transactional QA and commits only an all-green repair;
-6. launches the repaired build through verified-fullscreen MesenCE;
-7. shows the original case route/cues;
-8. requires explicit local PASS/FAIL for that same case;
-9. returns to the authoritative Final Regression Cockpit order afterward.
+3. creates the repair sprint only when one does not already exist;
+4. prefers the generated family contact board for character repair, otherwise the general repair board;
+5. waits for the local edit;
+6. runs transactional QA and commits only an all-green repair;
+7. launches the repaired build through verified-fullscreen MesenCE;
+8. shows the original case route/cues;
+9. requires explicit local PASS/FAIL for that same case;
+10. returns to the authoritative Final Regression Cockpit order afterward.
+
+If Guided Regression already prepared `CurrentRepairSprint`, the user can simply edit the opened files and then run `Regression_Repair_Loop.bat` to continue through transactional finish + same-case re-test.
 
 ## Privacy / repository policy
 
