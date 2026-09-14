@@ -24,51 +24,16 @@ class AuthoritativeProductionStudio(AuthoritativeRemasterStudio):
         super()._build()
         panel = ttk.LabelFrame(self, text="AUTHORITATIVE PRODUCTION AUTOPILOT", padding=10)
         panel.pack(fill="x", padx=14, pady=(0, 12))
-        ttk.Button(
-            panel,
-            text="CTRL+F6  FULL CAPTURE → HD AUTOPILOT",
-            command=lambda: self.run_windows("Full_Capture_To_HD_Autopilot.bat"),
-        ).pack(side="left", padx=4)
-        ttk.Button(
-            panel,
-            text="CTRL+F7  CONTINUE QA-GATED ART SESSION",
-            command=lambda: self.run_windows("Continue_HD_Art_Session.bat"),
-        ).pack(side="left", padx=4)
-        ttk.Button(
-            panel,
-            text="CTRL+F8  REFRESH PRODUCTION COCKPIT",
-            command=self.refresh_production_cockpit,
-        ).pack(side="left", padx=4)
-        ttk.Button(
-            panel,
-            text="CTRL+F9  ROADMAP EVIDENCE READINESS",
-            command=self.refresh_roadmap_evidence,
-        ).pack(side="left", padx=4)
-        ttk.Button(
-            panel,
-            text="CTRL+F10  OPEN ACTIVE FAMILY WORKBENCH",
-            command=self.open_active_family_workbench,
-        ).pack(side="left", padx=4)
-        ttk.Button(
-            panel,
-            text="CTRL+F11  COMMIT + QA + FULLSCREEN PLAYTEST",
-            command=lambda: self.run_windows("Finish_Family_And_Playtest.bat"),
-        ).pack(side="left", padx=4)
-        ttk.Button(
-            panel,
-            text="CTRL+SHIFT+F11  EVIDENCE → HD ART HANDOFF",
-            command=lambda: self.run_windows("Evidence_Bound_Art_Handoff.bat"),
-        ).pack(side="left", padx=4)
-        ttk.Button(
-            panel,
-            text="CTRL+F12  CAPTURE → GATE A REVIEW DIRECTOR",
-            command=lambda: self.run_windows("Capture_Review_Director.bat"),
-        ).pack(side="left", padx=4)
-        ttk.Button(
-            panel,
-            text="CTRL+SHIFT+F12  LOW-LEVEL GATE A REVIEW",
-            command=lambda: self.run_windows("Gate_A_Review_Attestation.bat"),
-        ).pack(side="left", padx=4)
+        ttk.Button(panel, text="CTRL+F6  FULL CAPTURE → HD AUTOPILOT", command=lambda: self.run_windows("Full_Capture_To_HD_Autopilot.bat")).pack(side="left", padx=4)
+        ttk.Button(panel, text="CTRL+F7  CONTINUE QA-GATED ART SESSION", command=lambda: self.run_windows("Continue_HD_Art_Session.bat")).pack(side="left", padx=4)
+        ttk.Button(panel, text="CTRL+F8  REFRESH PRODUCTION COCKPIT", command=self.refresh_production_cockpit).pack(side="left", padx=4)
+        ttk.Button(panel, text="CTRL+F9  ROADMAP EVIDENCE READINESS", command=self.refresh_roadmap_evidence).pack(side="left", padx=4)
+        ttk.Button(panel, text="CTRL+F10  OPEN ACTIVE FAMILY WORKBENCH", command=self.open_active_family_workbench).pack(side="left", padx=4)
+        ttk.Button(panel, text="CTRL+SHIFT+F10  GUIDED EXACT-BUILD REGRESSION", command=lambda: self.run_windows("Guided_Regression_Playtest.bat")).pack(side="left", padx=4)
+        ttk.Button(panel, text="CTRL+F11  COMMIT + QA + FULLSCREEN PLAYTEST", command=lambda: self.run_windows("Finish_Family_And_Playtest.bat")).pack(side="left", padx=4)
+        ttk.Button(panel, text="CTRL+SHIFT+F11  EVIDENCE → HD ART HANDOFF", command=lambda: self.run_windows("Evidence_Bound_Art_Handoff.bat")).pack(side="left", padx=4)
+        ttk.Button(panel, text="CTRL+F12  CAPTURE → GATE A REVIEW DIRECTOR", command=lambda: self.run_windows("Capture_Review_Director.bat")).pack(side="left", padx=4)
+        ttk.Button(panel, text="CTRL+SHIFT+F12  LOW-LEVEL GATE A REVIEW", command=lambda: self.run_windows("Gate_A_Review_Attestation.bat")).pack(side="left", padx=4)
         ttk.Button(panel, text="Open cockpit report", command=self.open_cockpit_report).pack(side="left", padx=4)
 
     def _bind_shortcuts(self) -> None:
@@ -78,6 +43,7 @@ class AuthoritativeProductionStudio(AuthoritativeRemasterStudio):
         self.bind("<Control-F8>", lambda event: self.refresh_production_cockpit())
         self.bind("<Control-F9>", lambda event: self.refresh_roadmap_evidence())
         self.bind("<Control-F10>", lambda event: self.open_active_family_workbench())
+        self.bind("<Control-Shift-F10>", lambda event: self.run_windows("Guided_Regression_Playtest.bat"))
         self.bind("<Control-F11>", lambda event: self.run_windows("Finish_Family_And_Playtest.bat"))
         self.bind("<Control-Shift-F11>", lambda event: self.run_windows("Evidence_Bound_Art_Handoff.bat"))
         self.bind("<Control-F12>", lambda event: self.run_windows("Capture_Review_Director.bat"))
@@ -141,18 +107,13 @@ class AuthoritativeProductionStudio(AuthoritativeRemasterStudio):
             result = resolve_active_family_workbench(kit)
             state = write_active_state(result, kit)
         except WorkbenchError as exc:
-            messagebox.showinfo(
-                "No active family workbench",
-                f"{exc}\n\nPrepare or continue the High-Impact Art Sprint first.",
-            )
+            messagebox.showinfo("No active family workbench", f"{exc}\n\nPrepare or continue the High-Impact Art Sprint first.")
             return
         board = kit / result["board"]
         editable = kit / result["editable_dir"]
         self._open_path(board)
         self._open_path(editable)
-        self.status.set(
-            f"Active family: {result['family']} · priority #{result['priority']} · {result['members']} members"
-        )
+        self.status.set(f"Active family: {result['family']} · priority #{result['priority']} · {result['members']} members")
         self._write(
             "ACTIVE FAMILY ART WORKBENCH\n\n"
             f"Family: {result['family']}\n"
