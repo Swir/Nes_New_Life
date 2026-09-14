@@ -153,10 +153,11 @@ class RegressionDefectLocatorTests(unittest.TestCase):
         source = (WINDOWS / "Guided_Regression_Playtest.ps1").read_text(encoding="utf-8")
         self.assertIn("regression_defect_locator.py", source)
         self.assertIn("DEFECT TARGET LOCATOR", source)
-        self.assertIn("target_tag", source)
-        self.assertIn("context_note", source)
-        self.assertIn("SWIR_TARGET", source)
-        self.assertLess(source.index("Select-DefectTarget"), source.index("--failure-notes"))
+        self.assertIn("Select-DefectTarget $case $category", source)
+        self.assertIn("$target.target_tag", source)
+        self.assertIn("$target.context_note", source)
+        self.assertIn("'--failure-notes', $failure", source)
+        self.assertLess(source.index("$target = Select-DefectTarget"), source.index("'--failure-notes', $failure"))
 
 
 if __name__ == "__main__":
