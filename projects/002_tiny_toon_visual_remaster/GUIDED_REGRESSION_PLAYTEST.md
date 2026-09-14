@@ -46,6 +46,31 @@ After a real observed failure, choose one existing Final Regression Cockpit defe
 
 A known FAIL is never silently skipped to reach later cases.
 
+## Ranked Defect Target Locator
+
+For art-repair categories (`MISSING_HD`, `WRONG_PALETTE`, `ANIMATION_SEAM`, `TRANSPARENCY`, `OTHER`), the Windows guided runner now invokes `tools/regression_defect_locator.py` immediately after classification and before recording the FAIL.
+
+The locator scans the **current exact HD runtime**, uses `Artwork/ART_QUEUE.csv` when available, and cross-references `Artwork/CurrentImpactSprint/ART_SPRINT_KIT.json`. It ranks metadata-only tile/palette candidates using:
+
+- the expected production group for the current regression case,
+- actual tile reuse count in the supplied runtime,
+- Mesen condition/context count,
+- palette-variant count for palette defects,
+- PLAYER/ENEMY/BOSS animation-family relevance,
+- current family-aware sprint membership and priority.
+
+The operator sees up to twelve candidates with group, tile, palette, score, reuse, family and condition contexts. Selecting one writes:
+
+```text
+[SWIR_TARGET tile=<tile> palette=<palette>]
+```
+
+plus a human-readable `SWIR_CONTEXT` note into the real FAIL description. The existing Regression Repair Loop already understands `SWIR_TARGET`, so the subsequent repair sprint can jump directly to that tile/palette and expand only to its family peers instead of guessing from the whole current sprint.
+
+Choosing `0 = unknown` is always allowed. Candidate ranking is an accelerator only; it never auto-selects a defect and never proves gameplay coverage.
+
+Reports are written under `Reports/RegressionDefectLocator/` as JSON/CSV/HTML and contain metadata only—no capture pixels or absolute local paths.
+
 ## Exact-build safety
 
 The Python director plans against the current `hires.txt + referenced runtime PNG` fingerprint. Recording refuses if the runtime fingerprint changed between planning and result recording. It also refuses out-of-order evidence: only the cockpit's exact current `next_case` may be recorded.
@@ -70,8 +95,10 @@ Authoritative Production Studio exposes the workflow as:
 CTRL+SHIFT+F10  GUIDED EXACT-BUILD REGRESSION
 ```
 
+The ranked defect locator is part of that same path automatically; no extra Studio button is required.
+
 ## Privacy / repository policy
 
-Generated JSON/HTML reports are metadata-only. The workflow does not commit ROMs, save states, gameplay screenshots, capture PNG/JPG, ripped commercial art/audio, emulator binaries or local derivative HD packs.
+Generated JSON/CSV/HTML reports are metadata-only. The workflow does not commit ROMs, save states, gameplay screenshots, capture PNG/JPG, ripped commercial art/audio, emulator binaries or local derivative HD packs.
 
 This tooling milestone does not change Gate A-D checkboxes. Real MesenCE gameplay evidence remains mandatory.
