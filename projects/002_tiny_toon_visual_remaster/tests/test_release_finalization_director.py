@@ -109,6 +109,12 @@ class ReleaseFinalizationDirectorTests(unittest.TestCase):
         self.assertIn("Re-auditing atomically immediately before packaging", source)
         self.assertIn("ROM-FREE RELEASE READY", source)
 
+    def test_authoritative_studio_exposes_finalization_entrypoint(self) -> None:
+        source = (TOOLS / "AuthoritativeProductionStudio.py").read_text(encoding="utf-8")
+        self.assertIn("CTRL+ALT+F8  FINALIZE RELEASE CANDIDATE", source)
+        self.assertIn("Finalize_Release_Candidate.bat", source)
+        self.assertIn("<Control-Alt-F8>", source)
+
 
 if __name__ == "__main__":
     unittest.main()
