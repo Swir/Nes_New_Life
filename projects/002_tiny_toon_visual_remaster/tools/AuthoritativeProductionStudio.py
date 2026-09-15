@@ -35,6 +35,7 @@ class AuthoritativeProductionStudio(AuthoritativeRemasterStudio):
         ttk.Button(panel, text="CTRL+SHIFT+F11  EVIDENCE → HD ART HANDOFF", command=lambda: self.run_windows("Evidence_Bound_Art_Handoff.bat")).pack(side="left", padx=4)
         ttk.Button(panel, text="CTRL+F12  CAPTURE → GATE A REVIEW DIRECTOR", command=lambda: self.run_windows("Capture_Review_Director.bat")).pack(side="left", padx=4)
         ttk.Button(panel, text="CTRL+SHIFT+F12  LOW-LEVEL GATE A REVIEW", command=lambda: self.run_windows("Gate_A_Review_Attestation.bat")).pack(side="left", padx=4)
+        ttk.Button(panel, text="CTRL+ALT+F12  ROUTE CURRENT REGRESSION", command=lambda: self.run_windows("Regression_Failure_Router.bat")).pack(side="left", padx=4)
         ttk.Button(panel, text="Open cockpit report", command=self.open_cockpit_report).pack(side="left", padx=4)
 
     def _bind_shortcuts(self) -> None:
@@ -50,6 +51,7 @@ class AuthoritativeProductionStudio(AuthoritativeRemasterStudio):
         self.bind("<Control-Shift-F11>", lambda event: self.run_windows("Evidence_Bound_Art_Handoff.bat"))
         self.bind("<Control-F12>", lambda event: self.run_windows("Capture_Review_Director.bat"))
         self.bind("<Control-Shift-F12>", lambda event: self.run_windows("Gate_A_Review_Attestation.bat"))
+        self.bind("<Control-Alt-F12>", lambda event: self.run_windows("Regression_Failure_Router.bat"))
 
     def refresh_production_cockpit(self) -> None:
         root = self.workspace if self.workspace else PROJECT_ROOT
