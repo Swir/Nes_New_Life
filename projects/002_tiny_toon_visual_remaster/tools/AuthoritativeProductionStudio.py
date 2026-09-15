@@ -31,6 +31,7 @@ class AuthoritativeProductionStudio(AuthoritativeRemasterStudio):
         ttk.Button(panel, text="CTRL+F7  CONTINUE QA-GATED ART SESSION", command=lambda: self.run_windows("Continue_HD_Art_Session.bat")).pack(side="left", padx=4)
         ttk.Button(panel, text="CTRL+F8  REFRESH PRODUCTION COCKPIT", command=self.refresh_production_cockpit).pack(side="left", padx=4)
         ttk.Button(panel, text="CTRL+F9  ROADMAP EVIDENCE READINESS", command=self.refresh_roadmap_evidence).pack(side="left", padx=4)
+        ttk.Button(panel, text="CTRL+ALT+F9  AUTO-CONTINUE FINAL REGRESSION", command=lambda: self.run_windows("Auto_Continue_Final_Regression.bat")).pack(side="left", padx=4)
         ttk.Button(panel, text="CTRL+F10  OPEN ACTIVE FAMILY WORKBENCH", command=self.open_active_family_workbench).pack(side="left", padx=4)
         ttk.Button(panel, text="CTRL+SHIFT+F10  GUIDED EXACT-BUILD REGRESSION", command=lambda: self.run_windows("Guided_Regression_Playtest.bat")).pack(side="left", padx=4)
         ttk.Button(panel, text="CTRL+ALT+F10  REPAIR FAILED REGRESSION", command=lambda: self.run_windows("Regression_Repair_Loop.bat")).pack(side="left", padx=4)
@@ -48,6 +49,7 @@ class AuthoritativeProductionStudio(AuthoritativeRemasterStudio):
         self.bind("<Control-F7>", lambda event: self.run_windows("Continue_HD_Art_Session.bat"))
         self.bind("<Control-F8>", lambda event: self.refresh_production_cockpit())
         self.bind("<Control-F9>", lambda event: self.refresh_roadmap_evidence())
+        self.bind("<Control-Alt-F9>", lambda event: self.run_windows("Auto_Continue_Final_Regression.bat"))
         self.bind("<Control-F10>", lambda event: self.open_active_family_workbench())
         self.bind("<Control-Shift-F10>", lambda event: self.run_windows("Guided_Regression_Playtest.bat"))
         self.bind("<Control-Alt-F10>", lambda event: self.run_windows("Regression_Repair_Loop.bat"))
@@ -84,7 +86,7 @@ class AuthoritativeProductionStudio(AuthoritativeRemasterStudio):
             f"Remembered case: {key} — {label}\n"
             f"Current fingerprint: {fingerprint}\n\n"
             f"DO THIS NEXT\n{state.get('next_action', 'Resume the exact remembered regression case.')}\n\n"
-            "Use CTRL+ALT+F11. Normal regression ordering must not bypass this remembered failed case.\n"
+            "Use CTRL+ALT+F11 for the exact recovery step, or CTRL+ALT+F9 to let Final Regression Auto-Continue resume the recovery and then continue normal exact-build cases after a verified same-case PASS.\n"
             "The recovery state is local metadata only; it does not contain ROM bytes, capture pixels or screenshots."
         )
 
