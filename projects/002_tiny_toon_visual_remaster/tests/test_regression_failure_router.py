@@ -80,7 +80,7 @@ class RegressionFailureRouterTests(unittest.TestCase):
             "REGRESSION_COMPLETE",
         ):
             self.assertIn(state, source)
-        self.assertIn("Regression_Failure_Router", source)
+        self.assertIn("regression_failure_router.py", source)
 
     def test_mapping_workbench_backs_up_validates_and_never_clears_regression(self):
         source = (WINDOWS / "Regression_Mapping_Repair.ps1").read_text(encoding="utf-8")
