@@ -89,6 +89,12 @@ class RegressionFailureRouterTests(unittest.TestCase):
         self.assertIn("Get-FileHash", source)
         self.assertIn("does NOT clear the regression case", source)
 
+    def test_authoritative_production_studio_exposes_unified_router(self):
+        source = (TOOLS / "AuthoritativeProductionStudio.py").read_text(encoding="utf-8")
+        self.assertIn("CTRL+ALT+F12  ROUTE CURRENT REGRESSION", source)
+        self.assertIn("<Control-Alt-F12>", source)
+        self.assertIn("Regression_Failure_Router.bat", source)
+
 
 if __name__ == "__main__":
     unittest.main()
