@@ -104,6 +104,12 @@ class RegressionAutoContinueTests(unittest.TestCase):
         self.assertIn("exceeded 30 orchestration iterations", source)
         self.assertNotIn("record_case_result", source)
 
+    def test_authoritative_studio_exposes_auto_continue_entrypoint(self) -> None:
+        source = (TOOLS / "AuthoritativeProductionStudio.py").read_text(encoding="utf-8")
+        self.assertIn("CTRL+ALT+F9  AUTO-CONTINUE FINAL REGRESSION", source)
+        self.assertIn("Auto_Continue_Final_Regression.bat", source)
+        self.assertIn("<Control-Alt-F9>", source)
+
     def test_outputs_are_metadata_only(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             root = Path(td); pack = root / "pack"; manifest = root / "regression.json"; recovery = root / "recovery.json"
