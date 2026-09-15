@@ -28,8 +28,10 @@ function Invoke-PythonRaw([string[]]$Arguments) {
     $all = @()
     if ($p.Count -gt 1) { $all += $p[1..($p.Count-1)] }
     $all += $Arguments
-    & $exe @all
-    return $LASTEXITCODE
+    $raw = & $exe @all
+    $exitCode = [int]$LASTEXITCODE
+    if ($raw) { $raw | ForEach-Object { Write-Host $_ } }
+    return $exitCode
 }
 function Pick-Folder([string]$Description) {
     $d = New-Object System.Windows.Forms.FolderBrowserDialog
