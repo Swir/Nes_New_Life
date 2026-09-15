@@ -12,8 +12,13 @@ $Here = Split-Path -Parent $MyInvocation.MyCommand.Path
 if (-not $ProjectRoot) { $ProjectRoot = Split-Path -Parent $Here }
 $ProjectRoot = (Resolve-Path $ProjectRoot).Path
 $Tool = Join-Path $ProjectRoot 'tools\regression_failure_router.py'
+$SessionTool = Join-Path $ProjectRoot 'tools\regression_recovery_session.py'
+$Manifest = Join-Path $ProjectRoot 'FINAL_REGRESSION.json'
 $Output = Join-Path $ProjectRoot 'Reports\RegressionFailureRouter'
 $Dashboard = Join-Path $Output 'REGRESSION_FAILURE_ROUTER.html'
+$RecoveryOutput = Join-Path $ProjectRoot 'Reports\RegressionRecoverySession'
+$RecoveryState = Join-Path $env:LOCALAPPDATA 'Swir\TinyToonVisualRemaster\regression-recovery-session.json'
+$RecoveryLauncher = Join-Path $Here 'Resume_Regression_Recovery.ps1'
 
 function Get-PythonCommand {
     if (Get-Command py -ErrorAction SilentlyContinue) { return @('py','-3') }
@@ -53,6 +58,27 @@ if (-not $RuntimePack) { exit 2 }
 $RuntimePack = (Resolve-Path $RuntimePack).Path
 if (-not (Test-Path (Join-Path $RuntimePack 'hires.txt'))) { throw 'Runtime pack must contain hires.txt.' }
 
+New-Item -ItemType Directory -Force -Path $RecoveryOutput | Out-Null
+$recovery = Invoke-PythonJson @($SessionTool, 'sync', $Manifest, $RuntimePack, $RecoveryState, '--output', $RecoveryOutput)
+if ($recovery.phase -eq 'RETEST_REQUIRED') {
+    Write-Host ''
+    Write-Host 'RECOVERY LOCK ACTIVE — same-case retest has priority over normal regression ordering.' -ForegroundColor Magenta
+    Write-Host ('Remembered case: {0} — {1}' -f $recovery.failed_case.key, $recovery.failed_case.label) -ForegroundColor Yellow
+    Write-Host ('Current repaired fingerprint: {0}' -f $recovery.current_fingerprint) -ForegroundColor DarkGray
+    if ($PlanOnly) {
+        Write-Host 'DO THIS NEXT: Resume_Regression_Recovery.bat' -ForegroundColor Yellow
+        exit 0
+    }
+    & $RecoveryLauncher -ProjectRoot $ProjectRoot -RuntimePack $RuntimePack -NoOpen:$NoOpen
+    exit $LASTEXITCODE
+}
+if ($recovery.phase -eq 'BLOCKED') {
+    Write-Host ('Recovery state conflict: {0}' -f $recovery.next_action) -ForegroundColor Red
+    if ($PlanOnly) { exit 3 }
+    & $RecoveryLauncher -ProjectRoot $ProjectRoot -RuntimePack $RuntimePack -NoOpen:$NoOpen
+    exit $LASTEXITCODE
+}
+
 New-Item -ItemType Directory -Force -Path $Output | Out-Null
 $route = Invoke-PythonJson @($Tool, $ProjectRoot, $RuntimePack, '--output', $Output)
 
@@ -63,6 +89,7 @@ Write-Host ('Exact runtime: {0}' -f $route.pack_fingerprint) -ForegroundColor Da
 if ($route.failed_case) {
     Write-Host ('FAIL: {0} / {1} — {2}' -f $route.failed_case.key, $route.failed_case.category, $route.failed_case.label) -ForegroundColor Red
     if ($route.failed_case.failure_notes) { Write-Host ('Observed: {0}' -f $route.failed_case.failure_notes) }
+    Write-Host ('Recovery session: {0}' -f $recovery.session_id) -ForegroundColor DarkGray
 }
 Write-Host ('Route: {0}' -f $route.launcher) -ForegroundColor Magenta
 if ($route.reason) { Write-Host $route.reason }
@@ -102,5 +129,5 @@ if ($code -ne 0) {
     Write-Host ('Routed workflow exited with code {0}; regression evidence remains blocking.' -f $code) -ForegroundColor Red
     exit $code
 }
-Write-Host 'Routed workflow completed. Re-run this router to resolve the next authoritative regression action.' -ForegroundColor Green
+Write-Host 'Routed workflow completed. Re-run this router or Resume_Regression_Recovery.bat to continue the exact remembered case.' -ForegroundColor Green
 exit 0
