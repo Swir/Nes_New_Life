@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+import os
 import webbrowser
 from pathlib import Path
 import tkinter as tk
@@ -19,6 +21,7 @@ class AuthoritativeProductionStudio(AuthoritativeRemasterStudio):
         super().__init__()
         self.title("Tiny Toon Visual Remaster — Authoritative HD Production Cockpit")
         self.after(150, self.refresh_production_cockpit)
+        self.after(350, self.refresh_regression_recovery_state)
 
     def _build(self) -> None:
         super()._build()
@@ -33,6 +36,7 @@ class AuthoritativeProductionStudio(AuthoritativeRemasterStudio):
         ttk.Button(panel, text="CTRL+ALT+F10  REPAIR FAILED REGRESSION", command=lambda: self.run_windows("Regression_Repair_Loop.bat")).pack(side="left", padx=4)
         ttk.Button(panel, text="CTRL+F11  COMMIT + QA + FULLSCREEN PLAYTEST", command=lambda: self.run_windows("Finish_Family_And_Playtest.bat")).pack(side="left", padx=4)
         ttk.Button(panel, text="CTRL+SHIFT+F11  EVIDENCE → HD ART HANDOFF", command=lambda: self.run_windows("Evidence_Bound_Art_Handoff.bat")).pack(side="left", padx=4)
+        ttk.Button(panel, text="CTRL+ALT+F11  RESUME REGRESSION RECOVERY", command=lambda: self.run_windows("Resume_Regression_Recovery.bat")).pack(side="left", padx=4)
         ttk.Button(panel, text="CTRL+F12  CAPTURE → GATE A REVIEW DIRECTOR", command=lambda: self.run_windows("Capture_Review_Director.bat")).pack(side="left", padx=4)
         ttk.Button(panel, text="CTRL+SHIFT+F12  LOW-LEVEL GATE A REVIEW", command=lambda: self.run_windows("Gate_A_Review_Attestation.bat")).pack(side="left", padx=4)
         ttk.Button(panel, text="CTRL+ALT+F12  ROUTE CURRENT REGRESSION", command=lambda: self.run_windows("Regression_Failure_Router.bat")).pack(side="left", padx=4)
@@ -49,9 +53,40 @@ class AuthoritativeProductionStudio(AuthoritativeRemasterStudio):
         self.bind("<Control-Alt-F10>", lambda event: self.run_windows("Regression_Repair_Loop.bat"))
         self.bind("<Control-F11>", lambda event: self.run_windows("Finish_Family_And_Playtest.bat"))
         self.bind("<Control-Shift-F11>", lambda event: self.run_windows("Evidence_Bound_Art_Handoff.bat"))
+        self.bind("<Control-Alt-F11>", lambda event: self.run_windows("Resume_Regression_Recovery.bat"))
         self.bind("<Control-F12>", lambda event: self.run_windows("Capture_Review_Director.bat"))
         self.bind("<Control-Shift-F12>", lambda event: self.run_windows("Gate_A_Review_Attestation.bat"))
         self.bind("<Control-Alt-F12>", lambda event: self.run_windows("Regression_Failure_Router.bat"))
+
+    def refresh_regression_recovery_state(self) -> None:
+        local = os.environ.get("LOCALAPPDATA")
+        if not local:
+            return
+        state_path = Path(local) / "Swir" / "TinyToonVisualRemaster" / "regression-recovery-session.json"
+        if not state_path.is_file():
+            return
+        try:
+            state = json.loads(state_path.read_text(encoding="utf-8"))
+        except Exception as exc:
+            self.status.set(f"Regression recovery state unreadable: {exc}")
+            return
+        phase = str(state.get("phase") or "")
+        if phase not in {"REPAIR_REQUIRED", "RETEST_REQUIRED", "BLOCKED"}:
+            return
+        case = state.get("failed_case") or {}
+        key = case.get("key", "unknown")
+        label = case.get("label", "Unknown regression case")
+        fingerprint = str(state.get("current_fingerprint") or "")
+        self.status.set(f"Regression recovery: {phase} · {key}")
+        self._write(
+            "REGRESSION RECOVERY SESSION RESUMED\n\n"
+            f"Phase: {phase}\n"
+            f"Remembered case: {key} — {label}\n"
+            f"Current fingerprint: {fingerprint}\n\n"
+            f"DO THIS NEXT\n{state.get('next_action', 'Resume the exact remembered regression case.')}\n\n"
+            "Use CTRL+ALT+F11. Normal regression ordering must not bypass this remembered failed case.\n"
+            "The recovery state is local metadata only; it does not contain ROM bytes, capture pixels or screenshots."
+        )
 
     def refresh_production_cockpit(self) -> None:
         root = self.workspace if self.workspace else PROJECT_ROOT
