@@ -188,7 +188,7 @@ class RegressionCaptureGapRecoveryTests(unittest.TestCase):
                 result = recovery.verify_recovery(root, root / "capture", token_path, output_dir=root / "out")
             self.assertEqual("CAPTURE_RECOVERED_READY_FOR_HD_HANDOFF", result["status"])
             self.assertEqual([], result["blockers"])
-            self.assertIn("SAME regression case", result["roadmap_policy"])
+            self.assertIn("same regression case", result["roadmap_policy"])
             self.assertFalse(result["privacy_contract"]["capture_pixels"])
 
     def test_windows_launcher_chains_capture_verify_and_art_handoff(self):
