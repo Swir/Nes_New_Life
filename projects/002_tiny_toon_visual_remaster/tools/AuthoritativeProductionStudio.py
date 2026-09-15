@@ -86,6 +86,7 @@ class AuthoritativeProductionStudio(AuthoritativeRemasterStudio):
             f"Remembered case: {key} — {label}\n"
             f"Current fingerprint: {fingerprint}\n\n"
             f"DO THIS NEXT\n{state.get('next_action', 'Resume the exact remembered regression case.')}\n\n"
+            "Normal regression ordering must not bypass this remembered failed case.\n"
             "Use CTRL+ALT+F11 for the exact recovery step, or CTRL+ALT+F9 to let Final Regression Auto-Continue resume the recovery and then continue normal exact-build cases after a verified same-case PASS.\n"
             "The recovery state is local metadata only; it does not contain ROM bytes, capture pixels or screenshots."
         )
